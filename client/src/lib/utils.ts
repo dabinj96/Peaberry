@@ -5,8 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Use the env variable directly or fall back to a blank key
-export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyD91_T3RFZia0JCNR1zfEC-r5SXSebOAQQ";
+// Use the environment variable only - no fallback value for security reasons
+export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 // Format price level
 export function formatPriceLevel(level: number): string {

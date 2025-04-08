@@ -120,6 +120,17 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
   // Load Google Maps API
   useEffect(() => {
     if (!window.google) {
+      // Check if API key is available
+      if (!GOOGLE_MAPS_API_KEY) {
+        console.warn("Google Maps API key is missing. Please set the VITE_GOOGLE_MAPS_API_KEY environment variable.");
+        toast({
+          title: "Map Configuration Error",
+          description: "Google Maps API key is not configured. Map functionality will be limited.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Create script element
       const script = document.createElement("script");
       // Use the API key from environment variables through the utils.ts export
@@ -138,7 +149,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
         console.error("Failed to load Google Maps API");
         toast({
           title: "Map Loading Error",
-          description: "Failed to load Google Maps. Please try again later.",
+          description: "Failed to load Google Maps. Please check API key configuration.",
           variant: "destructive",
         });
       };
@@ -308,6 +319,34 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
   }
 
   if (!mapLoaded) {
+    // Check if API key is missing
+    if (!GOOGLE_MAPS_API_KEY) {
+      return (
+        <div className="min-h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
+          <div className="text-center p-6 max-w-md">
+            <div className="bg-amber-100 p-4 rounded-lg mb-4 border border-amber-200">
+              <h3 className="text-amber-800 font-medium text-lg mb-2">Map Temporarily Unavailable</h3>
+              <p className="text-amber-700 text-sm">
+                Google Maps API key is not configured. Location information is still 
+                available in list view.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              {cafes.map(cafe => (
+                <div key={cafe.id} className="bg-white p-3 rounded shadow-sm text-left">
+                  <h4 className="font-medium text-[#A0522D]">{cafe.name}</h4>
+                  <p className="text-sm text-gray-500">{cafe.address}</p>
+                  <p className="text-xs text-gray-400 mt-1">{cafe.neighborhood}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Normal loading state
     return (
       <div className="min-h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
         <div className="text-center p-4">
