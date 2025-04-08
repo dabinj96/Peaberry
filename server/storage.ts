@@ -22,16 +22,19 @@ export interface IStorage {
   getCafeWithDetails(id: number, userId?: number): Promise<CafeWithDetails | undefined>;
   listCafes(filters?: CafeFilter, userId?: number): Promise<CafeWithDetails[]>;
   createCafe(cafe: InsertCafe): Promise<Cafe>;
+  updateCafe(id: number, cafeData: Partial<Cafe>): Promise<Cafe | undefined>;
   searchCafes(query: string, userId?: number): Promise<CafeWithDetails[]>;
   listNeighborhoods(): Promise<string[]>;
 
   // Cafe roast level methods
   addCafeRoastLevel(cafeRoastLevel: InsertCafeRoastLevel): Promise<CafeRoastLevel>;
   getCafeRoastLevels(cafeId: number): Promise<CafeRoastLevel[]>;
+  updateCafeRoastLevels(cafeId: number, roastLevels: string[]): Promise<CafeRoastLevel[]>;
 
   // Cafe brewing method methods
   addCafeBrewingMethod(cafeBrewingMethod: InsertCafeBrewingMethod): Promise<CafeBrewingMethod>;
   getCafeBrewingMethods(cafeId: number): Promise<CafeBrewingMethod[]>;
+  updateCafeBrewingMethods(cafeId: number, brewingMethods: string[]): Promise<CafeBrewingMethod[]>;
 
   // Rating methods
   getRating(id: number): Promise<Rating | undefined>;
@@ -237,6 +240,21 @@ export class MemStorage implements IStorage {
     this.cafesMap.set(id, cafe);
     return cafe;
   }
+  
+  async updateCafe(id: number, cafeData: Partial<Cafe>): Promise<Cafe | undefined> {
+    const existingCafe = this.cafesMap.get(id);
+    if (!existingCafe) return undefined;
+    
+    const updatedCafe: Cafe = {
+      ...existingCafe,
+      ...cafeData,
+      id, // Ensure ID doesn't change
+      createdAt: existingCafe.createdAt // Preserve creation date
+    };
+    
+    this.cafesMap.set(id, updatedCafe);
+    return updatedCafe;
+  }
 
   async searchCafes(query: string, userId?: number): Promise<CafeWithDetails[]> {
     if (!query || query.trim() === '') {
@@ -266,6 +284,31 @@ export class MemStorage implements IStorage {
     return Array.from(this.cafeRoastLevelsMap.values())
       .filter(rl => rl.cafeId === cafeId);
   }
+  
+  async updateCafeRoastLevels(cafeId: number, roastLevels: string[]): Promise<CafeRoastLevel[]> {
+    // Remove existing roast levels for this cafe
+    const existingIds = Array.from(this.cafeRoastLevelsMap.entries())
+      .filter(([_, rl]) => rl.cafeId === cafeId)
+      .map(([id, _]) => id);
+    
+    for (const id of existingIds) {
+      this.cafeRoastLevelsMap.delete(id);
+    }
+    
+    // Add new roast levels
+    const newRoastLevels: CafeRoastLevel[] = [];
+    for (const level of roastLevels) {
+      if (["light", "medium", "dark"].includes(level)) {
+        const roastLevel = await this.addCafeRoastLevel({ 
+          cafeId, 
+          roastLevel: level as "light" | "medium" | "dark" 
+        });
+        newRoastLevels.push(roastLevel);
+      }
+    }
+    
+    return newRoastLevels;
+  }
 
   // Cafe brewing method methods
   async addCafeBrewingMethod(insertCafeBrewingMethod: InsertCafeBrewingMethod): Promise<CafeBrewingMethod> {
@@ -278,6 +321,33 @@ export class MemStorage implements IStorage {
   async getCafeBrewingMethods(cafeId: number): Promise<CafeBrewingMethod[]> {
     return Array.from(this.cafeBrewingMethodsMap.values())
       .filter(bm => bm.cafeId === cafeId);
+  }
+  
+  async updateCafeBrewingMethods(cafeId: number, brewingMethods: string[]): Promise<CafeBrewingMethod[]> {
+    // Remove existing brewing methods for this cafe
+    const existingIds = Array.from(this.cafeBrewingMethodsMap.entries())
+      .filter(([_, bm]) => bm.cafeId === cafeId)
+      .map(([id, _]) => id);
+    
+    for (const id of existingIds) {
+      this.cafeBrewingMethodsMap.delete(id);
+    }
+    
+    // Add new brewing methods
+    const newBrewingMethods: CafeBrewingMethod[] = [];
+    const validMethods = ["pour_over", "espresso", "aeropress", "french_press", "siphon"];
+    
+    for (const method of brewingMethods) {
+      if (validMethods.includes(method)) {
+        const brewingMethod = await this.addCafeBrewingMethod({ 
+          cafeId, 
+          brewingMethod: method as "pour_over" | "espresso" | "aeropress" | "french_press" | "siphon" 
+        });
+        newBrewingMethods.push(brewingMethod);
+      }
+    }
+    
+    return newBrewingMethods;
   }
 
   // Rating methods

@@ -5,6 +5,7 @@ import { z } from "zod";
 // Enums
 export const roastLevelEnum = pgEnum('roast_level', ['light', 'medium', 'dark']);
 export const brewingMethodEnum = pgEnum('brewing_method', ['pour_over', 'espresso', 'aeropress', 'french_press', 'siphon']);
+export const cafeStatusEnum = pgEnum('cafe_status', ['draft', 'published', 'archived']);
 
 // Users table
 export const users = pgTable("users", {
@@ -35,6 +36,7 @@ export const cafes = pgTable("cafes", {
   phone: text("phone").default(''),
   instagramHandle: text("instagram_handle").default(''),
   googleMapsUrl: text("google_maps_url").default(''),
+  status: cafeStatusEnum("status").default('draft').notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

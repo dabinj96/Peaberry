@@ -457,6 +457,212 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to import cafes from Google Places" });
     }
   });
+  
+  // Admin routes for managing cafes
+  app.get("/api/admin/cafes", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Check for admin access
+    const adminUsernames = ['admin', 'testuser']; // Admin usernames
+    if (!adminUsernames.includes(req.user.username)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    try {
+      // Get all cafes with details for admin view
+      const cafes = await storage.listCafes();
+      res.json(cafes);
+    } catch (error) {
+      console.error("Error fetching admin cafes:", error);
+      res.status(500).json({ error: "Failed to fetch cafes" });
+    }
+  });
+  
+  app.get("/api/admin/cafes/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Check for admin access
+    const adminUsernames = ['admin', 'testuser']; // Admin usernames
+    if (!adminUsernames.includes(req.user.username)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    try {
+      const cafeId = parseInt(req.params.id, 10);
+      if (isNaN(cafeId)) {
+        return res.status(400).json({ error: "Invalid cafe ID" });
+      }
+      
+      const cafe = await storage.getCafeWithDetails(cafeId);
+      if (!cafe) {
+        return res.status(404).json({ error: "Cafe not found" });
+      }
+      
+      res.json(cafe);
+    } catch (error) {
+      console.error("Error fetching admin cafe:", error);
+      res.status(500).json({ error: "Failed to fetch cafe details" });
+    }
+  });
+  
+  app.put("/api/admin/cafes/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Check for admin access
+    const adminUsernames = ['admin', 'testuser']; // Admin usernames
+    if (!adminUsernames.includes(req.user.username)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    try {
+      const cafeId = parseInt(req.params.id, 10);
+      if (isNaN(cafeId)) {
+        return res.status(400).json({ error: "Invalid cafe ID" });
+      }
+      
+      // First check if cafe exists
+      const cafe = await storage.getCafe(cafeId);
+      if (!cafe) {
+        return res.status(404).json({ error: "Cafe not found" });
+      }
+      
+      // Update cafe basic information
+      const updateData = {
+        ...req.body,
+        id: cafeId // Ensure ID is included
+      };
+      
+      // Update cafe in the database
+      const updatedCafe = await storage.updateCafe(cafeId, updateData);
+      res.json(updatedCafe);
+    } catch (error) {
+      console.error("Error updating cafe:", error);
+      res.status(500).json({ error: "Failed to update cafe" });
+    }
+  });
+  
+  app.put("/api/admin/cafes/:id/roast-levels", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Check for admin access
+    const adminUsernames = ['admin', 'testuser']; // Admin usernames
+    if (!adminUsernames.includes(req.user.username)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    try {
+      const cafeId = parseInt(req.params.id, 10);
+      if (isNaN(cafeId)) {
+        return res.status(400).json({ error: "Invalid cafe ID" });
+      }
+      
+      // First check if cafe exists
+      const cafe = await storage.getCafe(cafeId);
+      if (!cafe) {
+        return res.status(404).json({ error: "Cafe not found" });
+      }
+      
+      const { roastLevels } = req.body;
+      if (!Array.isArray(roastLevels)) {
+        return res.status(400).json({ error: "roastLevels must be an array" });
+      }
+      
+      // Clear existing roast levels and add new ones
+      await storage.updateCafeRoastLevels(cafeId, roastLevels);
+      
+      // Return the updated roast levels
+      const updatedRoastLevels = await storage.getCafeRoastLevels(cafeId);
+      res.json(updatedRoastLevels);
+    } catch (error) {
+      console.error("Error updating cafe roast levels:", error);
+      res.status(500).json({ error: "Failed to update cafe roast levels" });
+    }
+  });
+  
+  app.put("/api/admin/cafes/:id/brewing-methods", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Check for admin access
+    const adminUsernames = ['admin', 'testuser']; // Admin usernames
+    if (!adminUsernames.includes(req.user.username)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    try {
+      const cafeId = parseInt(req.params.id, 10);
+      if (isNaN(cafeId)) {
+        return res.status(400).json({ error: "Invalid cafe ID" });
+      }
+      
+      // First check if cafe exists
+      const cafe = await storage.getCafe(cafeId);
+      if (!cafe) {
+        return res.status(404).json({ error: "Cafe not found" });
+      }
+      
+      const { brewingMethods } = req.body;
+      if (!Array.isArray(brewingMethods)) {
+        return res.status(400).json({ error: "brewingMethods must be an array" });
+      }
+      
+      // Clear existing brewing methods and add new ones
+      await storage.updateCafeBrewingMethods(cafeId, brewingMethods);
+      
+      // Return the updated brewing methods
+      const updatedBrewingMethods = await storage.getCafeBrewingMethods(cafeId);
+      res.json(updatedBrewingMethods);
+    } catch (error) {
+      console.error("Error updating cafe brewing methods:", error);
+      res.status(500).json({ error: "Failed to update cafe brewing methods" });
+    }
+  });
+  
+  app.put("/api/admin/cafes/:id/status", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Check for admin access
+    const adminUsernames = ['admin', 'testuser']; // Admin usernames
+    if (!adminUsernames.includes(req.user.username)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    try {
+      const cafeId = parseInt(req.params.id, 10);
+      if (isNaN(cafeId)) {
+        return res.status(400).json({ error: "Invalid cafe ID" });
+      }
+      
+      // First check if cafe exists
+      const cafe = await storage.getCafe(cafeId);
+      if (!cafe) {
+        return res.status(404).json({ error: "Cafe not found" });
+      }
+      
+      const { status } = req.body;
+      if (!status || !["draft", "published", "archived"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status value" });
+      }
+      
+      // Update cafe status
+      const updatedCafe = await storage.updateCafe(cafeId, { status });
+      res.json(updatedCafe);
+    } catch (error) {
+      console.error("Error updating cafe status:", error);
+      res.status(500).json({ error: "Failed to update cafe status" });
+    }
+  });
 
   // Create a test user for development if none exists
   app.get("/api/dev/create-test-user", async (req, res) => {

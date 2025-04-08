@@ -168,6 +168,16 @@ export class DatabaseStorage implements IStorage {
     const [cafe] = await db.insert(cafes).values(insertCafe).returning();
     return cafe;
   }
+  
+  async updateCafe(id: number, cafeData: Partial<Cafe>): Promise<Cafe | undefined> {
+    const [updatedCafe] = await db
+      .update(cafes)
+      .set(cafeData)
+      .where(eq(cafes.id, id))
+      .returning();
+    
+    return updatedCafe;
+  }
 
   async searchCafes(query: string, userId?: number): Promise<CafeWithDetails[]> {
     if (!query || query.trim() === '') {
@@ -217,6 +227,27 @@ export class DatabaseStorage implements IStorage {
       .from(cafeRoastLevels)
       .where(eq(cafeRoastLevels.cafeId, cafeId));
   }
+  
+  async updateCafeRoastLevels(cafeId: number, roastLevels: string[]): Promise<CafeRoastLevel[]> {
+    // Delete all existing roast levels for this cafe
+    await db
+      .delete(cafeRoastLevels)
+      .where(eq(cafeRoastLevels.cafeId, cafeId));
+    
+    // Add the new roast levels
+    const newRoastLevels: CafeRoastLevel[] = [];
+    for (const level of roastLevels) {
+      if (["light", "medium", "dark"].includes(level)) {
+        const roastLevel = await this.addCafeRoastLevel({ 
+          cafeId, 
+          roastLevel: level as "light" | "medium" | "dark" 
+        });
+        newRoastLevels.push(roastLevel);
+      }
+    }
+    
+    return newRoastLevels;
+  }
 
   // Cafe brewing method methods
   async addCafeBrewingMethod(insertCafeBrewingMethod: InsertCafeBrewingMethod): Promise<CafeBrewingMethod> {
@@ -248,6 +279,29 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(cafeBrewingMethods)
       .where(eq(cafeBrewingMethods.cafeId, cafeId));
+  }
+  
+  async updateCafeBrewingMethods(cafeId: number, brewingMethods: string[]): Promise<CafeBrewingMethod[]> {
+    // Delete all existing brewing methods for this cafe
+    await db
+      .delete(cafeBrewingMethods)
+      .where(eq(cafeBrewingMethods.cafeId, cafeId));
+    
+    // Add the new brewing methods
+    const newBrewingMethods: CafeBrewingMethod[] = [];
+    const validMethods = ["pour_over", "espresso", "aeropress", "french_press", "siphon"];
+    
+    for (const method of brewingMethods) {
+      if (validMethods.includes(method)) {
+        const brewingMethod = await this.addCafeBrewingMethod({ 
+          cafeId, 
+          brewingMethod: method as "pour_over" | "espresso" | "aeropress" | "french_press" | "siphon" 
+        });
+        newBrewingMethods.push(brewingMethod);
+      }
+    }
+    
+    return newBrewingMethods;
   }
 
   // Rating methods
