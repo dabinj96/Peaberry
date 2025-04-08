@@ -70,6 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(cafes);
     } catch (error) {
+      console.error("Error fetching cafes:", error);
       res.status(500).json({ error: "An error occurred while fetching cafes" });
     }
   });
@@ -100,6 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const neighborhoods = await storage.listNeighborhoods();
       res.json(neighborhoods);
     } catch (error) {
+      console.error("Error fetching neighborhoods:", error);
       res.status(500).json({ error: "An error occurred while fetching neighborhoods" });
     }
   });
