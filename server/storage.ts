@@ -49,7 +49,7 @@ export interface IStorage {
   isUserFavorite(userId: number, cafeId: number): Promise<boolean>;
 
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using any to avoid TypeScript errors with session store
 }
 
 export class MemStorage implements IStorage {
@@ -565,4 +565,7 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { DatabaseStorage } from "./storage.database";
+
+// Use the PostgreSQL database storage implementation
+export const storage = new DatabaseStorage();
