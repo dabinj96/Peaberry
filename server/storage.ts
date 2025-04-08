@@ -16,6 +16,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
 
   // Cafe methods
   getCafe(id: number): Promise<Cafe | undefined>;
@@ -117,6 +118,21 @@ export class MemStorage implements IStorage {
     const user: User = { ...insertUser, id, createdAt };
     this.usersMap.set(id, user);
     return user;
+  }
+  
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const existingUser = this.usersMap.get(id);
+    if (!existingUser) return undefined;
+    
+    const updatedUser: User = {
+      ...existingUser,
+      ...userData,
+      id, // Ensure ID doesn't change
+      createdAt: existingUser.createdAt // Preserve creation date
+    };
+    
+    this.usersMap.set(id, updatedUser);
+    return updatedUser;
   }
 
   // Cafe methods

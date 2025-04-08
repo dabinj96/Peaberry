@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { CafeWithDetails } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,13 +8,76 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
 import CafeCard from "@/components/cafe-card";
+import { apiRequest } from "@/lib/queryClient";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Define password change form schema
+const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1, { message: "Current password is required" }),
+  newPassword: z.string().min(6, { message: "New password must be at least 6 characters" }),
+  confirmPassword: z.string().min(1, { message: "Please confirm your new password" }),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>;
 
 export default function ProfilePage() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("favorites");
+
+  // Password change form setup
+  const form = useForm<PasswordChangeFormValues>({
+    resolver: zodResolver(passwordChangeSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: ""
+    }
+  });
+  
+  // Password change mutation
+  const passwordChangeMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string, newPassword: string }) => {
+      const response = await apiRequest("POST", "/api/change-password", data);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to change password");
+      }
+      return response.text();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Your password has been changed successfully",
+        variant: "default",
+      });
+      form.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handle password change form submission
+  const onSubmit = (data: PasswordChangeFormValues) => {
+    passwordChangeMutation.mutate({
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword
+    });
+  };
 
   // Fetch user favorites
   const { data: favorites = [], isLoading: isLoadingFavorites } = useQuery<CafeWithDetails[]>({
@@ -154,8 +218,93 @@ export default function ProfilePage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="py-12 text-center">
-                      <p className="text-gray-500">Account settings will be available in a future update.</p>
+                    <div className="max-w-md mx-auto">
+                      <div className="mb-8">
+                        <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
+                          <Lock className="h-5 w-5" />
+                          Change Password
+                        </h3>
+                        
+                        <Form {...form}>
+                          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                            <FormField
+                              control={form.control}
+                              name="currentPassword"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Current Password</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="password" 
+                                      placeholder="Enter your current password" 
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="newPassword"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>New Password</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="password" 
+                                      placeholder="Enter your new password" 
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormDescription>
+                                    Must be at least 6 characters long
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="confirmPassword"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Confirm New Password</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="password" 
+                                      placeholder="Confirm your new password" 
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <Button 
+                              type="submit" 
+                              className="w-full bg-[#A0522D] hover:bg-[#8B4513]"
+                              disabled={passwordChangeMutation.isPending}
+                            >
+                              {passwordChangeMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Changing Password...
+                                </>
+                              ) : (
+                                "Change Password"
+                              )}
+                            </Button>
+                          </form>
+                        </Form>
+                      </div>
+                      
+                      <div className="pt-4 border-t text-sm text-gray-500">
+                        <p>More account settings will be available in future updates.</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
