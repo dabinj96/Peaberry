@@ -5,7 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyDLUqBksmODJ8Ej9Gi9yPJE9lzvGcsx3tc";
+// Use the env variable directly or fall back to a blank key
+export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyD91_T3RFZia0JCNR1zfEC-r5SXSebOAQQ";
 
 // Format price level
 export function formatPriceLevel(level: number): string {

@@ -67,7 +67,7 @@ export class MemStorage implements IStorage {
   private ratingIdCounter: number;
   private favoriteIdCounter: number;
   
-  public sessionStore: session.SessionStore;
+  public sessionStore: any; // Using any to avoid SessionStore type issues
 
   constructor() {
     this.usersMap = new Map();

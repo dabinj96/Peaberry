@@ -11,10 +11,101 @@ interface CafeMapProps {
   singleLocation?: boolean;
 }
 
+// Google Maps type definitions
 declare global {
   interface Window {
-    google: any;
+    google: typeof google;
     initMap: () => void;
+  }
+  
+  namespace google.maps {
+    class Map {
+      constructor(element: HTMLElement, options?: MapOptions);
+      setCenter(latLng: LatLng | LatLngLiteral): void;
+      setZoom(zoom: number): void;
+      fitBounds(bounds: LatLngBounds): void;
+      getZoom(): number;
+    }
+    
+    class Marker {
+      constructor(options?: MarkerOptions);
+      setMap(map: Map | null): void;
+      addListener(event: string, handler: Function): MapsEventListener;
+    }
+    
+    class InfoWindow {
+      constructor(options?: InfoWindowOptions);
+      setContent(content: string | Node): void;
+      open(map: Map, anchor?: MVCObject): void;
+    }
+    
+    class LatLngBounds {
+      constructor();
+      extend(latLng: LatLng | LatLngLiteral): LatLngBounds;
+      isEmpty(): boolean;
+    }
+    
+    interface MapOptions {
+      center: LatLng | LatLngLiteral;
+      zoom: number;
+      styles?: any[];
+    }
+    
+    interface LatLngLiteral {
+      lat: number;
+      lng: number;
+    }
+    
+    interface LatLng {
+      lat(): number;
+      lng(): number;
+    }
+    
+    interface MarkerOptions {
+      position: LatLng | LatLngLiteral;
+      map?: Map;
+      title?: string;
+      icon?: string | Icon;
+      animation?: Animation;
+    }
+    
+    interface Icon {
+      url: string;
+      scaledSize?: Size;
+      origin?: Point;
+      anchor?: Point;
+    }
+    
+    class Size {
+      constructor(width: number, height: number);
+    }
+    
+    class Point {
+      constructor(x: number, y: number);
+    }
+    
+    interface InfoWindowOptions {
+      content?: string | Node;
+      maxWidth?: number;
+    }
+    
+    interface MapsEventListener {
+      remove(): void;
+    }
+    
+    interface MVCObject {
+      addListener(eventName: string, handler: Function): MapsEventListener;
+    }
+    
+    enum Animation {
+      DROP,
+      BOUNCE
+    }
+    
+    namespace event {
+      function addListener(instance: any, eventName: string, handler: Function): MapsEventListener;
+      function removeListener(listener: MapsEventListener): void;
+    }
   }
 }
 
@@ -31,17 +122,20 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
     if (!window.google) {
       // Create script element
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMap`;
+      // Use the API key from environment variables through the utils.ts export
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMap&libraries=places`;
       script.async = true;
       script.defer = true;
       
       // Define the callback
       window.initMap = () => {
         setMapLoaded(true);
+        console.log("Google Maps API loaded successfully");
       };
       
       // Handle errors
       script.onerror = () => {
+        console.error("Failed to load Google Maps API");
         toast({
           title: "Map Loading Error",
           description: "Failed to load Google Maps. Please try again later.",
@@ -54,7 +148,9 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
       return () => {
         // Cleanup
         window.initMap = () => {};
-        document.head.removeChild(script);
+        if (document.head.contains(script)) {
+          document.head.removeChild(script);
+        }
       };
     } else {
       setMapLoaded(true);
@@ -128,16 +224,42 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
           // Add marker click listener
           marker.addListener("click", () => {
             if (infoWindowRef.current) {
+              // Format price level as $ symbols
+              const priceLevel = "$".repeat(cafe.priceLevel);
+              
+              // Show average rating if available
+              const ratingDisplay = cafe.averageRating 
+                ? `<div class="flex items-center mt-1">
+                     <span class="text-yellow-500">★</span>
+                     <span class="ml-1 text-sm">${cafe.averageRating.toFixed(1)}</span>
+                     <span class="text-xs text-gray-500 ml-1">(${cafe.totalRatings} reviews)</span>
+                   </div>`
+                : '<div class="text-xs text-gray-500 mt-1">No reviews yet</div>';
+              
+              // Build enhanced info window with more details and directions link
               const content = `
-                <div class="p-2">
-                  <h3 class="font-semibold">${cafe.name}</h3>
-                  <p class="text-sm">${cafe.neighborhood}</p>
-                  <a 
-                    href="/cafe/${cafe.id}" 
-                    class="text-sm text-[#A0522D] hover:underline block mt-1"
-                  >
-                    View Details
-                  </a>
+                <div class="p-3 max-w-xs">
+                  <h3 class="font-semibold text-[#A0522D]">${cafe.name}</h3>
+                  <p class="text-sm text-gray-600">${cafe.neighborhood} · ${priceLevel}</p>
+                  ${ratingDisplay}
+                  
+                  <div class="border-t border-gray-200 my-2"></div>
+                  
+                  <div class="flex justify-between mt-2">
+                    <a 
+                      href="/cafe/${cafe.id}" 
+                      class="text-sm text-[#A0522D] hover:underline font-medium"
+                    >
+                      View Details
+                    </a>
+                    <a 
+                      href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cafe.address)}" 
+                      target="_blank"
+                      class="text-sm text-blue-600 hover:underline font-medium"
+                    >
+                      Get Directions
+                    </a>
+                  </div>
                 </div>
               `;
               
