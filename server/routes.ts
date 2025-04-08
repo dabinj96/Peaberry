@@ -371,8 +371,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ error: "Authentication required" });
     }
     
+    // Check for admin access (for now, whitelist specific usernames)
+    const adminUsernames = ['admin', 'testuser']; // Add your admin usernames here
+    if (!adminUsernames.includes(req.user.username)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
     try {
-      // Only authenticated users can access this endpoint
+      // Only admin users can access this endpoint
       
       const location = req.body.location || "Boston, MA";
       log(`Importing cafes from Google Places for location: ${location}`, "routes");

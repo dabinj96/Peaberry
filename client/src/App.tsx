@@ -9,6 +9,7 @@ import ProfilePage from "@/pages/profile-page";
 import AdminPage from "@/pages/admin-page";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { AdminProtectedRoute } from "@/lib/admin-protected-route";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -22,7 +23,7 @@ function Router() {
           <Route path="/auth" component={AuthPage} />
           <Route path="/cafe/:id" component={CafeDetailPage} />
           <ProtectedRoute path="/profile" component={ProfilePage} />
-          <ProtectedRoute path="/admin" component={AdminPage} />
+          <AdminProtectedRoute path="/admin" component={AdminPage} />
           <Route component={NotFound} />
         </Switch>
       </main>
