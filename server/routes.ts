@@ -6,6 +6,7 @@ import { cafeFilterSchema, insertRatingSchema, insertFavoriteSchema, insertCafeS
 import { z } from "zod";
 import axios from "axios";
 import { log } from "./vite";
+import bcrypt from 'bcrypt';
 
 // Google Places API helper function
 async function fetchCafesFromGooglePlaces(location: string = "Boston, MA") {
@@ -466,10 +467,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ message: "Test user already exists", userId: existingUser.id });
       }
       
-      // Create a test user with hashed password 'password'
+      // Use the imported bcrypt package
+      const hashedPassword = await bcrypt.hash('password', 10);
+      
+      // Create a test user with properly hashed password
       const user = await storage.createUser({
         username: "testuser",
-        password: "$2b$10$rGsrhKMnJQUBYJJU5Cia9OM5mUAVDjShayGBnWQkIr3moi56c.9FC", // 'password'
+        password: hashedPassword, // hashed 'password'
         email: "test@example.com",
         name: "Test User",
         bio: "This is a test user for development purposes."
