@@ -1,9 +1,140 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { cafeFilterSchema, insertRatingSchema, insertFavoriteSchema } from "@shared/schema";
+import { cafeFilterSchema, insertRatingSchema, insertFavoriteSchema, insertCafeSchema, insertCafeRoastLevelSchema, insertCafeBrewingMethodSchema } from "@shared/schema";
 import { z } from "zod";
+import axios from "axios";
+import { log } from "./vite";
+
+// Google Places API helper function
+async function fetchCafesFromGooglePlaces(location: string = "Boston, MA") {
+  try {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      throw new Error("Google Maps API key is not configured");
+    }
+
+    // First search for coffee shops in Boston
+    const searchResponse = await axios.get(
+      "https://maps.googleapis.com/maps/api/place/textsearch/json",
+      {
+        params: {
+          query: `specialty coffee shops in ${location}`,
+          key: apiKey,
+          type: "cafe"
+        }
+      }
+    );
+
+    if (searchResponse.data.status !== "OK") {
+      throw new Error(`Places API error: ${searchResponse.data.status}`);
+    }
+
+    // Process and enrich each place
+    const places = searchResponse.data.results;
+    const enrichedPlaces = [];
+
+    for (const place of places) {
+      try {
+        // Get additional details for each place
+        const detailsResponse = await axios.get(
+          "https://maps.googleapis.com/maps/api/place/details/json",
+          {
+            params: {
+              place_id: place.place_id,
+              fields: "name,formatted_address,formatted_phone_number,website,url,geometry,photos,price_level,rating,user_ratings_total,opening_hours,business_status",
+              key: apiKey
+            }
+          }
+        );
+
+        if (detailsResponse.data.status === "OK") {
+          const details = detailsResponse.data.result;
+          
+          // Combine search and details results
+          enrichedPlaces.push({
+            place_id: place.place_id,
+            name: details.name || place.name,
+            address: details.formatted_address || place.formatted_address,
+            lat: details.geometry?.location.lat || place.geometry?.location.lat,
+            lng: details.geometry?.location.lng || place.geometry?.location.lng,
+            phone: details.formatted_phone_number,
+            website: details.website,
+            googleMapsUrl: details.url,
+            rating: details.rating || place.rating,
+            totalRatings: details.user_ratings_total || place.user_ratings_total,
+            price_level: details.price_level,
+            neighborhood: extractNeighborhood(details.formatted_address || place.formatted_address),
+            description: `A specialty coffee shop located in ${extractNeighborhood(details.formatted_address || place.formatted_address)}.`,
+            photos: details.photos ? details.photos.map((photo: any) => ({
+              photo_reference: photo.photo_reference,
+              width: photo.width,
+              height: photo.height
+            })) : []
+          });
+        }
+      } catch (err) {
+        console.error(`Error fetching details for ${place.name}:`, err);
+        // Still include the basic place data even if details fail
+        enrichedPlaces.push({
+          place_id: place.place_id,
+          name: place.name,
+          address: place.formatted_address,
+          lat: place.geometry?.location.lat,
+          lng: place.geometry?.location.lng,
+          neighborhood: extractNeighborhood(place.formatted_address),
+          description: `A specialty coffee shop located in ${extractNeighborhood(place.formatted_address)}.`,
+        });
+      }
+      
+      // Small delay to avoid hitting API rate limits
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    return enrichedPlaces;
+  } catch (error) {
+    console.error("Error fetching cafes from Google Places:", error);
+    throw error;
+  }
+}
+
+// Helper to extract neighborhood from address
+function extractNeighborhood(address: string): string {
+  // Try to extract neighborhood from Boston address
+  if (!address) return "Boston";
+  
+  // Common Boston neighborhoods
+  const neighborhoods = [
+    "Back Bay", "Beacon Hill", "North End", "South End", "Downtown",
+    "Fenway", "Kenmore", "Allston", "Brighton", "Jamaica Plain",
+    "Roxbury", "Dorchester", "South Boston", "Charlestown", "East Boston",
+    "Cambridge", "Somerville", "Brookline", "Newton"
+  ];
+  
+  for (const neighborhood of neighborhoods) {
+    if (address.includes(neighborhood)) {
+      return neighborhood;
+    }
+  }
+  
+  // Default to general area if specific neighborhood not found
+  if (address.includes("Cambridge")) return "Cambridge";
+  if (address.includes("Somerville")) return "Somerville";
+  if (address.includes("Brookline")) return "Brookline";
+  
+  return "Boston";
+}
+
+// Helper to shuffle an array
+function shuffleArray<T>(array: T[]): T[] {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -230,6 +361,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(favorites);
     } catch (error) {
       res.status(500).json({ error: "An error occurred while fetching favorites" });
+    }
+  });
+
+  // Admin endpoint to import cafes from Google Places API
+  app.post("/api/admin/import-cafes", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      // Only authenticated users can access this endpoint
+      
+      const location = req.body.location || "Boston, MA";
+      log(`Importing cafes from Google Places for location: ${location}`, "routes");
+      
+      // Fetch places from Google Places API
+      const places = await fetchCafesFromGooglePlaces(location);
+      log(`Found ${places.length} cafes from Google Places`, "routes");
+      
+      // Track results
+      const results = {
+        total: places.length,
+        imported: 0,
+        errors: [] as string[]
+      };
+
+      // Import each place into our database
+      for (const place of places) {
+        try {
+          // Map Google Place data to our cafe schema
+          const cafeData = {
+            name: place.name,
+            description: place.description || `A specialty coffee shop in ${place.neighborhood || 'Boston'}.`,
+            address: place.address,
+            neighborhood: place.neighborhood || "Boston",
+            website: place.website || "",
+            phone: place.phone || "",
+            latitude: place.lat,
+            longitude: place.lng,
+            imageUrl: "",  // We'll handle images separately
+            instagramHandle: "",
+            googleMapsUrl: place.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.address)}`
+          };
+          
+          // Validate against our schema
+          const validatedData = insertCafeSchema.parse(cafeData);
+          
+          // Add to database
+          const cafe = await storage.createCafe(validatedData);
+          
+          // Add random roast levels and brewing methods to make data more interesting
+          const roastLevels: Array<"light" | "medium" | "dark"> = ["light", "medium", "dark"];
+          const brewingMethods: Array<"pour_over" | "espresso" | "aeropress" | "french_press" | "siphon"> = ["pour_over", "espresso", "aeropress", "french_press", "siphon"];
+          
+          // Add 1-3 random roast levels
+          const numRoastLevels = Math.floor(Math.random() * 3) + 1;
+          const selectedRoastLevels = shuffleArray([...roastLevels]).slice(0, numRoastLevels);
+          
+          for (const level of selectedRoastLevels) {
+            await storage.addCafeRoastLevel({
+              cafeId: cafe.id,
+              roastLevel: level
+            });
+          }
+          
+          // Add 1-4 random brewing methods
+          const numBrewingMethods = Math.floor(Math.random() * 4) + 1;
+          const selectedBrewingMethods = shuffleArray([...brewingMethods]).slice(0, numBrewingMethods);
+          
+          for (const method of selectedBrewingMethods) {
+            await storage.addCafeBrewingMethod({
+              cafeId: cafe.id,
+              brewingMethod: method
+            });
+          }
+          
+          results.imported++;
+        } catch (error) {
+          console.error(`Error importing cafe ${place.name}:`, error);
+          results.errors.push(`Failed to import ${place.name}: ${error}`);
+        }
+      }
+      
+      res.json(results);
+    } catch (error) {
+      console.error("Error in import process:", error);
+      res.status(500).json({ error: "Failed to import cafes from Google Places" });
+    }
+  });
+
+  // Create a test user for development if none exists
+  app.get("/api/dev/create-test-user", async (req, res) => {
+    // Only available in development environment
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({ error: "Endpoint not available in production" });
+    }
+    
+    try {
+      // Check if the test user already exists
+      const existingUser = await storage.getUserByUsername("testuser");
+      
+      if (existingUser) {
+        return res.json({ message: "Test user already exists", userId: existingUser.id });
+      }
+      
+      // Create a test user with hashed password 'password'
+      const user = await storage.createUser({
+        username: "testuser",
+        password: "$2b$10$rGsrhKMnJQUBYJJU5Cia9OM5mUAVDjShayGBnWQkIr3moi56c.9FC", // 'password'
+        email: "test@example.com",
+        name: "Test User",
+        bio: "This is a test user for development purposes."
+      });
+      
+      res.json({ message: "Test user created successfully", userId: user.id });
+    } catch (error) {
+      console.error("Error creating test user:", error);
+      res.status(500).json({ error: "Failed to create test user" });
     }
   });
 

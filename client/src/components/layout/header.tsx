@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui";
-import { Heart, Coffee, Menu, Search, User, LogOut, ChevronDown } from "lucide-react";
+import { Heart, Coffee, Menu, Search, User, LogOut, ChevronDown, Settings } from "lucide-react";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -114,6 +114,11 @@ export default function Header() {
                       My Favorites
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate("/admin")}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} disabled={logoutMutation.isPending}>
                       <LogOut className="mr-2 h-4 w-4" />
                       {logoutMutation.isPending ? "Logging out..." : "Logout"}
@@ -183,7 +188,29 @@ export default function Header() {
               Contact
             </Link>
             
-            {!user && (
+            {user ? (
+              <div className="py-2 border-t mt-2 pt-2">
+                <Link href="/profile">
+                  <Button variant="outline" className="w-full mb-2 justify-start">
+                    <User className="mr-2 h-4 w-4" />
+                    My Profile
+                  </Button>
+                </Link>
+                <Link href="/admin">
+                  <Button variant="outline" className="w-full mb-2 justify-start">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Admin Dashboard
+                  </Button>
+                </Link>
+                <Button 
+                  className="w-full bg-red-100 hover:bg-red-200 text-red-700 justify-start" 
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            ) : (
               <div className="py-2 border-t mt-2 pt-2">
                 <Link href="/auth">
                   <Button variant="outline" className="mr-2 w-full mb-2">Login</Button>

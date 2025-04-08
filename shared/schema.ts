@@ -26,11 +26,15 @@ export const cafes = pgTable("cafes", {
   neighborhood: text("neighborhood").notNull(),
   latitude: text("latitude").notNull(),
   longitude: text("longitude").notNull(),
-  priceLevel: integer("price_level").notNull(), // 1-4 representing $ to $$$$
+  priceLevel: integer("price_level").default(1), // 1-4 representing $ to $$$$
   hasWifi: boolean("has_wifi").default(false),
   hasPower: boolean("has_power").default(false),
   hasFood: boolean("has_food").default(false),
   imageUrl: text("image_url"),
+  website: text("website").default(''),
+  phone: text("phone").default(''),
+  instagramHandle: text("instagram_handle").default(''),
+  googleMapsUrl: text("google_maps_url").default(''),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -114,8 +118,8 @@ export const insertFavoriteSchema = createInsertSchema(favorites).omit({
 // Search and filter types
 export const cafeFilterSchema = z.object({
   neighborhood: z.string().optional(),
-  roastLevels: z.array(roastLevelEnum).optional(),
-  brewingMethods: z.array(brewingMethodEnum).optional(),
+  roastLevels: z.array(z.enum(["light", "medium", "dark"])).optional(),
+  brewingMethods: z.array(z.enum(["pour_over", "espresso", "aeropress", "french_press", "siphon"])).optional(),
   minRating: z.number().min(0).max(5).optional(),
   priceLevel: z.number().min(1).max(4).optional(),
   hasWifi: z.boolean().optional(),

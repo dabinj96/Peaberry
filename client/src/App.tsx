@@ -6,6 +6,7 @@ import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import CafeDetailPage from "@/pages/cafe-detail-page";
 import ProfilePage from "@/pages/profile-page";
+import AdminPage from "@/pages/admin-page";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "@/lib/protected-route";
 import Header from "@/components/layout/header";
@@ -21,6 +22,7 @@ function Router() {
           <Route path="/auth" component={AuthPage} />
           <Route path="/cafe/:id" component={CafeDetailPage} />
           <ProtectedRoute path="/profile" component={ProfilePage} />
+          <ProtectedRoute path="/admin" component={AdminPage} />
           <Route component={NotFound} />
         </Switch>
       </main>
