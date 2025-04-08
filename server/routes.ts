@@ -405,8 +405,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             neighborhood: place.neighborhood || "Boston",
             website: place.website || "",
             phone: place.phone || "",
-            latitude: place.lat,
-            longitude: place.lng,
+            latitude: place.lat.toString(),
+            longitude: place.lng.toString(),
             imageUrl: "",  // We'll handle images separately
             instagramHandle: "",
             googleMapsUrl: place.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.address)}`
