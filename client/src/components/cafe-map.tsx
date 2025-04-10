@@ -341,13 +341,15 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
                       </svg>
                     </a>
                     <a 
-                      href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cafe.name + ', ' + cafe.neighborhood + ', Boston, MA')}" 
+                      href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.neighborhood + ' Boston MA')}" 
                       target="_blank"
                       class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
                     >
-                      <span>Directions</span>
+                      <span>View on Maps</span>
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1">
-                        <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
                       </svg>
                     </a>
                   </div>

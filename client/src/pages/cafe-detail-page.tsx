@@ -358,8 +358,11 @@ export default function CafeDetailPage() {
               </div>
               
               <div className="mt-6">
-                <Button className="w-full bg-[#A0522D] hover:bg-[#8B4513]">
-                  Get Directions
+                <Button 
+                  className="w-full bg-[#A0522D] hover:bg-[#8B4513]"
+                  onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.neighborhood + ' Boston MA')}`, '_blank')}
+                >
+                  View on Google Maps
                 </Button>
               </div>
             </CardContent>
