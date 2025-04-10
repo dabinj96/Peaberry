@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import { CafeWithDetails } from "@shared/schema";
-import { Loader2 } from "lucide-react";
+import { Loader2, Navigation, Star, Phone, Clock, MapPin } from "lucide-react";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import MapMarker from "./map-marker";
+import { MarkerClusterer } from "@googlemaps/markerclusterer";
 
 interface CafeMapProps {
   cafes: CafeWithDetails[];
@@ -194,10 +195,16 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
     }
   }, [mapLoaded]);
 
+  // Reference for the marker clusterer
+  const markerClustererRef = useRef<MarkerClusterer | null>(null);
+
   // Add markers for cafes
   useEffect(() => {
     if (map && cafes.length > 0) {
-      // Clear previous markers
+      // Clear previous markers and clusterer
+      if (markerClustererRef.current) {
+        markerClustererRef.current.clearMarkers();
+      }
       markersRef.current.forEach(marker => marker.setMap(null));
       markersRef.current = [];
       
@@ -218,7 +225,6 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
           // Create custom marker
           const marker = new window.google.maps.Marker({
             position,
-            map,
             title: cafe.name,
             icon: {
               url: MapMarker({ filled: cafe.isFavorite }),
@@ -236,39 +242,88 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
           marker.addListener("click", () => {
             if (infoWindowRef.current) {
               // Format price level as $ symbols
-              const priceLevel = "$".repeat(cafe.priceLevel);
+              const priceLevel = cafe.priceLevel ? "$".repeat(cafe.priceLevel) : "";
+              
+              // Get cafe features for display
+              const features = [];
+              if (cafe.roastLevels && cafe.roastLevels.length > 0) {
+                features.push(`<span class="inline-flex items-center px-2 py-1 mr-1 mb-1 text-xs bg-amber-50 text-amber-800 rounded-full">
+                  ${cafe.roastLevels.join(', ')} Roast
+                </span>`);
+              }
+              
+              if (cafe.brewingMethods && cafe.brewingMethods.length > 0) {
+                features.push(`<span class="inline-flex items-center px-2 py-1 mr-1 mb-1 text-xs bg-amber-50 text-amber-800 rounded-full">
+                  ${cafe.brewingMethods.join(', ')}
+                </span>`);
+              }
               
               // Show average rating if available
               const ratingDisplay = cafe.averageRating 
-                ? `<div class="flex items-center mt-1">
-                     <span class="text-yellow-500">★</span>
-                     <span class="ml-1 text-sm">${cafe.averageRating.toFixed(1)}</span>
+                ? `<div class="flex items-center mt-2 mb-2">
+                     <span class="inline-flex items-center text-yellow-500 mr-1">
+                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                       </svg>
+                     </span>
+                     <span class="font-medium">${cafe.averageRating.toFixed(1)}</span>
                      <span class="text-xs text-gray-500 ml-1">(${cafe.totalRatings} reviews)</span>
                    </div>`
-                : '<div class="text-xs text-gray-500 mt-1">No reviews yet</div>';
+                : '<div class="text-xs text-gray-500 mt-2 mb-2">No reviews yet</div>';
               
-              // Build enhanced info window with more details and directions link
+              // Build enhanced info window with more visual details
               const content = `
-                <div class="p-3 max-w-xs">
-                  <h3 class="font-semibold text-[#A0522D]">${cafe.name}</h3>
-                  <p class="text-sm text-gray-600">${cafe.neighborhood} · ${priceLevel}</p>
+                <div class="p-4 max-w-xs">
+                  <div class="flex items-start mb-2">
+                    <div class="flex-grow">
+                      <h3 class="font-semibold text-[#A0522D] text-lg">${cafe.name}</h3>
+                      <p class="text-sm text-gray-600">${cafe.neighborhood} ${priceLevel ? '· ' + priceLevel : ''}</p>
+                    </div>
+                    ${cafe.isFavorite ? `
+                      <div class="ml-2 text-red-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                      </div>
+                    ` : ''}
+                  </div>
+                  
                   ${ratingDisplay}
                   
-                  <div class="border-t border-gray-200 my-2"></div>
+                  <div class="flex flex-wrap mb-2">
+                    ${features.join('')}
+                  </div>
                   
-                  <div class="flex justify-between mt-2">
+                  <div class="text-sm text-gray-700 flex items-start mb-2">
+                    <span class="inline-flex items-center text-gray-500 mr-2 shrink-0 mt-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                      </svg>
+                    </span>
+                    <span>${cafe.address}</span>
+                  </div>
+                  
+                  <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-200">
                     <a 
                       href="/cafe/${cafe.id}" 
-                      class="text-sm text-[#A0522D] hover:underline font-medium"
+                      class="inline-flex items-center text-sm font-medium text-[#A0522D] hover:text-[#8B4513]"
                     >
-                      View Details
+                      <span>View Details</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                      </svg>
                     </a>
                     <a 
                       href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cafe.address)}" 
                       target="_blank"
-                      class="text-sm text-blue-600 hover:underline font-medium"
+                      class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
                     >
-                      Get Directions
+                      <span>Directions</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+                      </svg>
                     </a>
                   </div>
                 </div>
@@ -285,6 +340,72 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
           console.error("Error creating marker:", error);
         }
       });
+      
+      // Create marker clusterer with custom styles if we're not in single location mode
+      if (!singleLocation) {
+        // Custom styles for the clusterer
+        const clusterStyles = [
+          {
+            textColor: 'white',
+            textSize: 12,
+            width: 40,
+            height: 40,
+            url: 'data:image/svg+xml;base64,' + btoa(`
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60">
+                <circle cx="30" cy="30" r="25" fill="#A0522D" />
+                <text x="30" y="35" font-family="Arial" font-size="16" fill="white" text-anchor="middle">%count%</text>
+              </svg>
+            `.replace(/\s+/g, ' '))
+          },
+          {
+            textColor: 'white',
+            textSize: 14,
+            width: 50,
+            height: 50,
+            url: 'data:image/svg+xml;base64,' + btoa(`
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 70">
+                <circle cx="35" cy="35" r="30" fill="#8B4513" />
+                <text x="35" y="40" font-family="Arial" font-size="18" fill="white" text-anchor="middle">%count%</text>
+              </svg>
+            `.replace(/\s+/g, ' '))
+          }
+        ];
+        
+        // Create a new MarkerClusterer instance
+        markerClustererRef.current = new MarkerClusterer({
+          map,
+          markers: markersRef.current,
+          renderer: {
+            render: ({ count, position }) => {
+              // Determine which cluster style to use based on count
+              const styleIndex = count < 10 ? 0 : 1;
+              const style = clusterStyles[styleIndex];
+              
+              // Replace placeholder with actual count
+              const iconUrl = style.url.replace('%count%', count.toString());
+              
+              // Create the marker for the cluster
+              return new google.maps.Marker({
+                position,
+                icon: {
+                  url: iconUrl,
+                  scaledSize: new google.maps.Size(style.width, style.height),
+                  anchor: new google.maps.Point(style.width/2, style.height/2),
+                },
+                label: {
+                  text: count.toString(),
+                  color: style.textColor,
+                  fontSize: style.textSize + 'px',
+                },
+                zIndex: 1000 + count,
+              });
+            }
+          }
+        });
+      } else {
+        // If singleLocation is true, just add markers to the map
+        markersRef.current.forEach(marker => marker.setMap(map));
+      }
       
       // Fit map to bounds
       if (!singleLocation && !bounds.isEmpty()) {
