@@ -225,13 +225,22 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
 
   // Add markers for cafes
   useEffect(() => {
-    if (map && cafes.length > 0) {
+    if (map) {
       // Clear previous markers and clusterer
       if (markerClustererRef.current) {
         markerClustererRef.current.clearMarkers();
       }
       markersRef.current.forEach(marker => marker.setMap(null));
       markersRef.current = [];
+      
+      if (cafes.length === 0) {
+        console.log("No cafes to display on map");
+        // Add debugging info to console
+        toast({
+          title: "No cafes to display",
+          description: "Try adjusting your filters to see cafes on the map.",
+        });
+      }
       
       const bounds = new window.google.maps.LatLngBounds();
       
@@ -515,6 +524,22 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
     );
   }
 
+  // No cafes found but map loaded
+  if (mapLoaded && cafes.length === 0) {
+    return (
+      <div className="min-h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
+        <div className="text-center p-6 max-w-md">
+          <div className="bg-amber-100 p-4 rounded-lg mb-4 border border-amber-200">
+            <h3 className="text-amber-800 font-medium text-lg mb-2">No Cafés Found</h3>
+            <p className="text-amber-700 text-sm">
+              No cafés match your current filters. Try adjusting your search criteria or removing some filters.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="w-full flex rounded-lg overflow-hidden shadow-md">
       <div ref={mapRef} className="h-[500px] w-full"></div>
