@@ -68,6 +68,16 @@ declare global {
       title?: string;
       icon?: string | Icon;
       animation?: Animation;
+      label?: string | MarkerLabel;
+      zIndex?: number;
+    }
+    
+    interface MarkerLabel {
+      text: string;
+      color?: string;
+      fontSize?: string;
+      fontWeight?: string;
+      fontFamily?: string;
     }
     
     interface Icon {
@@ -385,6 +395,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
               const iconUrl = style.url.replace('%count%', count.toString());
               
               // Create the marker for the cluster
+              // The SVG already contains the count via replacement
               return new google.maps.Marker({
                 position,
                 icon: {
@@ -392,11 +403,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
                   scaledSize: new google.maps.Size(style.width, style.height),
                   anchor: new google.maps.Point(style.width/2, style.height/2),
                 },
-                label: {
-                  text: count.toString(),
-                  color: style.textColor,
-                  fontSize: style.textSize + 'px',
-                },
+                // Don't need label as the count is in the SVG
                 zIndex: 1000 + count,
               });
             }
