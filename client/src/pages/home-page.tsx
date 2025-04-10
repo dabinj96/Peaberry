@@ -5,7 +5,6 @@ import SearchFilters from "@/components/search-filters";
 import CafeList from "@/components/cafe-list";
 import CafeMap from "@/components/cafe-map";
 import FeaturedCafes from "@/components/featured-cafes";
-import NeighborhoodGuide from "@/components/neighborhood-guide";
 
 export default function HomePage() {
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
@@ -129,9 +128,6 @@ export default function HomePage() {
         
         {/* Featured cafes section */}
         <FeaturedCafes />
-        
-        {/* Neighborhood guide */}
-        <NeighborhoodGuide />
         
         {/* Community section */}
         <section className="mb-12 bg-white rounded-lg shadow-md p-6">
