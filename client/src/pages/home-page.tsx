@@ -120,9 +120,9 @@ export default function HomePage() {
           />
           
           {viewMode === "list" ? (
-            <CafeList cafes={cafes} isLoading={isLoading} />
+            <CafeList key="cafe-list" cafes={cafes} isLoading={isLoading} />
           ) : (
-            <CafeMap cafes={cafes} isLoading={isLoading} />
+            <CafeMap key={`cafe-map-${cafes.length}`} cafes={cafes} isLoading={isLoading} />
           )}
         </section>
         

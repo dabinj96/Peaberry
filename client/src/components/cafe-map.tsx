@@ -197,6 +197,8 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
   // Initialize map when Google Maps is loaded
   useEffect(() => {
     if (mapLoaded && mapRef.current) {
+      console.log("Initializing map with Google Maps API");
+      
       // Create map
       const newMap = new window.google.maps.Map(mapRef.current, {
         center: { lat: 42.3601, lng: -71.0589 }, // Boston coordinates
@@ -219,6 +221,9 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
       };
     }
   }, [mapLoaded]);
+  
+  // Debug: Verify cafes array on every render
+  console.log(`CafeMap rendering with ${cafes.length} cafes, map loaded: ${mapLoaded}, map instance exists: ${!!map}`);
 
   // Reference for the marker clusterer
   const markerClustererRef = useRef<MarkerClusterer | null>(null);
@@ -233,14 +238,9 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
       markersRef.current.forEach(marker => marker.setMap(null));
       markersRef.current = [];
       
-      if (cafes.length === 0) {
-        console.log("No cafes to display on map");
-        // Add debugging info to console
-        toast({
-          title: "No cafes to display",
-          description: "Try adjusting your filters to see cafes on the map.",
-        });
-      }
+      console.log(`Displaying ${cafes.length} cafes on map`);
+      
+      // Skip showing toast notification - we'll handle empty state in the render method
       
       const bounds = new window.google.maps.LatLngBounds();
       
@@ -250,9 +250,11 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
           const lng = parseFloat(cafe.longitude);
           
           if (isNaN(lat) || isNaN(lng)) {
-            console.error("Invalid coordinates for cafe:", cafe.name);
+            console.error("Invalid coordinates for cafe:", cafe.name, cafe.latitude, cafe.longitude);
             return;
           }
+          
+          console.log(`Added marker for ${cafe.name} at (${lat}, ${lng})`);
           
           const position = { lat, lng };
           
