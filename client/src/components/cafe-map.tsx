@@ -34,6 +34,21 @@ declare global {
       addListener(event: string, handler: Function): MapsEventListener;
     }
     
+    namespace marker {
+      class AdvancedMarkerElement {
+        constructor(options?: AdvancedMarkerElementOptions);
+        map?: Map;
+      }
+      
+      interface AdvancedMarkerElementOptions {
+        position: LatLng | LatLngLiteral;
+        map?: Map;
+        title?: string;
+        content?: Element;
+        zIndex?: number;
+      }
+    }
+    
     class InfoWindow {
       constructor(options?: InfoWindowOptions);
       setContent(content: string | Node): void;
@@ -353,61 +368,12 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
       
       // Create marker clusterer with custom styles if we're not in single location mode
       if (!singleLocation) {
-        // Custom styles for the clusterer
-        const clusterStyles = [
-          {
-            textColor: 'white',
-            textSize: 12,
-            width: 40,
-            height: 40,
-            url: 'data:image/svg+xml;base64,' + btoa(`
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60">
-                <circle cx="30" cy="30" r="25" fill="#A0522D" />
-                <text x="30" y="35" font-family="Arial" font-size="16" fill="white" text-anchor="middle">%count%</text>
-              </svg>
-            `.replace(/\s+/g, ' '))
-          },
-          {
-            textColor: 'white',
-            textSize: 14,
-            width: 50,
-            height: 50,
-            url: 'data:image/svg+xml;base64,' + btoa(`
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 70">
-                <circle cx="35" cy="35" r="30" fill="#8B4513" />
-                <text x="35" y="40" font-family="Arial" font-size="18" fill="white" text-anchor="middle">%count%</text>
-              </svg>
-            `.replace(/\s+/g, ' '))
-          }
-        ];
-        
-        // Create a new MarkerClusterer instance
+        // Create the MarkerClusterer with default options
         markerClustererRef.current = new MarkerClusterer({
           map,
           markers: markersRef.current,
-          renderer: {
-            render: ({ count, position }) => {
-              // Determine which cluster style to use based on count
-              const styleIndex = count < 10 ? 0 : 1;
-              const style = clusterStyles[styleIndex];
-              
-              // Replace placeholder with actual count
-              const iconUrl = style.url.replace('%count%', count.toString());
-              
-              // Create the marker for the cluster
-              // The SVG already contains the count via replacement
-              return new google.maps.Marker({
-                position,
-                icon: {
-                  url: iconUrl,
-                  scaledSize: new google.maps.Size(style.width, style.height),
-                  anchor: new google.maps.Point(style.width/2, style.height/2),
-                },
-                // Don't need label as the count is in the SVG
-                zIndex: 1000 + count,
-              });
-            }
-          }
+          // Let the default renderer handle the clusters
+          // This will still show the count of markers in a cluster
         });
       } else {
         // If singleLocation is true, just add markers to the map
