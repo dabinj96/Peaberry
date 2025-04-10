@@ -341,7 +341,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
                       </svg>
                     </a>
                     <a 
-                      href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cafe.address)}" 
+                      href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cafe.name + ', ' + cafe.neighborhood + ', Boston, MA')}" 
                       target="_blank"
                       class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
                     >
