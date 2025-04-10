@@ -376,24 +376,25 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
           renderer: {
             render: ({ count, position }) => {
               // Determine size and color based on count
-              // Use more granular color changes (every 5 cafes)
-              let size, color;
+              // Use distinctive color palette for better visual contrast
+              let size, color, textColor = "white";
               
               if (count < 5) {
                 size = 40;
-                color = "#A0522D"; // Brown
+                color = "#C87137"; // Light coffee
               } else if (count < 10) {
                 size = 45;
-                color = "#8B4513"; // SaddleBrown
+                color = "#86592D"; // Medium coffee
               } else if (count < 15) {
                 size = 50;
-                color = "#654321"; // Dark brown
+                color = "#D4A76A"; // Coffee with cream
+                textColor = "#703030"; // Dark text for better contrast
               } else if (count < 20) {
                 size = 55;
-                color = "#5D4037"; // Very dark brown
+                color = "#4A2C2A"; // Dark espresso
               } else {
                 size = 60;
-                color = "#3E2723"; // Almost black brown
+                color = "#291711"; // Deep espresso
               }
               
               // Create a styled DIV for the cluster marker
@@ -407,7 +408,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                color: "white",
+                color: textColor,
                 fontWeight: "bold",
                 fontSize: `${Math.min(18, 13 + Math.floor(count / 10))}px`,
                 boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
@@ -424,7 +425,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
                   url: `data:image/svg+xml;base64,${btoa(`
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
                       <circle cx="${size/2}" cy="${size/2}" r="${size/2-1}" fill="${color}" stroke="white" stroke-width="2"/>
-                      <text x="${size/2}" y="${size/2+5}" text-anchor="middle" font-size="${Math.min(18, 13 + Math.floor(count/10))}px" font-family="Arial" font-weight="bold" fill="white">${count}</text>
+                      <text x="${size/2}" y="${size/2+5}" text-anchor="middle" font-size="${Math.min(18, 13 + Math.floor(count/10))}px" font-family="Arial" font-weight="bold" fill="${textColor}">${count}</text>
                     </svg>
                   `)}`,
                   size: new google.maps.Size(size, size),
