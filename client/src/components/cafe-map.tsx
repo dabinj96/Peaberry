@@ -368,12 +368,73 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
       
       // Create marker clusterer with custom styles if we're not in single location mode
       if (!singleLocation) {
-        // Create the MarkerClusterer with default options
+        // Create a MarkerClusterer with custom renderer
         markerClustererRef.current = new MarkerClusterer({
           map,
           markers: markersRef.current,
-          // Let the default renderer handle the clusters
-          // This will still show the count of markers in a cluster
+          // Custom renderer with coffee-themed colors
+          renderer: {
+            render: ({ count, position }) => {
+              // Determine size and color based on count
+              // Use more granular color changes (every 5 cafes)
+              let size, color;
+              
+              if (count < 5) {
+                size = 40;
+                color = "#A0522D"; // Brown
+              } else if (count < 10) {
+                size = 45;
+                color = "#8B4513"; // SaddleBrown
+              } else if (count < 15) {
+                size = 50;
+                color = "#654321"; // Dark brown
+              } else if (count < 20) {
+                size = 55;
+                color = "#5D4037"; // Very dark brown
+              } else {
+                size = 60;
+                color = "#3E2723"; // Almost black brown
+              }
+              
+              // Create a styled DIV for the cluster marker
+              const clusterMarker = document.createElement("div");
+              Object.assign(clusterMarker.style, {
+                background: color,
+                borderRadius: "50%",
+                width: `${size}px`,
+                height: `${size}px`,
+                cursor: "pointer",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                color: "white",
+                fontWeight: "bold",
+                fontSize: `${Math.min(18, 13 + Math.floor(count / 10))}px`,
+                boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
+                border: "2px solid white"
+              });
+              
+              // Add the count to the cluster
+              clusterMarker.textContent = count.toString();
+              
+              // Return standard marker
+              return new google.maps.Marker({
+                position,
+                icon: {
+                  url: `data:image/svg+xml;base64,${btoa(`
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
+                      <circle cx="${size/2}" cy="${size/2}" r="${size/2-1}" fill="${color}" stroke="white" stroke-width="2"/>
+                      <text x="${size/2}" y="${size/2+5}" text-anchor="middle" font-size="${Math.min(18, 13 + Math.floor(count/10))}px" font-family="Arial" font-weight="bold" fill="white">${count}</text>
+                    </svg>
+                  `)}`,
+                  size: new google.maps.Size(size, size),
+                  anchor: new google.maps.Point(size/2, size/2),
+                  scaledSize: new google.maps.Size(size, size)
+                },
+                zIndex: 1000 + count
+              });
+            }
+          }
         });
       } else {
         // If singleLocation is true, just add markers to the map
