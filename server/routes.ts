@@ -459,7 +459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             imageUrl: "",  // We'll handle images separately
             instagramHandle: "",
             googleMapsUrl: place.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.address)}`,
-            status: "published"  // Set imported cafés to published by default
+            status: "draft"  // Set imported cafés to draft by default so they require admin review
           };
           
           // Validate against our schema
