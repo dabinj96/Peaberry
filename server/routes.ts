@@ -236,10 +236,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid filter parameters" });
       }
       
-      const cafes = await storage.listCafes(
-        Object.keys(filterParams).length > 0 ? filterResult.data : undefined,
-        userId
-      );
+      // Add status filter to only show published cafes
+      let filters = Object.keys(filterParams).length > 0 ? filterResult.data : {};
+      
+      // Always enforce published status for public cafe listing
+      filters = {
+        ...filters,
+        status: "published"
+      };
+      
+      const cafes = await storage.listCafes(filters, userId);
       
       res.json(cafes);
     } catch (error) {
@@ -636,6 +642,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         id: cafeId // Ensure ID is included
       };
+      
+      // Update cafe in the database
+      const updatedCafe = await storage.updateCafe(cafeId, updateData);
+      res.json(updatedCafe);
+    } catch (error) {
+      console.error("Error updating cafe:", error);
+      res.status(500).json({ error: "Failed to update cafe" });
+    }
+  });
+  
+  // Add PATCH endpoint to match the client's request method
+  app.patch("/api/admin/cafes/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Check for admin access
+    const adminUsernames = ['admin', 'testuser']; // Admin usernames
+    if (!adminUsernames.includes(req.user.username)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    try {
+      const cafeId = parseInt(req.params.id, 10);
+      if (isNaN(cafeId)) {
+        return res.status(400).json({ error: "Invalid cafe ID" });
+      }
+      
+      // First check if cafe exists
+      const cafe = await storage.getCafe(cafeId);
+      if (!cafe) {
+        return res.status(404).json({ error: "Cafe not found" });
+      }
+      
+      // Update cafe with the provided fields
+      const updateData = {
+        ...req.body,
+        id: cafeId // Ensure ID is included
+      };
+      
+      console.log("Updating cafe status:", cafeId, updateData);
       
       // Update cafe in the database
       const updatedCafe = await storage.updateCafe(cafeId, updateData);
