@@ -10,9 +10,10 @@ import { formatBrewingMethod, formatPriceLevel, formatRoastLevel } from "@/lib/u
 
 interface CafeCardProps {
   cafe: CafeWithDetails;
+  distance?: number;  // Distance in kilometers
 }
 
-export default function CafeCard({ cafe }: CafeCardProps) {
+export default function CafeCard({ cafe, distance }: CafeCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isHovering, setIsHovering] = useState(false);
@@ -105,8 +106,9 @@ export default function CafeCard({ cafe }: CafeCardProps) {
           <div className="flex justify-between items-center text-sm text-gray-500">
             <span className="flex items-center">
               <MapPin className="h-3.5 w-3.5 mr-1" /> 
-              {/* Distance would be calculated in a real app */}
-              ~1.2 miles
+              {distance 
+                ? `${(distance * 0.621371).toFixed(1)} miles` // Convert km to miles
+                : "Distance unavailable"}
             </span>
             <span>{formatPriceLevel(cafe.priceLevel)}</span>
           </div>
