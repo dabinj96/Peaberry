@@ -164,10 +164,10 @@ export default function AdminPage() {
                     <Label htmlFor="location">Location</Label>
                     <div className="flex gap-2">
                       <MapPin className="h-5 w-5 text-muted-foreground" />
-                      <Input 
+                      <PlacesAutocomplete 
                         id="location" 
                         value={location} 
-                        onChange={(e) => setLocation(e.target.value)} 
+                        onChange={setLocation} 
                         placeholder="City, State or Zipcode"
                       />
                     </div>
