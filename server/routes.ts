@@ -851,6 +851,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint to publish all cafes - for admin use to fix existing data
+  app.post("/api/admin/publish-all-cafes", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Check for admin access
+    const adminUsernames = ['admin', 'testuser']; // Admin usernames
+    if (!adminUsernames.includes(req.user.username)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    try {
+      // Get all cafes regardless of status
+      const cafes = await storage.listCafes({ status: undefined });
+      
+      // Track results
+      const results = {
+        total: cafes.length,
+        updated: 0,
+        errors: [] as string[]
+      };
+      
+      // Update each cafe that's not already published
+      for (const cafe of cafes) {
+        if (cafe.status !== 'published') {
+          try {
+            const updatedCafe = await storage.updateCafe(cafe.id, { status: 'published' });
+            if (updatedCafe) {
+              results.updated++;
+            }
+          } catch (error) {
+            console.error(`Error updating cafe ${cafe.name}:`, error);
+            results.errors.push(`Failed to update ${cafe.name}: ${error}`);
+          }
+        }
+      }
+      
+      res.json({
+        message: `Successfully updated ${results.updated} of ${results.total} cafes to published status`,
+        results
+      });
+    } catch (error) {
+      console.error("Error in publish all cafes:", error);
+      res.status(500).json({ error: "Failed to publish all cafes" });
+    }
+  });
+
   // Create a test user for development if none exists
   app.get("/api/dev/create-test-user", async (req, res) => {
     // Only available in development environment
