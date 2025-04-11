@@ -1,6 +1,8 @@
 import { CafeWithDetails } from "@shared/schema";
 import CafeCard from "./cafe-card";
-import { Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Button } from "./ui/button";
 
 interface CafeListProps {
   cafes: CafeWithDetails[];
@@ -8,6 +10,30 @@ interface CafeListProps {
 }
 
 export default function CafeList({ cafes, isLoading }: CafeListProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [cafesPerPage] = useState(9); // Display 9 cafés per page (3x3 grid)
+  
+  // Reset pagination when cafes array changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [cafes.length]);
+  
+  // Calculate indexes for pagination
+  const indexOfLastCafe = currentPage * cafesPerPage;
+  const indexOfFirstCafe = indexOfLastCafe - cafesPerPage;
+  const currentCafes = cafes.slice(indexOfFirstCafe, indexOfLastCafe);
+  const totalPages = Math.ceil(cafes.length / cafesPerPage);
+  
+  // Change page
+  const goToPage = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    // Scroll to top of list with smooth animation
+    window.scrollTo({
+      top: document.querySelector('.cafe-list-container')?.getBoundingClientRect().top! + window.scrollY - 100,
+      behavior: 'smooth'
+    });
+  };
+  
   if (isLoading) {
     return (
       <div className="min-h-[300px] flex items-center justify-center">
@@ -31,10 +57,78 @@ export default function CafeList({ cafes, isLoading }: CafeListProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {cafes.map((cafe) => (
-        <CafeCard key={cafe.id} cafe={cafe} />
-      ))}
+    <div className="cafe-list-container space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {currentCafes.map((cafe) => (
+          <CafeCard key={cafe.id} cafe={cafe} />
+        ))}
+      </div>
+      
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center pt-4">
+          <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="h-8 w-8"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <div className="flex items-center space-x-1">
+              {/* Generate page buttons */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(page => 
+                  // Show first 2 pages, last 2 pages, and pages around current page
+                  page <= 2 || 
+                  page > totalPages - 2 || 
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                )
+                .map((page, idx, arr) => {
+                  // If there's a gap, show ellipsis
+                  const showEllipsis = idx > 0 && page - arr[idx - 1] > 1;
+                  
+                  return (
+                    <div key={page} className="flex items-center">
+                      {showEllipsis && (
+                        <span className="mx-1 text-gray-500">...</span>
+                      )}
+                      <Button 
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => goToPage(page)}
+                        className={`h-8 w-8 p-0 ${currentPage === page ? 'bg-[#A0522D] hover:bg-[#8B4513]' : ''}`}
+                        aria-label={`Page ${page}`}
+                        aria-current={currentPage === page ? "page" : undefined}
+                      >
+                        {page}
+                      </Button>
+                    </div>
+                  );
+                })
+              }
+            </div>
+            
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="h-8 w-8"
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      <div className="flex justify-center text-sm text-gray-500">
+        Showing {indexOfFirstCafe + 1}-{Math.min(indexOfLastCafe, cafes.length)} of {cafes.length} cafés
+      </div>
     </div>
   );
 }
