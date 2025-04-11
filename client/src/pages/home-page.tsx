@@ -92,7 +92,7 @@ export default function HomePage() {
   });
 
   // Function to calculate distance between two points (haversine formula)
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const calculateDistance = useCallback((lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371; // Radius of the earth in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lng2 - lng1) * Math.PI / 180;
@@ -103,7 +103,7 @@ export default function HomePage() {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
     const distance = R * c; // Distance in km
     return distance;
-  };
+  }, []);
 
   // Calculate distances for all cafes when user location or cafe list changes
   useEffect(() => {
@@ -122,7 +122,7 @@ export default function HomePage() {
       
       setCafeDistances(newDistances);
     }
-  }, [userLocation, cafes, calculateDistance]);
+  }, [userLocation, cafes]);
 
   // Sort cafes based on the selected sort option
   useEffect(() => {
@@ -173,7 +173,7 @@ export default function HomePage() {
     }
 
     setSortedCafes(sorted);
-  }, [cafes, filters.sortBy, userLocation, calculateDistance]);
+  }, [cafes, filters.sortBy, userLocation]);
 
   // Function to handle search and filter changes
   const handleSearch = (query: string) => {

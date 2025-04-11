@@ -106,7 +106,7 @@ export default function CafeCard({ cafe, distance }: CafeCardProps) {
           <div className="flex justify-between items-center text-sm text-gray-500">
             <span className="flex items-center">
               <MapPin className="h-3.5 w-3.5 mr-1" /> 
-              {distance 
+              {distance !== undefined 
                 ? `${(distance * 0.621371).toFixed(1)} miles` // Convert km to miles
                 : "Distance unavailable"}
             </span>

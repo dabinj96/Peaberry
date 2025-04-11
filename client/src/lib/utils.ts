@@ -9,7 +9,8 @@ export function cn(...inputs: ClassValue[]) {
 export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 // Format price level
-export function formatPriceLevel(level: number): string {
+export function formatPriceLevel(level: number | null): string {
+  if (level === null) return "";
   return "$".repeat(level);
 }
 
