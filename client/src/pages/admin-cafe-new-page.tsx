@@ -14,7 +14,7 @@ import { Link, useLocation } from "wouter";
 import { ArrowLeft, CheckCircle, Coffee, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { CheckboxGroup } from "@/components/checkbox-group";
+import { CheckboxGroup } from "../components/checkbox-group";
 import { toast as toastAction } from "@/hooks/use-toast";
 import PlacesAutocomplete from "@/components/places-autocomplete";
 
@@ -291,7 +291,12 @@ export default function AdminCafeNewPage() {
                         <FormItem>
                           <FormLabel>Website</FormLabel>
                           <FormControl>
-                            <Input placeholder="https://example.com" {...field} />
+                            <Input 
+                              placeholder="https://example.com"
+                              value={field.value || ""} 
+                              onChange={field.onChange}
+                              name={field.name}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -305,7 +310,12 @@ export default function AdminCafeNewPage() {
                         <FormItem>
                           <FormLabel>Phone</FormLabel>
                           <FormControl>
-                            <Input placeholder="(555) 555-5555" {...field} />
+                            <Input 
+                              placeholder="(555) 555-5555"
+                              value={field.value || ""} 
+                              onChange={field.onChange}
+                              name={field.name}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -321,7 +331,12 @@ export default function AdminCafeNewPage() {
                         <FormItem>
                           <FormLabel>Instagram</FormLabel>
                           <FormControl>
-                            <Input placeholder="@handle" {...field} />
+                            <Input 
+                              placeholder="@handle"
+                              value={field.value || ""} 
+                              onChange={field.onChange}
+                              name={field.name}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -335,7 +350,12 @@ export default function AdminCafeNewPage() {
                         <FormItem>
                           <FormLabel>Image URL</FormLabel>
                           <FormControl>
-                            <Input placeholder="https://example.com/image.jpg" {...field} />
+                            <Input 
+                              placeholder="https://example.com/image.jpg"
+                              value={field.value || ""} 
+                              onChange={field.onChange}
+                              name={field.name}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
