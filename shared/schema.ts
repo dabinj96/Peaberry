@@ -118,6 +118,14 @@ export const insertFavoriteSchema = createInsertSchema(favorites).omit({
 });
 
 // Search and filter types
+// Sort options enumeration
+export const cafeSortOptionsEnum = [
+  "default",        // Default sorting (featured/relevance)
+  "distance",       // Distance from user's location
+  "rating_high",    // Highest rating first
+  "reviews_count"   // Most reviews first
+] as const;
+
 export const cafeFilterSchema = z.object({
   neighborhood: z.string().optional(),
   roastLevels: z.array(z.enum(["light", "medium", "dark"])).optional(),
@@ -128,6 +136,7 @@ export const cafeFilterSchema = z.object({
   hasPower: z.boolean().optional(),
   hasFood: z.boolean().optional(),
   query: z.string().optional(),
+  sortBy: z.enum(cafeSortOptionsEnum).optional(),
 });
 
 // Types

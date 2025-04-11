@@ -9,9 +9,10 @@ import {
   Separator,
   Badge
 } from "@/components/ui";
-import { CafeFilter } from "@shared/schema";
+import { CafeFilter, cafeSortOptionsEnum } from "@shared/schema";
 import { ChevronDown, ChevronUp, List, MapPin, SlidersHorizontal, X } from "lucide-react";
 import FilterOptions from "./filter-options";
+import SortOptions, { SortOption } from "./sort-options";
 import { useQuery } from "@tanstack/react-query";
 
 interface SearchFiltersProps {
@@ -27,7 +28,9 @@ export default function SearchFilters({
   onViewModeChange,
   resultCount
 }: SearchFiltersProps) {
-  const [filters, setFilters] = useState<CafeFilter>({});
+  const [filters, setFilters] = useState<CafeFilter>({
+    sortBy: "default" // Default sort option
+  });
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   
