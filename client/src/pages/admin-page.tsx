@@ -134,6 +134,33 @@ export default function AdminPage() {
       });
     }
   };
+  
+  const deleteCafe = async (cafeId: number, cafeName: string) => {
+    // Show confirmation dialog
+    if (!window.confirm(`Are you sure you want to permanently delete "${cafeName}"? This action cannot be undone and will remove all associated data including ratings and favorites.`)) {
+      return;
+    }
+    
+    try {
+      await apiRequest("DELETE", `/api/admin/cafes/${cafeId}`);
+      
+      // Invalidate the cafe list cache to reload with new data
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/cafes'] });
+      
+      toast({
+        title: "Cafe deleted",
+        description: `${cafeName} has been permanently deleted`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error deleting cafe:", error);
+      toast({
+        title: "Deletion failed",
+        description: "There was an error permanently deleting the cafe.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="container my-8 space-y-6">
@@ -397,6 +424,16 @@ export default function AdminPage() {
                                   <Archive className="h-4 w-4 text-red-600" />
                                 </Button>
                               )}
+                              
+                              {/* Permanent Delete button */}
+                              <Button 
+                                variant="outline" 
+                                size="icon"
+                                title="Permanently Delete"
+                                onClick={() => deleteCafe(cafe.id, cafe.name)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
