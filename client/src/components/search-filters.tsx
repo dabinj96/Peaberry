@@ -94,6 +94,12 @@ export default function SearchFilters({
     updateFilters(newFilters);
   };
 
+  // Handle sort option change
+  const handleSortChange = (sortOption: SortOption) => {
+    const newFilters = { ...filters, sortBy: sortOption };
+    updateFilters(newFilters);
+  };
+
   // Update filters and count active filters
   const updateFilters = (newFilters: CafeFilter) => {
     setFilters(newFilters);
@@ -291,13 +297,20 @@ export default function SearchFilters({
         )}
       </div>
       
-      {/* Results count and view toggle */}
+      {/* Results count, sort options, and view toggle */}
       <div className="flex flex-wrap justify-between items-center mb-4">
         <p className="text-gray-700">
           <span className="font-medium">{resultCount}</span> cafés found
         </p>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Sort options dropdown */}
+          <SortOptions 
+            value={filters.sortBy || "default"} 
+            onChange={handleSortChange}
+          />
+          
+          {/* View mode toggle */}
           <div className="flex border rounded-lg overflow-hidden">
             <Button
               variant="ghost"

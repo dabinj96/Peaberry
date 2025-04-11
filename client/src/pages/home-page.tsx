@@ -1,15 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CafeWithDetails, CafeFilter } from "@shared/schema";
 import SearchFilters from "@/components/search-filters";
 import CafeList from "@/components/cafe-list";
 import CafeMap from "@/components/cafe-map";
 import FeaturedCafes from "@/components/featured-cafes";
+import { SortOption } from "@/components/sort-options";
 
 export default function HomePage() {
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [filters, setFilters] = useState<CafeFilter>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortedCafes, setSortedCafes] = useState<CafeWithDetails[]>([]);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Fetch user's location for distance-based sorting
+  useEffect(() => {
+    if (filters.sortBy === "distance" && !userLocation) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setUserLocation({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            });
+          },
+          (error) => {
+            console.error("Error getting location:", error);
+          }
+        );
+      }
+    }
+  }, [filters.sortBy, userLocation]);
 
   // Fetch cafes with filters applied
   const { data: cafes = [], isLoading } = useQuery<CafeWithDetails[]>({
@@ -69,6 +91,71 @@ export default function HomePage() {
     }
   });
 
+  // Function to calculate distance between two points (haversine formula)
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    const distance = R * c; // Distance in km
+    return distance;
+  };
+
+  // Sort cafes based on the selected sort option
+  useEffect(() => {
+    if (!cafes || cafes.length === 0) return;
+
+    let sorted = [...cafes];
+    const sortOption = filters.sortBy || "default";
+
+    switch (sortOption) {
+      case "distance":
+        if (userLocation) {
+          sorted = sorted.sort((a, b) => {
+            const aLat = parseFloat(a.latitude || "0");
+            const aLng = parseFloat(a.longitude || "0");
+            const bLat = parseFloat(b.latitude || "0");
+            const bLng = parseFloat(b.longitude || "0");
+            
+            if (isNaN(aLat) || isNaN(aLng) || isNaN(bLat) || isNaN(bLng)) return 0;
+            
+            const distanceA = calculateDistance(userLocation.lat, userLocation.lng, aLat, aLng);
+            const distanceB = calculateDistance(userLocation.lat, userLocation.lng, bLat, bLng);
+            
+            return distanceA - distanceB;
+          });
+        }
+        break;
+      
+      case "rating_high":
+        sorted = sorted.sort((a, b) => {
+          const ratingA = a.averageRating || 0;
+          const ratingB = b.averageRating || 0;
+          return ratingB - ratingA;
+        });
+        break;
+      
+      case "reviews_count":
+        sorted = sorted.sort((a, b) => {
+          const reviewsA = a.totalRatings || 0;
+          const reviewsB = b.totalRatings || 0;
+          return reviewsB - reviewsA;
+        });
+        break;
+      
+      case "default":
+      default:
+        // Default sorting - we'll keep what comes from the server (featured/relevance)
+        break;
+    }
+
+    setSortedCafes(sorted);
+  }, [cafes, filters.sortBy, userLocation]);
+
   // Function to handle search and filter changes
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -120,9 +207,9 @@ export default function HomePage() {
           />
           
           {viewMode === "list" ? (
-            <CafeList key="cafe-list" cafes={cafes} isLoading={isLoading} />
+            <CafeList key="cafe-list" cafes={sortedCafes.length > 0 ? sortedCafes : cafes} isLoading={isLoading} />
           ) : (
-            <CafeMap key={`cafe-map-${cafes.length}`} cafes={cafes} isLoading={isLoading} />
+            <CafeMap key={`cafe-map-${cafes.length}`} cafes={sortedCafes.length > 0 ? sortedCafes : cafes} isLoading={isLoading} />
           )}
         </section>
         
