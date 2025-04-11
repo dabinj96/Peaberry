@@ -91,10 +91,20 @@ export class DatabaseStorage implements IStorage {
     // Base query
     let query = db.select().from(cafes);
     
+    // Create where conditions array
+    const whereConditions = [];
+    
+    // Status filter - if explicit status is provided, use that
+    // Otherwise, default to showing only published cafes for public routes
+    if (filters?.status) {
+      whereConditions.push(eq(cafes.status, filters.status));
+    } else if (!filters?.hasOwnProperty('status')) {
+      // If status property is completely absent, default to published
+      // This ensures admin routes can explicitly pass undefined to see all statuses
+      whereConditions.push(eq(cafes.status, 'published'));
+    }
+    
     if (filters) {
-      // Apply filters
-      const whereConditions = [];
-      
       // Neighborhood filter
       if (filters.neighborhood && filters.neighborhood !== '') {
         whereConditions.push(eq(cafes.neighborhood, filters.neighborhood));
@@ -128,11 +138,11 @@ export class DatabaseStorage implements IStorage {
           )
         );
       }
-      
-      // Apply all conditions
-      if (whereConditions.length > 0) {
-        query = query.where(and(...whereConditions));
-      }
+    }
+    
+    // Apply all conditions
+    if (whereConditions.length > 0) {
+      query = query.where(and(...whereConditions));
     }
     
     // Execute query to get filtered cafes
@@ -229,13 +239,15 @@ export class DatabaseStorage implements IStorage {
       return this.listCafes(undefined, userId);
     }
     
-    return this.listCafes({ query }, userId);
+    // Make sure we only return published cafes for the public search
+    return this.listCafes({ query, status: 'published' }, userId);
   }
 
   async listNeighborhoods(): Promise<string[]> {
     const results = await db
       .selectDistinct({ neighborhood: cafes.neighborhood })
       .from(cafes)
+      .where(eq(cafes.status, 'published')) // Only show neighborhoods from published cafés
       .orderBy(cafes.neighborhood);
     
     return results.map(r => r.neighborhood);
