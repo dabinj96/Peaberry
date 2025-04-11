@@ -704,6 +704,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to update cafe status" });
     }
   });
+  
+  // Endpoint to permanently delete a cafe
+  app.delete("/api/admin/cafes/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Check for admin access
+    const adminUsernames = ['admin', 'testuser']; // Admin usernames
+    if (!adminUsernames.includes(req.user.username)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    try {
+      const cafeId = parseInt(req.params.id, 10);
+      if (isNaN(cafeId)) {
+        return res.status(400).json({ error: "Invalid cafe ID" });
+      }
+      
+      // First check if cafe exists
+      const cafe = await storage.getCafe(cafeId);
+      if (!cafe) {
+        return res.status(404).json({ error: "Cafe not found" });
+      }
+      
+      // Permanently delete the cafe and all related data
+      const success = await storage.deleteCafe(cafeId);
+      
+      if (success) {
+        res.status(204).send(); // No content
+      } else {
+        res.status(500).json({ error: "Failed to delete cafe" });
+      }
+    } catch (error) {
+      console.error("Error deleting cafe:", error);
+      res.status(500).json({ error: "Failed to delete cafe" });
+    }
+  });
 
   // Create a test user for development if none exists
   app.get("/api/dev/create-test-user", async (req, res) => {
