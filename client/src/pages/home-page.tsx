@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CafeWithDetails, CafeFilter } from "@shared/schema";
 import SearchFilters from "@/components/search-filters";
@@ -13,26 +13,26 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortedCafes, setSortedCafes] = useState<CafeWithDetails[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [cafeDistances, setCafeDistances] = useState<Map<number, number>>(new Map());
 
-  // Fetch user's location for distance-based sorting
+  // Fetch user's location for distance-based sorting and for showing distances
   useEffect(() => {
-    if (filters.sortBy === "distance" && !userLocation) {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setUserLocation({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            });
-          },
-          (error) => {
-            console.error("Error getting location:", error);
-          }
-        );
-      }
+    // Always try to get user location for distance calculation
+    if (!userLocation && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+        }
+      );
     }
-  }, [filters.sortBy, userLocation]);
-
+  }, [userLocation]);
+  
   // Fetch cafes with filters applied
   const { data: cafes = [], isLoading } = useQuery<CafeWithDetails[]>({
     queryKey: ["/api/cafes", filters, searchQuery],
@@ -105,6 +105,25 @@ export default function HomePage() {
     return distance;
   };
 
+  // Calculate distances for all cafes when user location or cafe list changes
+  useEffect(() => {
+    if (userLocation && cafes && cafes.length > 0) {
+      const newDistances = new Map<number, number>();
+      
+      cafes.forEach(cafe => {
+        const lat = parseFloat(cafe.latitude || "0");
+        const lng = parseFloat(cafe.longitude || "0");
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+          const distance = calculateDistance(userLocation.lat, userLocation.lng, lat, lng);
+          newDistances.set(cafe.id, distance);
+        }
+      });
+      
+      setCafeDistances(newDistances);
+    }
+  }, [userLocation, cafes, calculateDistance]);
+
   // Sort cafes based on the selected sort option
   useEffect(() => {
     if (!cafes || cafes.length === 0) return;
@@ -154,7 +173,7 @@ export default function HomePage() {
     }
 
     setSortedCafes(sorted);
-  }, [cafes, filters.sortBy, userLocation]);
+  }, [cafes, filters.sortBy, userLocation, calculateDistance]);
 
   // Function to handle search and filter changes
   const handleSearch = (query: string) => {
@@ -207,9 +226,18 @@ export default function HomePage() {
           />
           
           {viewMode === "list" ? (
-            <CafeList key="cafe-list" cafes={sortedCafes.length > 0 ? sortedCafes : cafes} isLoading={isLoading} />
+            <CafeList 
+              key="cafe-list" 
+              cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
+              isLoading={isLoading} 
+              cafeDistances={cafeDistances}
+            />
           ) : (
-            <CafeMap key={`cafe-map-${cafes.length}`} cafes={sortedCafes.length > 0 ? sortedCafes : cafes} isLoading={isLoading} />
+            <CafeMap 
+              key={`cafe-map-${cafes.length}`} 
+              cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
+              isLoading={isLoading} 
+            />
           )}
         </section>
         

@@ -7,9 +7,10 @@ import { Button } from "./ui/button";
 interface CafeListProps {
   cafes: CafeWithDetails[];
   isLoading: boolean;
+  cafeDistances?: Map<number, number>; // Map of cafe IDs to distances in km
 }
 
-export default function CafeList({ cafes, isLoading }: CafeListProps) {
+export default function CafeList({ cafes, isLoading, cafeDistances }: CafeListProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [cafesPerPage] = useState(9); // Display 9 cafés per page (3x3 grid)
   
@@ -60,7 +61,11 @@ export default function CafeList({ cafes, isLoading }: CafeListProps) {
     <div className="cafe-list-container space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {currentCafes.map((cafe) => (
-          <CafeCard key={cafe.id} cafe={cafe} />
+          <CafeCard 
+            key={cafe.id} 
+            cafe={cafe} 
+            distance={cafeDistances ? cafeDistances.get(cafe.id) : undefined}
+          />
         ))}
       </div>
       
