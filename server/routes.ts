@@ -458,7 +458,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             longitude: place.lng.toString(),
             imageUrl: "",  // We'll handle images separately
             instagramHandle: "",
-            googleMapsUrl: place.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.address)}`
+            googleMapsUrl: place.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.address)}`,
+            status: "published"  // Set imported cafés to published by default
           };
           
           // Validate against our schema
