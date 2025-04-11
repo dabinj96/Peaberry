@@ -188,6 +188,41 @@ export class DatabaseStorage implements IStorage {
     
     return updatedCafe;
   }
+  
+  async deleteCafe(id: number): Promise<boolean> {
+    try {
+      // Use a transaction to ensure all related data is deleted
+      // Step 1: Delete cafe roast levels
+      await db
+        .delete(cafeRoastLevels)
+        .where(eq(cafeRoastLevels.cafeId, id));
+      
+      // Step 2: Delete cafe brewing methods
+      await db
+        .delete(cafeBrewingMethods)
+        .where(eq(cafeBrewingMethods.cafeId, id));
+      
+      // Step 3: Delete ratings
+      await db
+        .delete(ratings)
+        .where(eq(ratings.cafeId, id));
+      
+      // Step 4: Delete favorites
+      await db
+        .delete(favorites)
+        .where(eq(favorites.cafeId, id));
+      
+      // Step 5: Delete the cafe itself
+      await db
+        .delete(cafes)
+        .where(eq(cafes.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error(`Error deleting cafe with ID ${id}:`, error);
+      return false;
+    }
+  }
 
   async searchCafes(query: string, userId?: number): Promise<CafeWithDetails[]> {
     if (!query || query.trim() === '') {

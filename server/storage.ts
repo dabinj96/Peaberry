@@ -24,6 +24,7 @@ export interface IStorage {
   listCafes(filters?: CafeFilter, userId?: number): Promise<CafeWithDetails[]>;
   createCafe(cafe: InsertCafe): Promise<Cafe>;
   updateCafe(id: number, cafeData: Partial<Cafe>): Promise<Cafe | undefined>;
+  deleteCafe(id: number): Promise<boolean>;
   searchCafes(query: string, userId?: number): Promise<CafeWithDetails[]>;
   listNeighborhoods(): Promise<string[]>;
 
@@ -270,6 +271,42 @@ export class MemStorage implements IStorage {
     
     this.cafesMap.set(id, updatedCafe);
     return updatedCafe;
+  }
+  
+  async deleteCafe(id: number): Promise<boolean> {
+    // First check if the cafe exists
+    if (!this.cafesMap.has(id)) {
+      return false;
+    }
+    
+    // Delete related data
+    // 1. Delete roast levels
+    const roastLevels = await this.getCafeRoastLevels(id);
+    for (const rl of roastLevels) {
+      this.cafeRoastLevelsMap.delete(rl.id);
+    }
+    
+    // 2. Delete brewing methods
+    const brewingMethods = await this.getCafeBrewingMethods(id);
+    for (const bm of brewingMethods) {
+      this.cafeBrewingMethodsMap.delete(bm.id);
+    }
+    
+    // 3. Delete ratings
+    const ratings = await this.getCafeRatings(id);
+    for (const rating of ratings) {
+      this.ratingsMap.delete(rating.id);
+    }
+    
+    // 4. Delete favorites
+    for (const [favId, fav] of this.favoritesMap.entries()) {
+      if (fav.cafeId === id) {
+        this.favoritesMap.delete(favId);
+      }
+    }
+    
+    // Finally, delete the cafe itself
+    return this.cafesMap.delete(id);
   }
 
   async searchCafes(query: string, userId?: number): Promise<CafeWithDetails[]> {
