@@ -500,6 +500,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Admin routes for managing cafes
+  // Add endpoint for creating a single cafe manually
+  app.post("/api/admin/cafes", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Check for admin access
+    const adminUsernames = ['admin', 'testuser']; // Admin usernames
+    if (!adminUsernames.includes(req.user.username)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    try {
+      // Validate cafe data
+      const validatedData = insertCafeSchema.parse(req.body);
+      
+      // Check if a cafe with this name and address already exists
+      const existingCafes = await storage.listCafes({
+        name: validatedData.name,
+        address: validatedData.address
+      });
+      
+      if (existingCafes.length > 0) {
+        return res.status(400).json({ error: `Cafe "${validatedData.name}" already exists at this address.` });
+      }
+      
+      // Create the cafe
+      const cafe = await storage.createCafe(validatedData);
+      
+      // If roastLevels or brewingMethods are provided, add them
+      if (req.body.roastLevels && Array.isArray(req.body.roastLevels)) {
+        for (const level of req.body.roastLevels) {
+          await storage.addCafeRoastLevel({
+            cafeId: cafe.id,
+            roastLevel: level
+          });
+        }
+      }
+      
+      if (req.body.brewingMethods && Array.isArray(req.body.brewingMethods)) {
+        for (const method of req.body.brewingMethods) {
+          await storage.addCafeBrewingMethod({
+            cafeId: cafe.id,
+            brewingMethod: method
+          });
+        }
+      }
+      
+      const cafeWithDetails = await storage.getCafeWithDetails(cafe.id);
+      
+      return res.status(201).json(cafeWithDetails);
+    } catch (error) {
+      console.error("Error creating cafe:", error);
+      return res.status(500).json({ error: "Failed to create cafe" });
+    }
+  });
+
   app.get("/api/admin/cafes", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Authentication required" });

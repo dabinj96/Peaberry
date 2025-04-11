@@ -19,7 +19,8 @@ import {
   Search,
   Wifi,
   Power,
-  Utensils
+  Utensils,
+  Plus
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -263,13 +264,23 @@ export default function AdminPage() {
         <TabsContent value="cafes" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Coffee className="h-5 w-5" />
-                Cafe Management
-              </CardTitle>
-              <CardDescription>
-                Manage, edit, and curate cafe listings. Review cafes before publishing them to the live site.
-              </CardDescription>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Coffee className="h-5 w-5" />
+                    Cafe Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage, edit, and curate cafe listings. Review cafes before publishing them to the live site.
+                  </CardDescription>
+                </div>
+                
+                <Link href="/admin/cafes/new">
+                  <Button className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" /> Add New Cafe
+                  </Button>
+                </Link>
+              </div>
               
               <div className="flex flex-col sm:flex-row gap-4 mt-2">
                 <div className="relative flex-1">
