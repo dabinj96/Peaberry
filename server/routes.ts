@@ -102,29 +102,70 @@ async function fetchCafesFromGooglePlaces(location: string = "Boston, MA") {
 
 // Helper to extract neighborhood from address
 function extractNeighborhood(address: string): string {
-  // Try to extract neighborhood from Boston address
-  if (!address) return "Boston";
+  // If no address, return null to use the city name later
+  if (!address) return "Unknown";
   
-  // Common Boston neighborhoods
-  const neighborhoods = [
+  // First check for cities in the Greater Boston area
+  const citiesAndTowns = [
+    "Cambridge", "Somerville", "Brookline", "Newton", "Watertown", 
+    "Arlington", "Medford", "Malden", "Everett", "Chelsea", 
+    "Revere", "Winthrop", "Quincy", "Milton", "Dedham",
+    "Needham", "Wellesley", "Weston", "Waltham", "Belmont",
+    "Lexington", "Winchester", "Woburn", "Stoneham", "Melrose"
+  ];
+  
+  for (const city of citiesAndTowns) {
+    if (address.includes(city)) {
+      return city;
+    }
+  }
+  
+  // Next check for Boston neighborhoods
+  const bostonNeighborhoods = [
     "Back Bay", "Beacon Hill", "North End", "South End", "Downtown",
     "Fenway", "Kenmore", "Allston", "Brighton", "Jamaica Plain",
     "Roxbury", "Dorchester", "South Boston", "Charlestown", "East Boston",
-    "Cambridge", "Somerville", "Brookline", "Newton"
+    "West Roxbury", "Roslindale", "Hyde Park", "Mattapan", "Mission Hill"
   ];
   
-  for (const neighborhood of neighborhoods) {
+  for (const neighborhood of bostonNeighborhoods) {
     if (address.includes(neighborhood)) {
       return neighborhood;
     }
   }
   
-  // Default to general area if specific neighborhood not found
-  if (address.includes("Cambridge")) return "Cambridge";
-  if (address.includes("Somerville")) return "Somerville";
-  if (address.includes("Brookline")) return "Brookline";
+  // Try to extract neighborhood from address components
+  // Format is typically: "123 Main St, Neighborhood, Boston, MA 02XXX, USA"
+  const addressParts = address.split(",").map(part => part.trim());
   
-  return "Boston";
+  // If we have at least 3 parts (street, city/neighborhood, state/zip) and Boston is mentioned
+  if (addressParts.length >= 3 && address.includes("Boston")) {
+    // Check if the part before "Boston" might be a neighborhood
+    for (let i = 1; i < addressParts.length; i++) {
+      if (addressParts[i].includes("Boston") && i > 0) {
+        const potentialNeighborhood = addressParts[i-1];
+        // If it's not just a street name (typically ends with St, Ave, Rd, etc.)
+        if (!potentialNeighborhood.match(/\b(St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Blvd|Boulevard|Hwy|Highway|Way|Place|Pl)\b/i)) {
+          return potentialNeighborhood;
+        }
+      }
+    }
+  }
+  
+  // If it mentions Boston but we couldn't extract a neighborhood
+  if (address.includes("Boston")) {
+    return "Boston";
+  }
+  
+  // If we reach here, we couldn't find a specific neighborhood
+  // Extract the city from the address if possible
+  const cityMatch = address.match(/([A-Za-z\s]+),\s*[A-Z]{2}/);
+  if (cityMatch && cityMatch[1]) {
+    return cityMatch[1].trim();
+  }
+  
+  // Final fallback
+  return "Unknown";
 }
 
 // Helper to shuffle an array
