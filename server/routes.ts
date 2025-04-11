@@ -245,6 +245,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "published"
       };
       
+      console.log("Public API filtering cafes with status:", filters.status);
+      
       const cafes = await storage.listCafes(filters, userId);
       
       res.json(cafes);

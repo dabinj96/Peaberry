@@ -542,6 +542,7 @@ export class MemStorage implements IStorage {
         hasPower: true,
         hasFood: true,
         imageUrl: "https://images.unsplash.com/photo-1554118811-1e0d58224f24",
+        status: "published", // Ensure sample cafés have an explicit status
       },
       {
         name: "Barrington Coffee",
@@ -555,6 +556,7 @@ export class MemStorage implements IStorage {
         hasPower: false,
         hasFood: true,
         imageUrl: "https://images.unsplash.com/photo-1445116572660-236099ec97a0",
+        status: "published", // Ensure sample cafés have an explicit status
       },
       {
         name: "Gracenote Coffee",
@@ -568,6 +570,7 @@ export class MemStorage implements IStorage {
         hasPower: false,
         hasFood: false,
         imageUrl: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb",
+        status: "published", // Ensure sample cafés have an explicit status
       },
       {
         name: "Broadsheet Coffee",
@@ -581,6 +584,7 @@ export class MemStorage implements IStorage {
         hasPower: true,
         hasFood: true,
         imageUrl: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf",
+        status: "published", // Ensure sample cafés have an explicit status
       },
       {
         name: "Ogawa Coffee",
@@ -594,6 +598,7 @@ export class MemStorage implements IStorage {
         hasPower: true,
         hasFood: true,
         imageUrl: "https://images.unsplash.com/photo-1498804103079-a6351b050096",
+        status: "published", // Ensure sample cafés have an explicit status
       },
       {
         name: "Diesel Cafe",
@@ -607,6 +612,7 @@ export class MemStorage implements IStorage {
         hasPower: true,
         hasFood: true,
         imageUrl: "https://images.unsplash.com/photo-1600093463592-8e36ae95ef56",
+        status: "published", // Ensure sample cafés have an explicit status
       },
       {
         name: "George Howell Coffee",
@@ -620,6 +626,7 @@ export class MemStorage implements IStorage {
         hasPower: true,
         hasFood: true,
         imageUrl: "https://images.unsplash.com/photo-1559305616-3f99cd43e353",
+        status: "published", // Ensure sample cafés have an explicit status
       },
       {
         name: "Pavement Coffeehouse",
@@ -633,6 +640,7 @@ export class MemStorage implements IStorage {
         hasPower: true,
         hasFood: true,
         imageUrl: "https://images.unsplash.com/photo-1442512595331-e89e73853f31",
+        status: "published", // Ensure sample cafés have an explicit status
       },
       {
         name: "Blue Bottle Coffee",
@@ -646,6 +654,7 @@ export class MemStorage implements IStorage {
         hasPower: false,
         hasFood: true,
         imageUrl: "https://images.unsplash.com/photo-1514481538271-cf9f99627524",
+        status: "published", // Ensure sample cafés have an explicit status
       }
     ];
 
