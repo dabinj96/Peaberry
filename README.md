@@ -129,7 +129,3 @@ Required environment variables include:
 3. Set up environment variables
 4. Run database migrations: `npm run db:push`
 5. Start development server: `npm run dev`
-
-### Default User Credentials
-- Username: `testuser`
-- Password: `password`
