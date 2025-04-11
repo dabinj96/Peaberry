@@ -167,6 +167,17 @@ export class MemStorage implements IStorage {
   async listCafes(filters?: CafeFilter, userId?: number): Promise<CafeWithDetails[]> {
     let cafes = Array.from(this.cafesMap.values());
     
+    // Filter by status
+    // If status is explicitly provided in filters, use that
+    // Otherwise for non-admin routes, only show published cafes by default
+    if (filters?.status) {
+      cafes = cafes.filter(cafe => cafe.status === filters.status);
+    } else if (!filters?.status && !filters?.hasOwnProperty('status')) {
+      // Only apply default filtering when status property is completely absent
+      // This ensures admin routes can explicitly pass null to see all statuses
+      cafes = cafes.filter(cafe => cafe.status === 'published');
+    }
+    
     if (filters) {
       // Apply neighborhood filter
       if (filters.neighborhood && filters.neighborhood !== '') {

@@ -137,6 +137,7 @@ export const cafeFilterSchema = z.object({
   hasFood: z.boolean().optional(),
   query: z.string().optional(),
   sortBy: z.enum(cafeSortOptionsEnum).optional(),
+  status: z.enum(["draft", "published", "archived"]).optional(),
 });
 
 // Types

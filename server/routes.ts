@@ -569,8 +569,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Get all cafes with details for admin view
-      const cafes = await storage.listCafes();
+      // Get all cafes with details for admin view, including all statuses
+      // Pass an empty object with status explicitly set to undefined to bypass the default filtering
+      const cafes = await storage.listCafes({ status: undefined });
       res.json(cafes);
     } catch (error) {
       console.error("Error fetching admin cafes:", error);
