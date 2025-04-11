@@ -6,6 +6,7 @@ import { GOOGLE_MAPS_API_KEY } from "@/lib/utils";
 interface PlacesAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
+  onSelect?: (address: string, lat?: number, lng?: number, neighborhood?: string) => void;
   placeholder?: string;
   id?: string;
   className?: string;
@@ -14,6 +15,7 @@ interface PlacesAutocompleteProps {
 export default function PlacesAutocomplete({
   value,
   onChange,
+  onSelect,
   placeholder = "Enter a location",
   id = "location-input",
   className = "",
@@ -77,6 +79,38 @@ export default function PlacesAutocomplete({
           const place = autocomplete.getPlace();
           if (place.formatted_address) {
             onChange(place.formatted_address);
+            
+            // Call onSelect if provided
+            if (onSelect && place.geometry?.location) {
+              // Extract latitude and longitude
+              const lat = place.geometry.location.lat();
+              const lng = place.geometry.location.lng();
+              
+              // Extract neighborhood from address components if available
+              let neighborhood = "";
+              if (place.address_components) {
+                // Look for the neighborhood component
+                const neighborhoodComponent = place.address_components.find(
+                  (component: any) => component.types.includes('neighborhood')
+                );
+                
+                // Look for sublocality if neighborhood is not found
+                const sublocalityComponent = place.address_components.find(
+                  (component: any) => component.types.includes('sublocality')
+                );
+                
+                // Look for locality if neither neighborhood nor sublocality is found
+                const localityComponent = place.address_components.find(
+                  (component: any) => component.types.includes('locality')
+                );
+                
+                neighborhood = neighborhoodComponent ? neighborhoodComponent.long_name :
+                              sublocalityComponent ? sublocalityComponent.long_name :
+                              localityComponent ? localityComponent.long_name : "";
+              }
+              
+              onSelect(place.formatted_address, lat, lng, neighborhood);
+            }
           }
         });
         
@@ -91,7 +125,7 @@ export default function PlacesAutocomplete({
         console.error("Error initializing Places Autocomplete:", error);
       }
     }
-  }, [scriptLoaded, onChange]);
+  }, [scriptLoaded, onChange, onSelect]);
   
   return (
     <Input
@@ -139,6 +173,11 @@ declare global {
         };
         name?: string;
         place_id?: string;
+        address_components?: Array<{
+          long_name: string;
+          short_name: string;
+          types: string[];
+        }>;
       }
     }
   }
