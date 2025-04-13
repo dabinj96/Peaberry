@@ -6,6 +6,7 @@ import { z } from "zod";
 export const roastLevelEnum = pgEnum('roast_level', ['light', 'medium', 'dark']);
 export const brewingMethodEnum = pgEnum('brewing_method', ['pour_over', 'espresso', 'aeropress', 'french_press', 'siphon']);
 export const cafeStatusEnum = pgEnum('cafe_status', ['draft', 'published', 'archived']);
+export const userRoleEnum = pgEnum('user_role', ['user', 'admin', 'cafe_owner']);
 
 // Users table
 export const users = pgTable("users", {
@@ -15,6 +16,7 @@ export const users = pgTable("users", {
   email: text("email").notNull(),
   name: text("name").notNull(),
   bio: text("bio"),
+  role: userRoleEnum("role").default('user').notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

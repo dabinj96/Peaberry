@@ -4,8 +4,7 @@ import { Redirect, Route } from "wouter";
 
 /**
  * A route component that only allows access to admin users
- * For now, we'll hardcode admin access for specific usernames until
- * we implement proper roles in the database schema
+ * Uses the role-based access control system to check for admin permissions
  */
 export function AdminProtectedRoute({
   path,
@@ -15,9 +14,6 @@ export function AdminProtectedRoute({
   component: () => React.JSX.Element;
 }) {
   const { user, isLoading } = useAuth();
-  
-  // List of admin usernames
-  const adminUsernames = ['admin', 'testuser']; // Add your admin usernames here
 
   if (isLoading) {
     return (
@@ -39,7 +35,7 @@ export function AdminProtectedRoute({
   }
   
   // Check if the user has admin access
-  if (!adminUsernames.includes(user.username)) {
+  if (user.role !== 'admin') {
     return (
       <Route path={path}>
         <Redirect to="/" />

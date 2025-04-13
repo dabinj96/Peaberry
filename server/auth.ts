@@ -28,6 +28,40 @@ async function comparePasswords(supplied: string, stored: string) {
   }
 }
 
+// Middleware to require authentication
+export const requireAuth = (req: any, res: any, next: any) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  next();
+};
+
+// Middleware to require admin role
+export const requireAdmin = (req: any, res: any, next: any) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  
+  next();
+};
+
+// Middleware to require cafe owner or admin role
+export const requireCafeOwnerOrAdmin = (req: any, res: any, next: any) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  
+  if (req.user.role !== 'admin' && req.user.role !== 'cafe_owner') {
+    return res.status(403).json({ error: "Cafe owner or admin access required" });
+  }
+  
+  next();
+};
+
 export function setupAuth(app: Express) {
   const sessionSecret = process.env.SESSION_SECRET || "peaberry-coffee-secret-key";
   const sessionSettings: session.SessionOptions = {
