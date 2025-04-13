@@ -566,17 +566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/cafes", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Check for admin access
-    const adminUsernames = ['admin', 'testuser']; // Admin usernames
-    if (!adminUsernames.includes(req.user.username)) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    
+  app.get("/api/admin/cafes", requireAdmin, async (req, res) => {
     try {
       // Get all cafes with details for admin view, including all statuses
       // Pass an empty object with status explicitly set to undefined to bypass the default filtering
@@ -588,17 +578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/admin/cafes/:id", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Check for admin access
-    const adminUsernames = ['admin', 'testuser']; // Admin usernames
-    if (!adminUsernames.includes(req.user.username)) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    
+  app.get("/api/admin/cafes/:id", requireAdmin, async (req, res) => {
     try {
       const cafeId = parseInt(req.params.id, 10);
       if (isNaN(cafeId)) {
@@ -617,17 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/admin/cafes/:id", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Check for admin access
-    const adminUsernames = ['admin', 'testuser']; // Admin usernames
-    if (!adminUsernames.includes(req.user.username)) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    
+  app.put("/api/admin/cafes/:id", requireAdmin, async (req, res) => {
     try {
       const cafeId = parseInt(req.params.id, 10);
       if (isNaN(cafeId)) {
@@ -656,17 +626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Add PATCH endpoint to match the client's request method
-  app.patch("/api/admin/cafes/:id", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Check for admin access
-    const adminUsernames = ['admin', 'testuser']; // Admin usernames
-    if (!adminUsernames.includes(req.user.username)) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    
+  app.patch("/api/admin/cafes/:id", requireAdmin, async (req, res) => {
     try {
       const cafeId = parseInt(req.params.id, 10);
       if (isNaN(cafeId)) {
@@ -696,17 +656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/admin/cafes/:id/roast-levels", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Check for admin access
-    const adminUsernames = ['admin', 'testuser']; // Admin usernames
-    if (!adminUsernames.includes(req.user.username)) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    
+  app.put("/api/admin/cafes/:id/roast-levels", requireAdmin, async (req, res) => {
     try {
       const cafeId = parseInt(req.params.id, 10);
       if (isNaN(cafeId)) {
@@ -736,17 +686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/admin/cafes/:id/brewing-methods", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Check for admin access
-    const adminUsernames = ['admin', 'testuser']; // Admin usernames
-    if (!adminUsernames.includes(req.user.username)) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    
+  app.put("/api/admin/cafes/:id/brewing-methods", requireAdmin, async (req, res) => {
     try {
       const cafeId = parseInt(req.params.id, 10);
       if (isNaN(cafeId)) {
@@ -776,17 +716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/admin/cafes/:id/status", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Check for admin access
-    const adminUsernames = ['admin', 'testuser']; // Admin usernames
-    if (!adminUsernames.includes(req.user.username)) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    
+  app.put("/api/admin/cafes/:id/status", requireAdmin, async (req, res) => {
     try {
       const cafeId = parseInt(req.params.id, 10);
       if (isNaN(cafeId)) {
@@ -814,17 +744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Endpoint to permanently delete a cafe
-  app.delete("/api/admin/cafes/:id", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Check for admin access
-    const adminUsernames = ['admin', 'testuser']; // Admin usernames
-    if (!adminUsernames.includes(req.user.username)) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    
+  app.delete("/api/admin/cafes/:id", requireAdmin, async (req, res) => {
     try {
       const cafeId = parseInt(req.params.id, 10);
       if (isNaN(cafeId)) {
@@ -852,17 +772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Endpoint to publish all cafes - for admin use to fix existing data
-  app.post("/api/admin/publish-all-cafes", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Check for admin access
-    const adminUsernames = ['admin', 'testuser']; // Admin usernames
-    if (!adminUsernames.includes(req.user.username)) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    
+  app.post("/api/admin/publish-all-cafes", requireAdmin, async (req, res) => {
     try {
       // Get all cafes regardless of status
       const cafes = await storage.listCafes({ status: undefined });
