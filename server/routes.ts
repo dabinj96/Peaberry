@@ -415,17 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin endpoint to import cafes from Google Places API
-  app.post("/api/admin/import-cafes", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Check for admin access (for now, whitelist specific usernames)
-    const adminUsernames = ['admin', 'testuser']; // Add your admin usernames here
-    if (!adminUsernames.includes(req.user.username)) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    
+  app.post("/api/admin/import-cafes", requireAdmin, async (req, res) => {
     try {
       // Only admin users can access this endpoint
       
@@ -510,17 +500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Admin routes for managing cafes
   // Add endpoint for creating a single cafe manually
-  app.post("/api/admin/cafes", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Check for admin access
-    const adminUsernames = ['admin', 'testuser']; // Admin usernames
-    if (!adminUsernames.includes(req.user.username)) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    
+  app.post("/api/admin/cafes", requireAdmin, async (req, res) => {
     try {
       // Validate cafe data
       const validatedData = insertCafeSchema.parse(req.body);

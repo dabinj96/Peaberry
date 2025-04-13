@@ -140,6 +140,8 @@ export const cafeFilterSchema = z.object({
   query: z.string().optional(),
   sortBy: z.enum(cafeSortOptionsEnum).optional(),
   status: z.enum(["draft", "published", "archived"]).optional(),
+  name: z.string().optional(),
+  address: z.string().optional(),
 });
 
 // Types
