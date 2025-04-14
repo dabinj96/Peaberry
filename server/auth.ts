@@ -328,7 +328,7 @@ export function setupAuth(app: Express) {
         console.error("Error verifying token:", tokenError);
         return res.status(401).send(`Token verification failed: ${tokenError.message}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("OAuth login error:", error);
       return res.status(500).send(`OAuth error: ${error.message}`);
     }

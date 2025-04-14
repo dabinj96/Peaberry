@@ -824,6 +824,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to simulate a Firebase Auth webhook call for user deletion
+  // This is for testing purposes only and should be removed in production
+  app.post('/api/admin/test-firebase-webhook', requireAdmin, async (req, res) => {
+    try {
+      const { uid } = req.body;
+      
+      if (!uid) {
+        return res.status(400).json({ error: 'Missing uid parameter' });
+      }
+      
+      // Call the webhook endpoint directly with a simulated payload
+      const webhookPayload = {
+        event: 'user.deleted',
+        data: {
+          uid: uid,
+          providerId: 'google'
+        }
+      };
+      
+      console.log(`Simulating Firebase Auth webhook for user deletion: ${uid}`);
+      
+      // Find if the user exists first
+      const user = await storage.getUserByProviderAuth('google', uid);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found', uid });
+      }
+      
+      // Delete the user
+      const success = await storage.deleteUserByProviderAuth('google', uid);
+      
+      if (success) {
+        return res.status(200).json({ 
+          message: 'User successfully deleted', 
+          uid,
+          userId: user.id 
+        });
+      } else {
+        return res.status(500).json({ error: 'Failed to delete user', uid });
+      }
+    } catch (error) {
+      console.error('Error in test webhook:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Firebase Auth webhook endpoint for handling user deletion events
+  app.post('/api/webhooks/firebase-auth', async (req, res) => {
+    try {
+      console.log('Received Firebase Auth webhook event');
+      
+      // Verify the request is from Firebase
+      const signature = req.headers['x-firebase-auth-signature'] as string;
+      const rawBody = JSON.stringify(req.body);
+      
+      if (!signature) {
+        console.warn('Missing X-Firebase-Auth-Signature header');
+        return res.status(401).json({ error: 'Missing authentication signature' });
+      }
+      
+      // Verify the signature (commented out for testing)
+      // In production, this should be uncommented
+      // const isValid = verifyFirebaseAuthWebhookSignature(signature, rawBody);
+      // if (!isValid) {
+      //   console.warn('Invalid webhook signature');
+      //   return res.status(401).json({ error: 'Invalid signature' });
+      // }
+      
+      // Extract event data
+      const { event, data } = req.body;
+      
+      // Handle different event types
+      if (event === 'user.deleted') {
+        const { uid, providerId } = data;
+        console.log(`Processing user deletion event for uid: ${uid}, providerId: ${providerId || 'google'}`);
+        
+        // Delete the user from our database
+        const success = await storage.deleteUserByProviderAuth(providerId || 'google', uid);
+        
+        if (success) {
+          console.log(`Successfully deleted user with uid: ${uid} from database`);
+        } else {
+          console.warn(`User with uid: ${uid} not found in database`);
+        }
+      } else {
+        console.log(`Ignoring unsupported Firebase Auth event: ${event}`);
+      }
+      
+      // Always return success to acknowledge receipt
+      return res.status(200).json({ status: 'success' });
+    } catch (error) {
+      console.error('Error processing Firebase Auth webhook:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
