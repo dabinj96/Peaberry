@@ -81,11 +81,13 @@ const passwordChangeSchema = z.object({
   path: ["confirmPassword"],
 });
 
-// Define account deletion form schema - will be updated dynamically based on user type
-const deleteAccountSchema = (isOAuth: boolean) => z.object({
-  password: isOAuth
-    ? z.string().optional() // No password needed for OAuth users
-    : z.string().min(1, { message: "Password confirmation is required" })
+// Define account deletion form schemas - separate schemas for each user type
+const regularUserDeleteSchema = z.object({
+  password: z.string().min(1, { message: "Password confirmation is required" })
+});
+
+const oauthUserDeleteSchema = z.object({
+  password: z.string().optional() // No password needed for OAuth users
 });
 
 type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>;
@@ -439,10 +441,8 @@ function DeleteAccountForm({
   const isOAuthUser = !!(user.providerId || user.providerUid);
   console.log("Is OAuth user?", isOAuthUser);
   
-  // Dynamically create validation schema based on user type
-  const formSchema = React.useMemo(() => 
-    deleteAccountSchema(isOAuthUser), [isOAuthUser]
-  );
+  // Use the appropriate schema based on user type
+  const formSchema = isOAuthUser ? oauthUserDeleteSchema : regularUserDeleteSchema;
   
   // Delete account form
   const deleteForm = useForm<DeleteAccountFormValues>({
@@ -577,14 +577,9 @@ function DeleteAccountForm({
               Cancel
             </AlertDialogCancel>
             <Button 
-              type="button" 
+              type="submit" 
               variant="destructive"
               disabled={isDeleting}
-              onClick={() => {
-                console.log("Delete button clicked directly");
-                const formData = deleteForm.getValues();
-                onSubmitDelete(formData);
-              }}
             >
               {isDeleting ? (
                 <>
