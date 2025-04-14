@@ -945,6 +945,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error in test webhook:', error);
       return res.status(500).json({ error: 'Internal server error' });
     }
+  })
+  
+  // List all users - admin only
+  app.get('/api/admin/users', requireAdmin, async (req, res) => {
+    try {
+      // Fetch all users
+      const users = await storage.listUsers();
+      
+      // Remove sensitive information
+      const safeUsers = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
+      res.json(safeUsers);
+    } catch (error) {
+      console.error('Error listing users:', error);
+      res.status(500).json({ error: 'Failed to list users' });
+    }
+  });
+  
+  // Delete a user directly by ID - for admin cleanup purposes
+  app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id, 10);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: 'Invalid user ID' });
+      }
+      
+      // Find if the user exists first
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found', userId });
+      }
+      
+      // Don't allow deleting the current user
+      if (req.user && req.user.id === userId) {
+        return res.status(400).json({ error: 'Cannot delete your own account' });
+      }
+      
+      // Delete the user
+      const success = await storage.deleteUser(userId);
+      
+      if (success) {
+        return res.status(200).json({ 
+          message: 'User successfully deleted', 
+          userId
+        });
+      } else {
+        return res.status(500).json({ error: 'Failed to delete user', userId });
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
   });
 
   // Firebase Auth webhook endpoint for handling user deletion events
