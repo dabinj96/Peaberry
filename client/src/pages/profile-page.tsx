@@ -456,6 +456,13 @@ function DeleteAccountForm({
       // Use fetch instead of XMLHttpRequest for better debugging
       console.log("Sending fetch request to /api/delete-account");
       
+      // Show toast for debugging
+      toast({
+        title: "Deleting account...",
+        description: "Sending request to server",
+        variant: "default",
+      });
+      
       const response = await fetch('/api/delete-account', {
         method: 'POST',
         headers: {
