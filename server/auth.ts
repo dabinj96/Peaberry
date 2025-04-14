@@ -154,7 +154,11 @@ export function setupAuth(app: Express) {
   // Account deletion endpoint
   app.post("/api/delete-account", async (req, res, next) => {
     try {
-      console.log("Processing account deletion request");
+      console.log("Processing account deletion request", { 
+        body: req.body,
+        isAuthenticated: req.isAuthenticated(),
+        user: req.user ? { id: req.user.id, name: req.user.name } : null 
+      });
       
       if (!req.isAuthenticated()) {
         console.log("Account deletion failed: User not authenticated");
@@ -167,10 +171,14 @@ export function setupAuth(app: Express) {
       console.log(`Attempting to delete account for user ID: ${req.user.id}`);
       const { password } = req.body;
       console.log(`Password provided: ${password ? "Yes" : "No"}`);
-      console.log(`User is OAuth: ${req.user.providerId ? "Yes" : "No"}`);
+      console.log(`User data:`, { 
+        id: req.user.id, 
+        providerId: req.user.providerId,
+        providerUid: req.user.providerUid
+      });
       
-      // Check if this is an OAuth user (has providerId)
-      const isOAuthUser = !!req.user.providerId;
+      // Check if this is an OAuth user (has providerId or providerUid)
+      const isOAuthUser = !!(req.user.providerId || req.user.providerUid);
       console.log(`User is OAuth: ${isOAuthUser}`);
       
       // For non-OAuth users, verify password
@@ -197,71 +205,61 @@ export function setupAuth(app: Express) {
         console.log("No password verification needed for OAuth user");
       }
       
-      // If user authenticated via OAuth, we also need to delete from Firebase
-      // This is handled in the routes.ts file
-      
-      // Delete user data
-      // First, get user's data
+      // Delete user data from database
       const userId = req.user.id;
       
       try {
-        // First, delete the user from the database
-        console.log(`Attempting to delete user with ID: ${userId} from database`);
+        console.log(`Deleting user ${userId} from database...`);
         const success = await storage.deleteUser(userId);
+        console.log(`Database delete result: ${success}`);
         
-        if (success) {
-          console.log(`Successfully deleted user with ID: ${userId}`);
-          
-          try {
-            // Now log the user out - use a promise wrapper for req.logout which takes a callback
-            await new Promise<void>((resolve, reject) => {
-              req.logout((err) => {
-                if (err) {
-                  console.error("Error logging out user during account deletion:", err);
-                  // Don't reject, just log the error and continue
-                  console.log("Continuing despite logout error");
-                }
-                console.log("User logout processed");
-                resolve();
-              });
-            });
-            
-            // Also destroy the session explicitly to ensure clean logout
-            await new Promise<void>((resolve) => {
-              if (!req.session) {
-                console.log("No session to destroy");
-                return resolve();
-              }
-              
-              req.session.destroy((err) => {
-                if (err) {
-                  console.error("Error destroying session:", err);
-                  // Continue anyway
-                }
-                console.log("Session destroyed successfully");
-                resolve();
-              });
-            });
-          } catch (sessionError) {
-            // Log but continue even if session handling fails
-            console.error("Session cleanup error:", sessionError);
-            console.log("Continuing with account deletion response despite session error");
-          }
-          
-          // Send success response
-          console.log("Sending successful account deletion response");
-          return res.status(200).json({ success: true, message: "Account deleted successfully" });
-        } else {
-          console.error(`Failed to delete user with ID: ${userId}`);
-          return res.status(500).json({ success: false, message: "Failed to delete account" });
+        if (!success) {
+          console.error(`Database reported failure to delete user with ID: ${userId}`);
+          return res.status(500).json({ success: false, message: "Database could not delete user account" });
         }
+        
+        console.log(`Successfully deleted user with ID: ${userId} from database`);
+        
+        // Handle session cleanup
+        try {
+          console.log("Logging out user...");
+          // Option 1: Use req.logout with a promise
+          await new Promise<void>((resolve) => {
+            req.logout(() => {
+              console.log("Logout callback executed");
+              resolve();
+            });
+          });
+          
+          console.log("Destroying session...");
+          // Option 2: Destroy the session if it exists
+          if (req.session) {
+            await new Promise<void>((resolve) => {
+              req.session.destroy((err) => {
+                if (err) console.error("Session destruction error:", err);
+                else console.log("Session destroyed successfully");
+                resolve();
+              });
+            });
+          }
+        } catch (sessionError) {
+          console.error("Session cleanup error:", sessionError);
+          // Continue anyway since the database delete was successful
+        }
+        
+        // Even with session errors, return success since the account was deleted
+        console.log("Sending successful account deletion response");
+        return res.status(200).json({ 
+          success: true, 
+          message: "Account deleted successfully" 
+        });
+        
       } catch (err: any) {
-        console.error("Error in account deletion process:", err);
-        const errorMessage = err.message || "An unknown error occurred";
+        console.error("Database error during account deletion:", err);
+        const errorMessage = err.message || "An unknown database error occurred";
         return res.status(500).json({ 
           success: false, 
-          message: "Error deleting user: " + errorMessage,
-          error: errorMessage
+          message: "Error deleting user: " + errorMessage
         });
       }
     } catch (error) {

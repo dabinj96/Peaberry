@@ -374,6 +374,43 @@ export default function ProfilePage() {
                           Deleting your account is permanent and will remove all your data from our system, including favorites, ratings, and reviews.
                         </p>
                         
+                        <Button 
+                          className="w-full mb-4 bg-blue-500 hover:bg-blue-600 text-white"
+                          onClick={() => {
+                            console.log("DEBUG BUTTON CLICKED - Testing account deletion directly");
+                            fetch('/api/delete-account', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              credentials: 'include',
+                              body: JSON.stringify({ password: "" })
+                            })
+                            .then(response => response.text())
+                            .then(data => {
+                              console.log("DEBUG RESPONSE:", data);
+                              toast({
+                                title: "Debug Response",
+                                description: data.substring(0, 100),
+                                variant: "default",
+                              });
+                              if (data.includes("success") || data.includes("deleted")) {
+                                window.location.href = "/";
+                              }
+                            })
+                            .catch(error => {
+                              console.error("DEBUG ERROR:", error);
+                              toast({
+                                title: "Debug Error",
+                                description: error.toString(),
+                                variant: "destructive",
+                              });
+                            });
+                          }}
+                        >
+                          Debug: Test Account Deletion
+                        </Button>
+                        
                         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                           <AlertDialogTrigger asChild>
                             <Button variant="destructive" className="w-full">
