@@ -18,6 +18,10 @@ export const users = pgTable("users", {
   bio: text("bio"),
   role: userRoleEnum("role").default('user').notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // OAuth related fields
+  providerId: text("provider_id"),    // e.g. 'google', 'facebook'
+  providerUid: text("provider_uid"),  // unique ID from the provider
+  photoUrl: text("photo_url"),        // profile photo URL
 });
 
 // Cafes table
@@ -99,11 +103,23 @@ const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/;
 // Common passwords to reject (simplified list for demo)
 const commonPasswords = ["password", "123456", "qwerty", "welcome", "admin"];
 
+// Create a schema for OAuth login
+export const oauthUserSchema = z.object({
+  username: z.string(),
+  email: z.string().email(),
+  name: z.string(),
+  providerId: z.string(),
+  providerUid: z.string(),
+  photoUrl: z.string().optional(),
+  role: z.enum(["user", "admin", "cafe_owner"]).default("user"),
+});
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
 }).extend({
+  // Make password optional to support OAuth users, but validate if provided
   password: z.string()
     .min(8, "Password must be at least 8 characters")
     .max(100, "Password must be less than 100 characters")
@@ -119,6 +135,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
     .refine((password) => {
       return !commonPasswords.includes(password.toLowerCase());
     }, "This password is too common and easily guessed")
+    .optional()
+    .refine((password) => {
+      // Either password is undefined (OAuth) or it meets our requirements
+      return password === undefined || password.length >= 8;
+    }, "Password is required for standard authentication")
 });
 
 export const insertCafeSchema = createInsertSchema(cafes).omit({
