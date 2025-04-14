@@ -104,6 +104,15 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
+  
+  async listUsers(): Promise<User[]> {
+    try {
+      return await db.select().from(users);
+    } catch (error) {
+      console.error('Error listing users:', error);
+      return [];
+    }
+  }
 
   // Cafe methods
   async getCafe(id: number): Promise<Cafe | undefined> {
