@@ -445,6 +445,7 @@ function DeleteAccountForm({
   // Handle delete account form submission
   const onSubmitDelete = async (data: DeleteAccountFormValues) => {
     try {
+      console.log("onSubmitDelete called!!!");
       setIsDeleting(true);
       setError(null);
       
@@ -462,6 +463,8 @@ function DeleteAccountForm({
         description: "Sending request to server",
         variant: "default",
       });
+      
+      alert("About to send deletion request to server");
       
       const response = await fetch('/api/delete-account', {
         method: 'POST',
@@ -565,9 +568,14 @@ function DeleteAccountForm({
               Cancel
             </AlertDialogCancel>
             <Button 
-              type="submit" 
+              type="button" 
               variant="destructive"
               disabled={isDeleting}
+              onClick={() => {
+                console.log("Delete button clicked directly");
+                const formData = deleteForm.getValues();
+                onSubmitDelete(formData);
+              }}
             >
               {isDeleting ? (
                 <>
