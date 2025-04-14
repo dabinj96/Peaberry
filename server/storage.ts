@@ -19,6 +19,8 @@ export interface IStorage {
   getUserByProviderAuth(providerId: string, providerUid: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
+  deleteUserByProviderAuth(providerId: string, providerUid: string): Promise<boolean>;
 
   // Cafe methods
   getCafe(id: number): Promise<Cafe | undefined>;
@@ -154,6 +156,47 @@ export class MemStorage implements IStorage {
     
     this.usersMap.set(id, updatedUser);
     return updatedUser;
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    // First check if the user exists
+    if (!this.usersMap.has(id)) {
+      return false;
+    }
+    
+    // Delete related data
+    
+    // 1. Delete user's ratings
+    const ratingsToDelete = Array.from(this.ratingsMap.entries())
+      .filter(([_, rating]) => rating.userId === id)
+      .map(([id, _]) => id);
+    
+    for (const ratingId of ratingsToDelete) {
+      this.ratingsMap.delete(ratingId);
+    }
+    
+    // 2. Delete user's favorites
+    const favoritesToDelete = Array.from(this.favoritesMap.entries())
+      .filter(([_, favorite]) => favorite.userId === id)
+      .map(([id, _]) => id);
+    
+    for (const favoriteId of favoritesToDelete) {
+      this.favoritesMap.delete(favoriteId);
+    }
+    
+    // Finally, delete the user itself
+    return this.usersMap.delete(id);
+  }
+  
+  async deleteUserByProviderAuth(providerId: string, providerUid: string): Promise<boolean> {
+    // Find the user by provider auth
+    const user = await this.getUserByProviderAuth(providerId, providerUid);
+    if (!user) {
+      return false;
+    }
+    
+    // Delete the user by ID
+    return this.deleteUser(user.id);
   }
 
   // Cafe methods
