@@ -790,7 +790,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create a test user for development if none exists
+  // Create a test user with Firebase credentials for testing
+  app.post("/api/admin/test-user", async (req, res) => {
+    try {
+      const userData = req.body;
+      
+      // Validate required fields
+      if (!userData.username || !userData.email || !userData.password || 
+          !userData.providerId || !userData.providerUid) {
+        return res.status(400).json({ 
+          error: "Missing required fields. Required: username, email, password, providerId, providerUid" 
+        });
+      }
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+      
+      // Check if user with this provider auth already exists
+      const existingProviderUser = await storage.getUserByProviderAuth(
+        userData.providerId, 
+        userData.providerUid
+      );
+      
+      if (existingProviderUser) {
+        return res.status(400).json({ 
+          error: "User with this provider authentication already exists",
+          userId: existingProviderUser.id
+        });
+      }
+      
+      // Hash the password
+      const hashedPassword = await scrypt.hashPassword(userData.password);
+      
+      // Create the user
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword,
+        bio: userData.bio || '',
+        role: userData.role || 'user'
+      });
+      
+      // Remove password from response
+      const { password, ...userWithoutPassword } = user;
+      
+      res.status(201).json({ 
+        message: "Test user with Firebase credentials created successfully", 
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error("Error creating test Firebase user:", error);
+      res.status(500).json({ error: "Failed to create test user" });
+    }
+  });
+  
+  // Create a simple test user for development if none exists
   app.get("/api/dev/create-test-user", async (req, res) => {
     // Only available in development environment
     if (process.env.NODE_ENV === 'production') {
