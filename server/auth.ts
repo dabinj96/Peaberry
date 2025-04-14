@@ -169,17 +169,32 @@ export function setupAuth(app: Express) {
       console.log(`Password provided: ${password ? "Yes" : "No"}`);
       console.log(`User is OAuth: ${req.user.providerId ? "Yes" : "No"}`);
       
-      // Verify password if provided (unless it's an OAuth user without a regular password)
-      if (password && !req.user.providerId) {
+      // Check if this is an OAuth user (has providerId)
+      const isOAuthUser = !!req.user.providerId;
+      console.log(`User is OAuth: ${isOAuthUser}`);
+      
+      // For non-OAuth users, verify password
+      if (!isOAuthUser && password) {
+        console.log("Verifying password for non-OAuth user");
         const user = await storage.getUser(req.user.id);
         if (!user) {
-          return res.status(404).send("User not found");
+          console.log("User not found for password verification");
+          return res.status(404).json({ success: false, message: "User not found" });
         }
         
         const isCorrectPassword = await comparePasswords(password, user.password);
         if (!isCorrectPassword) {
-          return res.status(400).send("Incorrect password");
+          console.log("Incorrect password provided");
+          return res.status(400).json({ success: false, message: "Incorrect password" });
         }
+        console.log("Password verified successfully");
+      } else if (!isOAuthUser && !password) {
+        // Non-OAuth users must provide password
+        console.log("Password required for non-OAuth user but not provided");
+        return res.status(400).json({ success: false, message: "Password is required to delete your account" });
+      } else {
+        // OAuth user - no password needed
+        console.log("No password verification needed for OAuth user");
       }
       
       // If user authenticated via OAuth, we also need to delete from Firebase
