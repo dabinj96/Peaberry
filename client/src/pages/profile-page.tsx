@@ -81,13 +81,18 @@ const passwordChangeSchema = z.object({
   path: ["confirmPassword"],
 });
 
-// Define account deletion form schema
-const deleteAccountSchema = z.object({
-  password: z.string().min(1, { message: "Password confirmation is required" })
+// Define account deletion form schema - will be updated dynamically based on user type
+const deleteAccountSchema = (isOAuth: boolean) => z.object({
+  password: isOAuth
+    ? z.string().optional() // No password needed for OAuth users
+    : z.string().min(1, { message: "Password confirmation is required" })
 });
 
 type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>;
-type DeleteAccountFormValues = z.infer<typeof deleteAccountSchema>;
+// Account deletion form values type
+type DeleteAccountFormValues = {
+  password?: string;
+};
 
 export default function ProfilePage() {
   const [, setLocation] = useLocation();
@@ -434,12 +439,18 @@ function DeleteAccountForm({
   const isOAuthUser = !!(user.providerId || user.providerUid);
   console.log("Is OAuth user?", isOAuthUser);
   
+  // Dynamically create validation schema based on user type
+  const formSchema = React.useMemo(() => 
+    deleteAccountSchema(isOAuthUser), [isOAuthUser]
+  );
+  
   // Delete account form
   const deleteForm = useForm<DeleteAccountFormValues>({
-    resolver: zodResolver(deleteAccountSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       password: "",
-    }
+    },
+    mode: "onSubmit"
   });
   
   // Handle delete account form submission
@@ -457,14 +468,12 @@ function DeleteAccountForm({
       // Use fetch instead of XMLHttpRequest for better debugging
       console.log("Sending fetch request to /api/delete-account");
       
-      // Show toast for debugging
+      // Show deletion in progress toast
       toast({
         title: "Deleting account...",
-        description: "Sending request to server",
+        description: "Your account is being deleted",
         variant: "default",
       });
-      
-      alert("About to send deletion request to server");
       
       const response = await fetch('/api/delete-account', {
         method: 'POST',

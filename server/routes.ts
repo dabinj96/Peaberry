@@ -1278,41 +1278,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password } = req.body;
       const user = req.user;
       
-      console.log(`User ${user.id} attempting to delete their account`);
+      // Log the request details for debugging
+      console.log('Processing account deletion request', {
+        body: { password: password ? '(provided)' : '' },
+        isAuthenticated: !!req.isAuthenticated(),
+        user: user ? { id: user.id, name: user.name } : null
+      });
       
-      // Check if this is an OAuth user
+      if (!user) {
+        return res.status(401).json({ 
+          success: false,
+          message: "You must be logged in to delete your account" 
+        });
+      }
+      
+      console.log(`Attempting to delete account for user ID: ${user.id}`);
+      console.log(`Password provided: ${password ? 'Yes' : 'No'}`);
+      console.log(`User data: ${JSON.stringify({
+        id: user.id,
+        providerId: user.providerId, 
+        providerUid: user.providerUid
+      })}`);
+      
+      // Check if this is an OAuth user (has provider credentials)
       const isOAuthUser = !!(user.providerId && user.providerUid);
-      let firebaseDeleted = false;
+      console.log(`User is OAuth: ${isOAuthUser}`);
       
-      // If not an OAuth user, verify password
-      if (!isOAuthUser && password) {
+      // Regular users (not OAuth) MUST provide password for deletion
+      if (!isOAuthUser && !password) {
+        console.log('Password required for non-OAuth user but not provided');
+        return res.status(400).json({ 
+          success: false,
+          message: "Password is required to delete your account" 
+        });
+      }
+      
+      // If not an OAuth user, verify the password
+      if (!isOAuthUser) {
         // Get the current password from the database
         const dbUser = await storage.getUser(user.id);
         if (!dbUser) {
-          return res.status(404).json({ error: "User not found" });
+          return res.status(404).json({ 
+            success: false,
+            message: "User account not found" 
+          });
         }
         
         // Verify the password
         const passwordCorrect = await scrypt.comparePasswords(password, dbUser.password);
         if (!passwordCorrect) {
-          return res.status(401).json({ error: "Incorrect password" });
+          return res.status(401).json({ 
+            success: false,
+            message: "Incorrect password. Please try again." 
+          });
         }
+        
+        console.log('Password verification successful for regular user');
+      } else {
+        console.log('No password verification needed for OAuth user');
       }
       
-      // For OAuth users, attempt to delete the account from Firebase
+      let firebaseDeleted = false;
+      
+      // For OAuth users, attempt to delete the account from Firebase Auth
       if (isOAuthUser && user.providerUid) {
         try {
-          console.log(`Attempting to delete Firebase user with uid: ${user.providerUid}`);
+          console.log(`Attempting to delete Firebase user with UID: ${user.providerUid}`);
           
           // Use the Firebase Admin SDK directly to delete the user
           if (admin && admin.auth) {
             // First try direct UID deletion (most reliable)
             try {
               await admin.auth().deleteUser(user.providerUid);
-              console.log(`Successfully deleted Firebase user with uid: ${user.providerUid}`);
+              console.log(`Successfully deleted Firebase user with UID: ${user.providerUid}`);
               firebaseDeleted = true;
             } catch (directDeleteError) {
-              console.error(`Error directly deleting Firebase user: ${directDeleteError.message}`);
+              console.error(`Error directly deleting Firebase user:`, directDeleteError);
               console.log("Trying fallback provider-based deletion method...");
               
               // Fallback: try to delete via provider UID lookup
@@ -1336,7 +1377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }
                   }
                 } catch (providerLookupError) {
-                  console.error(`Error with provider lookup deletion: ${providerLookupError.message}`);
+                  console.error(`Error with provider lookup deletion:`, providerLookupError);
                 }
               }
             }
@@ -1352,9 +1393,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Delete the user from our database
       console.log(`Deleting user ${user.id} from database...`);
       const success = await storage.deleteUser(user.id);
+      console.log(`Database delete result: ${success}`);
       
       if (success) {
         console.log(`Successfully deleted user with ID: ${user.id} from database`);
+        
         // Log the user out
         console.log("Logging out user...");
         req.logout((err) => {
@@ -1382,11 +1425,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         });
       } else {
-        return res.status(500).json({ error: "Failed to delete account" });
+        return res.status(500).json({ 
+          success: false,
+          message: "Failed to delete your account. Please try again or contact support." 
+        });
       }
     } catch (error) {
       console.error("Error deleting account:", error);
-      return res.status(500).json({ error: "An unexpected error occurred" });
+      return res.status(500).json({ 
+        success: false,
+        message: "An unexpected error occurred while deleting your account" 
+      });
     }
   });
   
