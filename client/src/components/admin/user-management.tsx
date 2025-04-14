@@ -2,7 +2,16 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UserX, RefreshCw, AlertTriangle, Check, Users } from "lucide-react";
+import { 
+  Loader2, 
+  UserX, 
+  RefreshCw, 
+  AlertTriangle, 
+  Check, 
+  Users, 
+  Repeat,
+  Database 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -53,6 +62,18 @@ interface CleanupResult {
     total: number;
     deleted: number;
     failed: number;
+    errors: string[];
+  };
+}
+
+// Type for sync results
+interface SyncResult {
+  success: boolean;
+  message: string;
+  results: {
+    added: number;
+    updated: number;
+    deleted: number;
     errors: string[];
   };
 }
@@ -135,6 +156,29 @@ export default function UserManagement() {
       });
     },
   });
+  
+  // Mutation to manually sync Firebase users
+  const syncFirebaseUsersMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/sync-firebase-users");
+      return await response.json() as SyncResult;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Firebase sync completed",
+        description: `Updated: ${data.results.updated}, Deleted: ${data.results.deleted}, Errors: ${data.results.errors.length}`,
+      });
+      refetchUsers();
+      refetchOrphanedCheck();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Firebase sync failed",
+        description: error.message || "An error occurred during synchronization",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Helper to get status badge color
   const getStatusBadgeVariant = (status: string) => {
@@ -181,6 +225,48 @@ export default function UserManagement() {
           Refresh
         </Button>
       </div>
+
+      {/* Firebase Sync Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Firebase Synchronization
+          </CardTitle>
+          <CardDescription>
+            Synchronize user data between Firebase Auth and the local database.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground mb-4">
+            <p>User synchronization runs automatically every 24 hours. You can also trigger a manual sync if needed.</p>
+            <p className="mt-1">This will:</p>
+            <ul className="list-disc pl-5 mt-1 space-y-1">
+              <li>Update local user profiles with the latest Firebase data</li>
+              <li>Link existing email-matching accounts to their Firebase providers</li>
+              <li>Identify users deleted from Firebase and remove their provider links</li>
+            </ul>
+          </div>
+          
+          <Button 
+            onClick={() => syncFirebaseUsersMutation.mutate()}
+            disabled={syncFirebaseUsersMutation.isPending}
+            className="mt-2"
+          >
+            {syncFirebaseUsersMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Syncing Users...
+              </>
+            ) : (
+              <>
+                <Repeat className="mr-2 h-4 w-4" />
+                Sync Firebase Users
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Orphaned users alert */}
       {orphanedUsers && orphanedUsers.count > 0 && (

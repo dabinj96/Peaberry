@@ -17,6 +17,7 @@ import {
   getFirebaseUserByEmail,
   getProviderData
 } from './firebase-admin';
+import { User } from '@shared/schema';
 
 // Convert the callback-based scrypt to a Promise-based one
 const scryptAsync = promisify(scryptCallback);
@@ -1195,6 +1196,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error listing users:', error);
       res.status(500).json({ error: 'Failed to list users' });
+    }
+  });
+  
+  // Manual Firebase sync endpoint for admins
+  app.post('/api/admin/sync-firebase-users', requireAdmin, async (req, res) => {
+    try {
+      console.log('Manual Firebase user synchronization triggered by admin');
+      
+      // Run the sync function
+      const results = await syncFirebaseUsers();
+      
+      res.json({
+        success: true,
+        message: 'Firebase user synchronization completed',
+        results
+      });
+    } catch (error) {
+      console.error('Error during manual Firebase sync:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Firebase user synchronization failed',
+        error: error.message
+      });
     }
   });
   
