@@ -164,8 +164,27 @@ export function setupAuth(app: Express) {
         return res.status(400).send("Current password and new password are required");
       }
       
-      if (newPassword.length < 6) {
-        return res.status(400).send("New password must be at least 6 characters long");
+      // Apply same password validation as during registration
+      if (newPassword.length < 8) {
+        return res.status(400).send("New password must be at least 8 characters long");
+      }
+      
+      // Validate password complexity
+      const hasUppercase = /[A-Z]/.test(newPassword);
+      const hasLowercase = /[a-z]/.test(newPassword);
+      const hasNumber = /[0-9]/.test(newPassword);
+      const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
+      
+      // Check if password meets minimum complexity requirements
+      const varietyScore = [hasUppercase, hasLowercase, hasNumber, hasSpecial].filter(Boolean).length;
+      if (varietyScore < 2) {
+        return res.status(400).send("Password must include at least 2 of the following: uppercase letters, lowercase letters, numbers, and special characters");
+      }
+      
+      // Check for common passwords
+      const commonPasswords = ["password", "123456", "qwerty", "welcome", "admin"];
+      if (commonPasswords.includes(newPassword.toLowerCase())) {
+        return res.status(400).send("This password is too common and not secure");
       }
       
       // Verify current password

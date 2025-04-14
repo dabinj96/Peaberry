@@ -17,10 +17,46 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+// Helper function to validate password complexity
+const validatePasswordComplexity = (password: string) => {
+  if (password.length < 8) {
+    return { valid: false, error: "Password must be at least 8 characters" };
+  }
+  
+  // Check for common passwords
+  const commonPasswords = ["password", "123456", "qwerty", "welcome", "admin"];
+  if (commonPasswords.includes(password.toLowerCase())) {
+    return { valid: false, error: "This password is too common and not secure" };
+  }
+  
+  // Check character variety
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+  
+  const varietyScore = [hasUppercase, hasLowercase, hasNumber, hasSpecial].filter(Boolean).length;
+  if (varietyScore < 2) {
+    return { 
+      valid: false, 
+      error: "Password must include at least 2 of the following: uppercase letters, lowercase letters, numbers, and special characters"
+    };
+  }
+  
+  return { valid: true, error: null };
+};
+
 // Define password change form schema
 const passwordChangeSchema = z.object({
   currentPassword: z.string().min(1, { message: "Current password is required" }),
-  newPassword: z.string().min(6, { message: "New password must be at least 6 characters" }),
+  newPassword: z.string()
+    .min(8, { message: "Password must be at least 8 characters" })
+    .refine((password) => {
+      const result = validatePasswordComplexity(password);
+      return result.valid;
+    }, {
+      message: "Password doesn't meet complexity requirements"
+    }),
   confirmPassword: z.string().min(1, { message: "Please confirm your new password" }),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "Passwords don't match",
@@ -259,7 +295,7 @@ export default function ProfilePage() {
                                     />
                                   </FormControl>
                                   <FormDescription>
-                                    Must be at least 6 characters long
+                                    Must be at least 8 characters long and include variety of characters
                                   </FormDescription>
                                   <FormMessage />
                                 </FormItem>
