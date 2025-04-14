@@ -274,8 +274,7 @@ export function setupAuth(app: Express) {
       req.login(user, (err) => {
         if (err) return next(err);
         // Don't send password back to client
-        const userWithoutPassword = { ...user };
-        delete userWithoutPassword.password;
+        const { password, ...userWithoutPassword } = user;
         res.status(200).json(userWithoutPassword);
       });
     } catch (error) {

@@ -54,9 +54,15 @@ export default function AuthPage() {
         const result = await handleGoogleRedirectResult();
         
         if (result && result.user) {
-          // You would typically send this token to your backend to validate and create a session
-          // For now, we'll just log it
-          console.log("Successfully authenticated with Google:", result.user.email);
+          console.log("Successfully authenticated with Google, sending to server...");
+          try {
+            // Send token to server to create session
+            await authenticateWithServer(result);
+            // Querylient will handle redirect through useAuth
+          } catch (serverError: any) {
+            console.error("Server authentication failed:", serverError);
+            setFirebaseError("Server authentication failed: " + serverError.message);
+          }
         }
       } catch (error: any) {
         console.error("Error handling redirect:", error);
@@ -77,20 +83,15 @@ export default function AuthPage() {
       const result = await signInWithGoogle();
       
       if (result && result.user) {
-        // Here you would send the user data to your backend to create/sign in the user
-        console.log("Signed in with Google:", result.user.email);
-        
-        // Example of data we could send to the backend
-        // const googleAuthData = {
-        //   name: result.user.displayName,
-        //   email: result.user.email,
-        //   username: result.user.email?.split('@')[0], // Generate a username from the email
-        //   photoUrl: result.user.photoURL,
-        //   providerId: "google",
-        //   uid: result.user.uid
-        // };
-        
-        // This would require a new API endpoint on the backend to handle OAuth authentication
+        console.log("Signed in with Google, sending to server...");
+        try {
+          // Send token to server to create session
+          await authenticateWithServer(result);
+          // Querylient will handle redirect through useAuth
+        } catch (serverError: any) {
+          console.error("Server authentication failed:", serverError);
+          setFirebaseError("Server authentication failed: " + serverError.message);
+        }
       }
     } catch (error: any) {
       console.error("Error signing in with Google:", error);

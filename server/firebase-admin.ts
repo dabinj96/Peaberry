@@ -1,4 +1,5 @@
-import * as admin from 'firebase-admin';
+import { initializeApp, App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
 // Initialize Firebase Admin SDK
 // This will use the GOOGLE_APPLICATION_CREDENTIALS environment variable or
@@ -6,14 +7,18 @@ import * as admin from 'firebase-admin';
 let firebaseInitialized = false;
 
 try {
+  // Use the VITE env variable which we know is set
+  const firebaseProjectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+  
   // Check if Firebase project ID is available
-  if (process.env.FIREBASE_PROJECT_ID) {
+  if (firebaseProjectId) {
     // Initialize the app
     admin.initializeApp({
       // If you want to use a service account instead of project ID, you'd provide it here
       // We're using environment-based auth which is simpler for deployment
-      projectId: process.env.FIREBASE_PROJECT_ID
+      projectId: firebaseProjectId
     });
+    console.log(`Firebase Admin initialized with project ID: ${firebaseProjectId}`);
     firebaseInitialized = true;
   } else {
     console.warn('FIREBASE_PROJECT_ID environment variable not set. OAuth verification will not work.');
