@@ -146,16 +146,27 @@ export const resetPassword = async (email: string): Promise<void> => {
   }
   
   try {
-    // Get the current URL to set as continue URL (without query parameters)
-    const actionCodeSettings = {
-      url: window.location.origin + '/auth?mode=resetPassword',
-      handleCodeInApp: true
-    };
-    
-    await sendPasswordResetEmail(auth, email, actionCodeSettings);
+    // Simplest approach - let Firebase handle all the URL aspects
+    // This is the most reliable approach but requires the domain to be in Firebase's authorized domains
+    await sendPasswordResetEmail(auth, email);
     console.log(`Password reset email sent to ${email}`);
   } catch (error: any) {
+    // Log detailed error information for debugging
     console.error("Error sending password reset email:", error);
+    console.error("Error code:", error.code);
+    console.error("Error message:", error.message);
+    
+    // Helpful messages for common error cases
+    if (error.code === 'auth/user-not-found') {
+      console.warn("No user found with this email address");
+    } else if (error.code === 'auth/invalid-email') {
+      console.warn("The email address is not valid");
+    } else if (error.code === 'auth/unauthorized-domain') {
+      console.warn("IMPORTANT: Your domain needs to be added to Firebase authorized domains list");
+      console.warn("Go to Firebase Console → Authentication → Settings → Authorized domains");
+      console.warn("Add: " + window.location.hostname);
+    }
+    
     throw new Error(error.message || "Failed to send password reset email");
   }
 };

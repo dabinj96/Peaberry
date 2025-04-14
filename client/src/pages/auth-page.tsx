@@ -300,6 +300,12 @@ export default function AuthPage() {
         setResetError("Invalid email address. Please check and try again.");
       } else if (error.message?.includes("auth/operation-not-allowed")) {
         setResetError("Password reset is not enabled for this project.");
+      } else if (error.message?.includes("auth/unauthorized-domain") || error.message?.includes("unauthorized-continue-uri")) {
+        // This is the most common issue
+        setResetError(
+          `Your domain (${window.location.hostname}) needs to be added to Firebase authorized domains list. ` +
+          `Go to Firebase Console → Authentication → Settings → Authorized domains and add this domain.`
+        );
       } else {
         setResetError("An error occurred. Please try again later.");
       }
