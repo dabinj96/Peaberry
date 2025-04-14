@@ -205,6 +205,22 @@ export function setupAuth(app: Express) {
         console.log("No password verification needed for OAuth user");
       }
       
+      // For OAuth users, attempt to delete the Firebase account
+      let firebaseDeleteResult = false;
+      if (isOAuthUser && req.user.providerUid) {
+        try {
+          // Import the deleteFirebaseUser function
+          const { deleteFirebaseUser } = await import('./firebase-admin');
+          
+          console.log(`Attempting to delete Firebase user with UID: ${req.user.providerUid}`);
+          firebaseDeleteResult = await deleteFirebaseUser(req.user.providerUid);
+          console.log(`Firebase user deletion result: ${firebaseDeleteResult}`);
+        } catch (firebaseError) {
+          console.error("Error during Firebase user deletion:", firebaseError);
+          // Continue with local account deletion even if Firebase deletion fails
+        }
+      }
+      
       // Delete user data from database
       const userId = req.user.id;
       
@@ -250,7 +266,8 @@ export function setupAuth(app: Express) {
         // Even with session errors, return success since the account was deleted
         console.log("Sending successful account deletion response");
         return res.status(200).json({ 
-          success: true, 
+          success: true,
+          firebaseDeleted: firebaseDeleteResult,
           message: "Account deleted successfully" 
         });
         
