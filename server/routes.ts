@@ -7,7 +7,28 @@ import { z } from "zod";
 import axios from "axios";
 import { log } from "./vite";
 import bcrypt from 'bcrypt';
+import { randomBytes, scrypt as scryptCallback } from "crypto";
+import { promisify } from "util";
 import { verifyFirebaseAuthWebhookSignature } from './firebase-admin';
+
+// Convert the callback-based scrypt to a Promise-based one
+const scryptAsync = promisify(scryptCallback);
+
+// Utility for password hashing with scrypt
+const scrypt = {
+  async hashPassword(password: string): Promise<string> {
+    const salt = randomBytes(16).toString("hex");
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    return `${buf.toString("hex")}.${salt}`;
+  },
+  
+  async comparePasswords(supplied: string, stored: string): Promise<boolean> {
+    const [hashed, salt] = stored.split(".");
+    const hashedBuf = Buffer.from(hashed, "hex");
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    return Buffer.compare(hashedBuf, suppliedBuf) === 0;
+  }
+};
 
 // Google Places API helper function
 async function fetchCafesFromGooglePlaces(location: string = "Boston, MA") {
@@ -882,8 +903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Test endpoint to simulate a Firebase Auth webhook call for user deletion
   // This is for testing purposes only and should be removed in production
-  // Note: Authentication temporarily disabled for testing
-  app.post('/api/admin/test-firebase-webhook', async (req, res) => {
+  app.post('/api/admin/test-firebase-webhook', requireAdmin, async (req, res) => {
     try {
       const { uid } = req.body;
       
