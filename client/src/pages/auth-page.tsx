@@ -123,6 +123,25 @@ export default function AuthPage() {
     }
   };
 
+  // Handle tab state
+  const [activeTab, setActiveTab] = useState<string>(window.location.search.includes('tab=register') ? 'register' : 'login');
+  
+  // Handle URL changes
+  useEffect(() => {
+    const tabParam = window.location.search.includes('tab=register') ? 'register' : 'login';
+    setActiveTab(tabParam);
+  }, [window.location.search]);
+  
+  // Update URL when tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === 'register') {
+      window.history.replaceState(null, '', '?tab=register');
+    } else {
+      window.history.replaceState(null, '', '/auth');
+    }
+  };
+  
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
@@ -175,7 +194,7 @@ export default function AuthPage() {
             <p className="text-gray-700">Discover and explore Boston's vibrant specialty coffee scene.</p>
           </div>
           
-          <Tabs defaultValue={window.location.search.includes('tab=register') ? 'register' : 'login'} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Create Account</TabsTrigger>

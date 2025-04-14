@@ -137,7 +137,7 @@ export default function Header() {
                   <Button variant="outline" className="mr-2">Login</Button>
                 </Link>
                 <Link href="/auth?tab=register">
-                  <Button className="bg-[#A0522D] hover:bg-[#8B4513]">Sign Up</Button>
+                  <Button className="bg-[#A0522D] hover:bg-[#8B4513]">Create Account</Button>
                 </Link>
               </div>
             )}
@@ -222,7 +222,7 @@ export default function Header() {
                   <Button variant="outline" className="mr-2 w-full mb-2">Login</Button>
                 </Link>
                 <Link href="/auth?tab=register">
-                  <Button className="bg-[#A0522D] hover:bg-[#8B4513] w-full">Sign Up</Button>
+                  <Button className="bg-[#A0522D] hover:bg-[#8B4513] w-full">Create Account</Button>
                 </Link>
               </div>
             )}
