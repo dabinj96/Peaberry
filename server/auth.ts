@@ -151,6 +151,62 @@ export function setupAuth(app: Express) {
     res.json(userWithoutPassword);
   });
   
+  // Account deletion endpoint
+  app.post("/api/delete-account", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send("You must be logged in to delete your account");
+      }
+      
+      const { password } = req.body;
+      
+      // Verify password if provided (unless it's an OAuth user without a regular password)
+      if (password && !req.user.providerId) {
+        const user = await storage.getUser(req.user.id);
+        if (!user) {
+          return res.status(404).send("User not found");
+        }
+        
+        const isCorrectPassword = await comparePasswords(password, user.password);
+        if (!isCorrectPassword) {
+          return res.status(400).send("Incorrect password");
+        }
+      }
+      
+      // If user authenticated via OAuth, we also need to delete from Firebase
+      // This is handled in the routes.ts file
+      
+      // Delete user data
+      // First, get user's data
+      const userId = req.user.id;
+      
+      // Log the user out
+      req.logout((err) => {
+        if (err) {
+          console.error("Error logging out user during account deletion:", err);
+          return next(err);
+        }
+        
+        // Delete the user from the database after logout
+        storage.deleteUser(userId)
+          .then((success) => {
+            if (success) {
+              res.status(200).send("Account deleted successfully");
+            } else {
+              res.status(500).send("Failed to delete account");
+            }
+          })
+          .catch((err) => {
+            console.error("Error deleting user:", err);
+            res.status(500).send("Error deleting user: " + err.message);
+          });
+      });
+    } catch (error) {
+      console.error("Account deletion error:", error);
+      next(error);
+    }
+  });
+  
   app.post("/api/change-password", async (req, res, next) => {
     try {
       if (!req.isAuthenticated()) {

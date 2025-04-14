@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,7 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Lock } from "lucide-react";
+import { 
+  Loader2, 
+  Lock, 
+  AlertTriangle,
+  X 
+} from "lucide-react";
 import CafeCard from "@/components/cafe-card";
 import { apiRequest } from "@/lib/queryClient";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -16,6 +22,17 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Helper function to validate password complexity
 const validatePasswordComplexity = (password: string) => {
@@ -63,12 +80,20 @@ const passwordChangeSchema = z.object({
   path: ["confirmPassword"],
 });
 
+// Define account deletion form schema
+const deleteAccountSchema = z.object({
+  password: z.string().min(1, { message: "Password confirmation is required" })
+});
+
 type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>;
+type DeleteAccountFormValues = z.infer<typeof deleteAccountSchema>;
 
 export default function ProfilePage() {
+  const [, setLocation] = useLocation();
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("favorites");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Password change form setup
   const form = useForm<PasswordChangeFormValues>({
@@ -338,8 +363,44 @@ export default function ProfilePage() {
                         </Form>
                       </div>
                       
-                      <div className="pt-4 border-t text-sm text-gray-500">
-                        <p>More account settings will be available in future updates.</p>
+                      <div className="pt-6 mt-6 border-t">
+                        <h3 className="text-lg font-medium flex items-center gap-2 mb-4 text-red-600">
+                          <AlertTriangle className="h-5 w-5" />
+                          Delete Account
+                        </h3>
+                        
+                        <p className="text-sm text-gray-600 mb-4">
+                          Deleting your account is permanent and will remove all your data from our system, including favorites, ratings, and reviews.
+                        </p>
+                        
+                        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" className="w-full">
+                              Delete Account
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            
+                            <DeleteAccountForm
+                              user={user}
+                              onSuccess={() => {
+                                toast({
+                                  title: "Account Deleted",
+                                  description: "Your account has been successfully deleted.",
+                                  variant: "default",
+                                });
+                                setLocation("/");
+                              }}
+                              onCancel={() => setDeleteDialogOpen(false)}
+                            />
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   </CardContent>
@@ -350,5 +411,104 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// DeleteAccountForm Component
+function DeleteAccountForm({
+  user,
+  onSuccess,
+  onCancel
+}: {
+  user: any;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
+  const { toast } = useToast();
+  const isOAuthUser = !!user.providerId;
+  
+  // Delete account form
+  const deleteForm = useForm<DeleteAccountFormValues>({
+    resolver: zodResolver(deleteAccountSchema),
+    defaultValues: {
+      password: "",
+    }
+  });
+  
+  // Delete account mutation
+  const deleteAccountMutation = useMutation({
+    mutationFn: async (data: { password?: string }) => {
+      const response = await apiRequest("POST", "/api/delete-account", data);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to delete account");
+      }
+      return response.text();
+    },
+    onSuccess: () => {
+      onSuccess();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handle delete account form submission
+  const onSubmitDelete = (data: DeleteAccountFormValues) => {
+    deleteAccountMutation.mutate({
+      password: data.password
+    });
+  };
+  
+  return (
+    <>
+      <Form {...deleteForm}>
+        <form onSubmit={deleteForm.handleSubmit(onSubmitDelete)} className="space-y-6 py-4">
+          {!isOAuthUser && (
+            <FormField
+              control={deleteForm.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm Password</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="password" 
+                      placeholder="Enter your password to confirm" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+          
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={onCancel} disabled={deleteAccountMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <Button 
+              type="submit" 
+              variant="destructive"
+              disabled={deleteAccountMutation.isPending}
+            >
+              {deleteAccountMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete My Account"
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </form>
+      </Form>
+    </>
   );
 }
