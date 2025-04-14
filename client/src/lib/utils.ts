@@ -1,71 +1,78 @@
-import { type ClassValue, clsx } from "clsx";
+import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+// Export the Google Maps API Key from environment variables
+export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+/**
+ * Utility function to conditionally join classNames together
+ * Uses clsx and tailwind-merge for efficiency
+ * 
+ * @param inputs Class values to merge
+ * @returns Merged class string
+ */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Use the environment variable only - no fallback value for security reasons
-export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-
-// Format price level
-export function formatPriceLevel(level: number | null): string {
-  if (level === null) return "";
-  return "$".repeat(level);
-}
-
-// Convert brewing method enum value to display name
+/**
+ * Format a brewing method from its internal value to a display name
+ * @param method Brewing method string
+ * @returns Formatted brewing method string
+ */
 export function formatBrewingMethod(method: string): string {
   const methodMap: Record<string, string> = {
-    'pour_over': 'Pour Over',
+    'pourOver': 'Pour Over',
     'espresso': 'Espresso',
-    'aeropress': 'Aeropress',
-    'french_press': 'French Press',
-    'siphon': 'Siphon'
+    'drip': 'Drip',
+    'aeropress': 'AeroPress',
+    'frenchPress': 'French Press',
+    'coldBrew': 'Cold Brew',
+    'siphon': 'Siphon',
+    'chemex': 'Chemex',
+    'moka': 'Moka Pot',
+    'turkish': 'Turkish',
+    'vietnamese': 'Vietnamese',
   };
   
   return methodMap[method] || method;
 }
 
-// Convert roast level enum value to display name
+/**
+ * Format a roast level from its internal value to a display name
+ * @param level Roast level string
+ * @returns Formatted roast level string
+ */
 export function formatRoastLevel(level: string): string {
   const levelMap: Record<string, string> = {
     'light': 'Light Roast',
     'medium': 'Medium Roast',
-    'dark': 'Dark Roast'
+    'dark': 'Dark Roast',
+    'light-medium': 'Light-Medium Roast',
+    'medium-dark': 'Medium-Dark Roast',
   };
   
   return levelMap[level] || level;
 }
 
-// Format a rating out of 5
-export function formatRating(rating: number | undefined): string {
-  if (rating === undefined) return "No ratings yet";
-  return rating.toFixed(1);
-}
-
-// Random color based on seed
-export function getColorFromString(str: string): string {
-  const colors = [
-    'bg-red-100 text-red-800',
-    'bg-blue-100 text-blue-800',
-    'bg-green-100 text-green-800',
-    'bg-yellow-100 text-yellow-800',
-    'bg-purple-100 text-purple-800',
-    'bg-pink-100 text-pink-800',
-    'bg-indigo-100 text-indigo-800',
-  ];
+/**
+ * Format a price level from its numeric value to a dollar sign representation
+ * @param level Price level (1-4)
+ * @returns Dollar sign representation of price level
+ */
+export function formatPriceLevel(level: number): string {
+  if (!level) return 'N/A';
   
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  switch (level) {
+    case 1:
+      return '$';
+    case 2:
+      return '$$';
+    case 3:
+      return '$$$';
+    case 4:
+      return '$$$$';
+    default:
+      return 'N/A';
   }
-  
-  return colors[Math.abs(hash) % colors.length];
-}
-
-// Truncate text to a specific length
-export function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
 }

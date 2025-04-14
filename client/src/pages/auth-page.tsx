@@ -13,7 +13,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { validatePasswordComplexity } from "@/lib/password-validator";
 import { Loader2, AlertCircle } from "lucide-react";
 import { 
   signInWithGoogle, 
@@ -42,11 +41,37 @@ const registerSchema = insertUserSchema.extend({
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
+// Password reset request schema
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
+
+// Password reset confirmation schema
+const resetPasswordSchema = z.object({
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  confirmNewPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmNewPassword, {
+  message: "Passwords do not match",
+  path: ["confirmNewPassword"],
+});
+
+type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+
 export default function AuthPage() {
   const [, setLocation] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
   const [isFirebaseLoading, setIsFirebaseLoading] = useState(false);
   const [firebaseError, setFirebaseError] = useState<string | null>(null);
+  
+  // Password reset states
+  const [resetCode, setResetCode] = useState<string | null>(null);
+  const [isRequestingPasswordReset, setIsRequestingPasswordReset] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetRequestSuccess, setResetRequestSuccess] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   // Import toast functionality from the UI
   const { toast } = useToast();
@@ -165,10 +190,22 @@ export default function AuthPage() {
   // Update URL when tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    
+    // Update URL based on tab
     if (value === 'register') {
       window.history.replaceState(null, '', '?tab=register');
+    } else if (value === 'forgotPassword') {
+      window.history.replaceState(null, '', '?tab=forgotPassword');
+    } else if (value === 'resetPassword' && resetCode) {
+      // Keep the reset code in the URL
+      window.history.replaceState(null, '', `?mode=resetPassword&oobCode=${resetCode}`);
     } else {
       window.history.replaceState(null, '', '/auth');
+    }
+    
+    // Clear any reset errors when switching tabs
+    if (value !== 'forgotPassword' && value !== 'resetPassword') {
+      setResetError(null);
     }
   };
   
@@ -210,6 +247,114 @@ export default function AuthPage() {
     const { confirmPassword, ...registerData } = data;
     registerMutation.mutate(registerData);
   };
+  
+  // Password reset forms
+  const forgotPasswordForm = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+  
+  const resetPasswordForm = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      newPassword: "",
+      confirmNewPassword: "",
+    },
+  });
+  
+  // Password reset handlers
+  const onForgotPasswordSubmit = async (data: ForgotPasswordFormValues) => {
+    setResetError(null);
+    setIsRequestingPasswordReset(true);
+    setResetRequestSuccess(false);
+    
+    try {
+      const response = await fetch('/api/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        setResetRequestSuccess(true);
+        toast({
+          title: "Reset email sent",
+          description: "If an account with that email exists, you'll receive a password reset link.",
+          variant: "default",
+        });
+      } else {
+        setResetError(result.message || "Failed to request password reset. Please try again.");
+        
+        // Special handling for OAuth users trying to reset password
+        if (result.message?.includes("Google Sign-In")) {
+          toast({
+            title: "Cannot reset password",
+            description: result.message,
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error("Error requesting password reset:", error);
+      setResetError("An error occurred. Please try again later.");
+    } finally {
+      setIsRequestingPasswordReset(false);
+    }
+  };
+  
+  const onResetPasswordSubmit = async (data: ResetPasswordFormValues) => {
+    if (!resetCode) {
+      setResetError("Invalid reset link. Please request a new one.");
+      return;
+    }
+    
+    setResetError(null);
+    setIsResettingPassword(true);
+    setResetSuccess(false);
+    
+    try {
+      const response = await fetch('/api/verify-reset-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          oobCode: resetCode,
+          newPassword: data.newPassword,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        setResetSuccess(true);
+        toast({
+          title: "Password reset successful",
+          description: "Your password has been reset. You can now login with your new password.",
+          variant: "default",
+        });
+        
+        // Clear reset code and redirect to login after a delay
+        setTimeout(() => {
+          setResetCode(null);
+          handleTabChange('login');
+        }, 3000);
+      } else {
+        setResetError(result.message || "Failed to reset password. Please try again.");
+      }
+    } catch (error: any) {
+      console.error("Error resetting password:", error);
+      setResetError("An error occurred. Please try again later.");
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
 
   if (user) {
     return null; // Prevents flashing content before redirect
@@ -229,6 +374,39 @@ export default function AuthPage() {
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Create Account</TabsTrigger>
             </TabsList>
+            
+            {/* Hidden tabs for password reset flow */}
+            {activeTab === 'forgotPassword' && (
+              <div className="mb-4 flex items-center">
+                <Button 
+                  variant="link" 
+                  className="p-0 flex items-center text-sm text-gray-600 hover:text-gray-900"
+                  onClick={() => handleTabChange('login')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to login
+                </Button>
+                <span className="text-lg font-medium ml-auto">Forgot Password</span>
+              </div>
+            )}
+            
+            {activeTab === 'resetPassword' && (
+              <div className="mb-4 flex items-center">
+                <Button 
+                  variant="link" 
+                  className="p-0 flex items-center text-sm text-gray-600 hover:text-gray-900"
+                  onClick={() => handleTabChange('login')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to login
+                </Button>
+                <span className="text-lg font-medium ml-auto">Reset Password</span>
+              </div>
+            )}
             
             <TabsContent value="login">
               <Card>
@@ -317,6 +495,137 @@ export default function AuthPage() {
                       <p className="mt-2 text-sm text-red-600">{firebaseError}</p>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="forgotPassword">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Forgot Password</CardTitle>
+                  <CardDescription>Enter your email address to receive a password reset link.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...forgotPasswordForm}>
+                    <form onSubmit={forgotPasswordForm.handleSubmit(onForgotPasswordSubmit)} className="space-y-4">
+                      <FormField
+                        control={forgotPasswordForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input type="email" placeholder="Enter your email address" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {resetError && (
+                        <div className="flex items-center text-red-600 text-sm">
+                          <AlertCircle className="h-4 w-4 mr-2" />
+                          <span>{resetError}</span>
+                        </div>
+                      )}
+                      
+                      {resetRequestSuccess && (
+                        <div className="bg-green-50 p-3 rounded border border-green-200 text-green-800 text-sm">
+                          Check your email for a password reset link. The link will expire in 1 hour.
+                        </div>
+                      )}
+                      
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-[#A0522D] hover:bg-[#8B4513]"
+                        disabled={isRequestingPasswordReset}
+                      >
+                        {isRequestingPasswordReset ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Sending reset link...
+                          </>
+                        ) : (
+                          "Send reset link"
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="resetPassword">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Reset Password</CardTitle>
+                  <CardDescription>Enter your new password to complete the reset process.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {!resetCode ? (
+                    <div className="bg-red-50 p-3 rounded border border-red-200 text-red-800 text-sm">
+                      Invalid or expired reset link. Please request a new password reset link.
+                    </div>
+                  ) : resetSuccess ? (
+                    <div className="bg-green-50 p-3 rounded border border-green-200 text-green-800 text-sm">
+                      Your password has been reset successfully. You will be redirected to the login page shortly.
+                    </div>
+                  ) : (
+                    <Form {...resetPasswordForm}>
+                      <form onSubmit={resetPasswordForm.handleSubmit(onResetPasswordSubmit)} className="space-y-4">
+                        <FormField
+                          control={resetPasswordForm.control}
+                          name="newPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>New Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="Enter new password" {...field} />
+                              </FormControl>
+                              <PasswordStrengthIndicator password={field.value} />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={resetPasswordForm.control}
+                          name="confirmNewPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Confirm New Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="Confirm new password" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        {resetError && (
+                          <div className="flex items-center text-red-600 text-sm">
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            <span>{resetError}</span>
+                          </div>
+                        )}
+                        
+                        <Button 
+                          type="submit" 
+                          className="w-full bg-[#A0522D] hover:bg-[#8B4513]"
+                          disabled={isResettingPassword}
+                        >
+                          {isResettingPassword ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Resetting password...
+                            </>
+                          ) : (
+                            "Reset Password"
+                          )}
+                        </Button>
+                      </form>
+                    </Form>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
