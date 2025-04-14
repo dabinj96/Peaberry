@@ -189,31 +189,49 @@ export function setupAuth(app: Express) {
       // First, get user's data
       const userId = req.user.id;
       
-      // First, delete the user from the database
-      storage.deleteUser(userId)
-        .then((success) => {
-          if (success) {
-            console.log(`Successfully deleted user with ID: ${userId}`);
-            
-            // Now log the user out
+      try {
+        // First, delete the user from the database
+        const success = await storage.deleteUser(userId);
+        
+        if (success) {
+          console.log(`Successfully deleted user with ID: ${userId}`);
+          
+          // Now log the user out - use a promise wrapper for req.logout which takes a callback
+          await new Promise<void>((resolve, reject) => {
             req.logout((err) => {
               if (err) {
                 console.error("Error logging out user during account deletion:", err);
-                return next(err);
+                reject(err);
+              } else {
+                console.log("User logged out successfully after account deletion");
+                resolve();
               }
-              
-              // Send success response
-              res.status(200).json({ success: true, message: "Account deleted successfully" });
             });
-          } else {
-            console.error(`Failed to delete user with ID: ${userId}`);
-            res.status(500).json({ success: false, message: "Failed to delete account" });
-          }
-        })
-        .catch((err) => {
-          console.error("Error deleting user:", err);
-          res.status(500).json({ success: false, message: "Error deleting user: " + err.message });
-        });
+          });
+          
+          // Also destroy the session explicitly to ensure clean logout
+          await new Promise<void>((resolve) => {
+            req.session.destroy((err) => {
+              if (err) {
+                console.error("Error destroying session:", err);
+                // Continue anyway
+              }
+              console.log("Session destroyed successfully");
+              resolve();
+            });
+          });
+          
+          // Send success response
+          console.log("Sending successful account deletion response");
+          return res.status(200).json({ success: true, message: "Account deleted successfully" });
+        } else {
+          console.error(`Failed to delete user with ID: ${userId}`);
+          return res.status(500).json({ success: false, message: "Failed to delete account" });
+        }
+      } catch (err) {
+        console.error("Error in account deletion process:", err);
+        return res.status(500).json({ success: false, message: "Error deleting user: " + err.message });
+      }
     } catch (error) {
       console.error("Account deletion error:", error);
       next(error);
