@@ -148,7 +148,7 @@ export async function getFirebaseUserByEmail(email: string): Promise<admin.auth.
   try {
     const user = await admin.auth().getUserByEmail(email);
     return user;
-  } catch (error) {
+  } catch (error: any) {
     // Not found is expected in some cases, so we don't log as error
     if (error.code === 'auth/user-not-found') {
       return null;
@@ -172,7 +172,7 @@ export async function getFirebaseUserByUid(uid: string): Promise<admin.auth.User
   try {
     const user = await admin.auth().getUser(uid);
     return user;
-  } catch (error) {
+  } catch (error: any) {
     // Not found is expected in some cases, so we don't log as error
     if (error.code === 'auth/user-not-found') {
       return null;
