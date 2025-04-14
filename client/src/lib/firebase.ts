@@ -6,7 +6,10 @@ import {
   signInWithRedirect, 
   getRedirectResult,
   UserCredential,
-  signOut as firebaseSignOut
+  signOut as firebaseSignOut,
+  sendPasswordResetEmail,
+  confirmPasswordReset as firebaseConfirmPasswordReset,
+  verifyPasswordResetCode as firebaseVerifyPasswordResetCode
 } from "firebase/auth";
 
 // Firebase configuration
@@ -133,6 +136,54 @@ export const authenticateWithServer = async (userCredential: UserCredential) => 
   } catch (error) {
     console.error('Error authenticating with server:', error);
     throw error;
+  }
+};
+
+// Password reset functions
+export const resetPassword = async (email: string): Promise<void> => {
+  if (!isFirebaseConfigured()) {
+    throw new Error("Firebase is not configured. Set environment variables first.");
+  }
+  
+  try {
+    // Get the current URL to set as continue URL (without query parameters)
+    const actionCodeSettings = {
+      url: window.location.origin + '/auth?mode=resetPassword',
+      handleCodeInApp: true
+    };
+    
+    await sendPasswordResetEmail(auth, email, actionCodeSettings);
+    console.log(`Password reset email sent to ${email}`);
+  } catch (error: any) {
+    console.error("Error sending password reset email:", error);
+    throw new Error(error.message || "Failed to send password reset email");
+  }
+};
+
+export const verifyPasswordResetCode = async (code: string): Promise<string> => {
+  if (!isFirebaseConfigured()) {
+    throw new Error("Firebase is not configured. Set environment variables first.");
+  }
+  
+  try {
+    return await firebaseVerifyPasswordResetCode(auth, code);
+  } catch (error: any) {
+    console.error("Error verifying password reset code:", error);
+    throw new Error(error.message || "Invalid or expired password reset code");
+  }
+};
+
+export const confirmPasswordReset = async (code: string, newPassword: string): Promise<void> => {
+  if (!isFirebaseConfigured()) {
+    throw new Error("Firebase is not configured. Set environment variables first.");
+  }
+  
+  try {
+    await firebaseConfirmPasswordReset(auth, code, newPassword);
+    console.log("Password reset successful");
+  } catch (error: any) {
+    console.error("Error confirming password reset:", error);
+    throw new Error(error.message || "Failed to reset password");
   }
 };
 
