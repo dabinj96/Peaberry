@@ -1,9 +1,7 @@
-import { initializeApp, App } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+import admin from 'firebase-admin';
 
 // Initialize Firebase Admin SDK
-// This will use the GOOGLE_APPLICATION_CREDENTIALS environment variable or
-// implicit credentials if running on GCP
+let firebaseApp: admin.app.App | undefined;
 let firebaseInitialized = false;
 
 try {
@@ -13,9 +11,7 @@ try {
   // Check if Firebase project ID is available
   if (firebaseProjectId) {
     // Initialize the app
-    admin.initializeApp({
-      // If you want to use a service account instead of project ID, you'd provide it here
-      // We're using environment-based auth which is simpler for deployment
+    firebaseApp = admin.initializeApp({
       projectId: firebaseProjectId
     });
     console.log(`Firebase Admin initialized with project ID: ${firebaseProjectId}`);
