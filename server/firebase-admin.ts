@@ -133,3 +133,63 @@ export async function listFirebaseUsers(): Promise<admin.auth.UserRecord[]> {
     return [];
   }
 }
+
+/**
+ * Get a Firebase user by email
+ * @param email The user's email address
+ * @returns The Firebase user record or null if not found
+ */
+export async function getFirebaseUserByEmail(email: string): Promise<admin.auth.UserRecord | null> {
+  if (!firebaseInitialized) {
+    console.warn('Firebase Admin is not initialized. Cannot get user by email.');
+    return null;
+  }
+  
+  try {
+    const user = await admin.auth().getUserByEmail(email);
+    return user;
+  } catch (error) {
+    // Not found is expected in some cases, so we don't log as error
+    if (error.code === 'auth/user-not-found') {
+      return null;
+    }
+    console.error(`Error getting Firebase user by email ${email}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get a Firebase user by UID
+ * @param uid The Firebase UID
+ * @returns The Firebase user record or null if not found
+ */
+export async function getFirebaseUserByUid(uid: string): Promise<admin.auth.UserRecord | null> {
+  if (!firebaseInitialized) {
+    console.warn('Firebase Admin is not initialized. Cannot get user by UID.');
+    return null;
+  }
+  
+  try {
+    const user = await admin.auth().getUser(uid);
+    return user;
+  } catch (error) {
+    // Not found is expected in some cases, so we don't log as error
+    if (error.code === 'auth/user-not-found') {
+      return null;
+    }
+    console.error(`Error getting Firebase user by UID ${uid}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetch provider details for a Firebase user
+ * @param user Firebase user record
+ * @param providerId The provider ID (e.g., 'google.com')
+ * @returns Provider data or null if not found
+ */
+export function getProviderData(user: admin.auth.UserRecord, providerId: string = 'google.com') {
+  if (!user || !user.providerData) return null;
+  
+  return user.providerData.find(provider => provider.providerId === providerId) || null;
+}
