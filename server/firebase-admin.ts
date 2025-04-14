@@ -1,4 +1,5 @@
 import admin from 'firebase-admin';
+import crypto from 'crypto';
 
 // Initialize Firebase Admin SDK
 let firebaseApp: admin.app.App | undefined;
@@ -42,5 +43,38 @@ export async function verifyFirebaseToken(idToken: string) {
   } catch (error) {
     console.error('Error verifying Firebase token:', error);
     throw error;
+  }
+}
+
+/**
+ * Verify Firebase Auth webhook signature
+ * @param signature The signature from the 'X-Firebase-Auth-Signature' header
+ * @param body The raw request body
+ * @returns Whether the signature is valid
+ */
+export function verifyFirebaseAuthWebhookSignature(signature: string, body: string): boolean {
+  if (!firebaseInitialized) {
+    console.warn('Firebase Admin is not initialized. Cannot verify webhook signature.');
+    return false;
+  }
+  
+  try {
+    // In a production environment, you would get this from a secure configuration
+    // For the test environment, a shared secret can be used
+    const webhookSecret = process.env.FIREBASE_WEBHOOK_SECRET || 'peaberry-webhook-secret';
+    
+    // Compute HMAC using SHA-256
+    const hmac = crypto.createHmac('sha256', webhookSecret);
+    hmac.update(body);
+    const computedSignature = hmac.digest('hex');
+    
+    // Use a constant-time comparison to prevent timing attacks
+    return crypto.timingSafeEqual(
+      Buffer.from(computedSignature, 'hex'),
+      Buffer.from(signature, 'hex')
+    );
+  } catch (error) {
+    console.error('Error verifying Firebase webhook signature:', error);
+    return false;
   }
 }

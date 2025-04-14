@@ -66,6 +66,44 @@ export class DatabaseStorage implements IStorage {
     
     return updatedUser;
   }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    try {
+      // Begin by deleting related data for this user
+      
+      // Delete ratings by this user
+      await db.delete(ratings).where(eq(ratings.userId, id));
+      
+      // Delete favorites by this user
+      await db.delete(favorites).where(eq(favorites.userId, id));
+      
+      // Finally delete the user
+      const result = await db.delete(users).where(eq(users.id, id));
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return false;
+    }
+  }
+  
+  async deleteUserByProviderAuth(providerId: string, providerUid: string): Promise<boolean> {
+    try {
+      // Find the user first
+      const user = await this.getUserByProviderAuth(providerId, providerUid);
+      if (!user) {
+        console.log(`No user found with provider auth: ${providerId}:${providerUid}`);
+        return false;
+      }
+      
+      console.log(`Deleting user ${user.id} with provider auth: ${providerId}:${providerUid}`);
+      // Delete the user using the id
+      return this.deleteUser(user.id);
+    } catch (error) {
+      console.error("Error deleting user by provider auth:", error);
+      return false;
+    }
+  }
 
   // Cafe methods
   async getCafe(id: number): Promise<Cafe | undefined> {

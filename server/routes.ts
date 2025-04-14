@@ -7,6 +7,7 @@ import { z } from "zod";
 import axios from "axios";
 import { log } from "./vite";
 import bcrypt from 'bcrypt';
+import { verifyFirebaseAuthWebhookSignature } from './firebase-admin';
 
 // Google Places API helper function
 async function fetchCafesFromGooglePlaces(location: string = "Boston, MA") {
