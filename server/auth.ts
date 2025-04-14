@@ -4,8 +4,9 @@ import { Express } from "express";
 import session from "express-session";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
+import { User as SelectUser, oauthUserSchema } from "@shared/schema";
 import bcrypt from 'bcrypt';
+import { verifyFirebaseToken } from "./firebase-admin";
 
 declare global {
   namespace Express {
@@ -189,6 +190,85 @@ export function setupAuth(app: Express) {
       
       res.status(200).send("Password changed successfully");
     } catch (error) {
+      next(error);
+    }
+  });
+  
+  // OAuth with Firebase authentication
+  app.post("/api/oauth/login", async (req, res, next) => {
+    try {
+      const { idToken } = req.body;
+      
+      if (!idToken) {
+        return res.status(400).send("ID token is required");
+      }
+      
+      // Verify the Firebase token
+      const decodedToken = await verifyFirebaseToken(idToken);
+      
+      if (!decodedToken) {
+        return res.status(401).send("Invalid ID token");
+      }
+      
+      // Extract user information from the decoded token
+      const { uid, email, name, picture } = decodedToken;
+      
+      if (!email) {
+        return res.status(400).send("Email is required");
+      }
+      
+      // Generate a username based on email if needed
+      const username = email.split('@')[0] + '_' + Math.floor(Math.random() * 1000);
+      
+      // Check if user exists by provider ID and UID
+      let user = await storage.getUserByProviderAuth('google', uid);
+      
+      if (!user) {
+        // Check if user exists with the same email
+        user = await storage.getUserByEmail(email);
+        
+        if (user) {
+          // Update existing user with OAuth information
+          user = await storage.updateUser(user.id, {
+            providerId: 'google',
+            providerUid: uid,
+            photoUrl: picture || null
+          });
+        } else {
+          // Create a new user
+          const oauthUserData = oauthUserSchema.parse({
+            username,
+            email,
+            name: name || email.split('@')[0],
+            providerId: 'google',
+            providerUid: uid,
+            photoUrl: picture,
+            role: 'user'
+          });
+          
+          // Generate a random secure password for OAuth users
+          // They won't use this password, but we need something in the field
+          const randomPassword = Math.random().toString(36).slice(-10) + 
+                               Math.random().toString(36).slice(-10).toUpperCase() +
+                               '!@#$%';
+          
+          user = await storage.createUser({
+            ...oauthUserData,
+            password: await hashPassword(randomPassword),
+            bio: ''
+          });
+        }
+      }
+      
+      // Log in the user
+      req.login(user, (err) => {
+        if (err) return next(err);
+        // Don't send password back to client
+        const { password, ...userWithoutPassword } = user;
+        res.status(200).json(userWithoutPassword);
+      });
+    } catch (error) {
+      console.error("OAuth login error:", error);
       next(error);
     }
   });
