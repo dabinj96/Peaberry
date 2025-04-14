@@ -453,71 +453,57 @@ function DeleteAccountForm({
         isOAuthUser 
       });
       
-      // Create a simple browser-native request to avoid any library issues
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/delete-account', true);
-      xhr.setRequestHeader('Content-Type', 'application/json');
+      // Use fetch instead of XMLHttpRequest for better debugging
+      console.log("Sending fetch request to /api/delete-account");
       
-      const requestData = JSON.stringify({
-        password: data.password
+      const response = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Important for session cookies
+        body: JSON.stringify({
+          password: data.password || "" // Send empty string if no password provided
+        }),
       });
       
-      console.log("Sending XHR request:", requestData);
+      // Get response as text first for better debugging
+      const responseText = await response.text();
+      console.log("Raw server response:", response.status, responseText);
       
-      // Create a promise to handle the XHR response
-      const xhrPromise = new Promise<{status: number, response: string}>((resolve, reject) => {
-        xhr.onload = function() {
-          if (this.status >= 200 && this.status < 300) {
-            resolve({status: this.status, response: xhr.responseText});
-          } else {
-            reject({
-              status: this.status,
-              response: xhr.responseText
-            });
-          }
-        };
-        
-        xhr.onerror = function() {
-          reject({
-            status: this.status,
-            response: xhr.responseText || "Network error occurred"
-          });
-        };
-      });
-      
-      // Send the request
-      xhr.send(requestData);
-      
-      // Wait for the response
-      const {status, response} = await xhrPromise;
-      console.log("XHR Response:", status, response);
-      
-      // Handle the response
-      if (status >= 200 && status < 300) {
-        console.log("Account deletion successful");
-        toast({
-          title: "Success",
-          description: "Your account has been successfully deleted.",
-          variant: "default",
-        });
-        
-        // Explicitly redirect to homepage
-        window.location.href = "/";
-      } else {
-        throw new Error(response || "Failed to delete account");
+      // Try to parse as JSON if possible
+      let responseData;
+      try {
+        if (responseText) {
+          responseData = JSON.parse(responseText);
+        }
+      } catch (e) {
+        console.log("Response is not JSON:", e);
+        // Not JSON, just use text
+        responseData = { message: responseText };
       }
+      
+      if (!response.ok) {
+        throw new Error(responseData?.message || responseText || "Failed to delete account");
+      }
+      
+      console.log("Account deletion successful");
+      toast({
+        title: "Success",
+        description: "Your account has been successfully deleted.",
+        variant: "default",
+      });
+      
+      // Explicitly logout and redirect to homepage
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1000);
+      
     } catch (err: any) {
       console.error("Account deletion error:", err);
       let errorMessage = "An unexpected error occurred";
       
-      if (err.response) {
-        try {
-          const errorData = JSON.parse(err.response);
-          errorMessage = errorData.message || err.response;
-        } catch (e) {
-          errorMessage = err.response;
-        }
-      } else if (err.message) {
+      if (typeof err.message === 'string') {
         errorMessage = err.message;
       }
       
