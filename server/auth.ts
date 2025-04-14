@@ -154,11 +154,20 @@ export function setupAuth(app: Express) {
   // Account deletion endpoint
   app.post("/api/delete-account", async (req, res, next) => {
     try {
+      console.log("Processing account deletion request");
+      
       if (!req.isAuthenticated()) {
-        return res.status(401).send("You must be logged in to delete your account");
+        console.log("Account deletion failed: User not authenticated");
+        return res.status(401).json({ 
+          success: false,
+          message: "You must be logged in to delete your account" 
+        });
       }
       
+      console.log(`Attempting to delete account for user ID: ${req.user.id}`);
       const { password } = req.body;
+      console.log(`Password provided: ${password ? "Yes" : "No"}`);
+      console.log(`User is OAuth: ${req.user.providerId ? "Yes" : "No"}`);
       
       // Verify password if provided (unless it's an OAuth user without a regular password)
       if (password && !req.user.providerId) {
@@ -180,27 +189,31 @@ export function setupAuth(app: Express) {
       // First, get user's data
       const userId = req.user.id;
       
-      // Log the user out
-      req.logout((err) => {
-        if (err) {
-          console.error("Error logging out user during account deletion:", err);
-          return next(err);
-        }
-        
-        // Delete the user from the database after logout
-        storage.deleteUser(userId)
-          .then((success) => {
-            if (success) {
-              res.status(200).send("Account deleted successfully");
-            } else {
-              res.status(500).send("Failed to delete account");
-            }
-          })
-          .catch((err) => {
-            console.error("Error deleting user:", err);
-            res.status(500).send("Error deleting user: " + err.message);
-          });
-      });
+      // First, delete the user from the database
+      storage.deleteUser(userId)
+        .then((success) => {
+          if (success) {
+            console.log(`Successfully deleted user with ID: ${userId}`);
+            
+            // Now log the user out
+            req.logout((err) => {
+              if (err) {
+                console.error("Error logging out user during account deletion:", err);
+                return next(err);
+              }
+              
+              // Send success response
+              res.status(200).json({ success: true, message: "Account deleted successfully" });
+            });
+          } else {
+            console.error(`Failed to delete user with ID: ${userId}`);
+            res.status(500).json({ success: false, message: "Failed to delete account" });
+          }
+        })
+        .catch((err) => {
+          console.error("Error deleting user:", err);
+          res.status(500).json({ success: false, message: "Error deleting user: " + err.message });
+        });
     } catch (error) {
       console.error("Account deletion error:", error);
       next(error);

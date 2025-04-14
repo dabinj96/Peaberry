@@ -443,12 +443,20 @@ function DeleteAccountForm({
         const errorText = await response.text();
         throw new Error(errorText || "Failed to delete account");
       }
-      return response.text();
+      
+      try {
+        return await response.json();
+      } catch (err) {
+        console.error("Error parsing JSON response:", err);
+        return { success: true, message: "Account deleted" }; // Fallback if not JSON
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Account deletion successful:", data);
       onSuccess();
     },
     onError: (error: Error) => {
+      console.error("Account deletion error:", error);
       toast({
         title: "Error",
         description: error.message,
