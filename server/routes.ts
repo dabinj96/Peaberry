@@ -1488,12 +1488,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Generate and send password reset email through Firebase
         const actionCodeSettings = {
+          // This URL must be authorized in Firebase Auth Console
           url: `${getFrontendUrl()}/auth?mode=resetPassword`,
           handleCodeInApp: true
         };
         
-        await generatePasswordResetLink(email, actionCodeSettings);
-        console.log(`Password reset link sent to ${email}`);
+        const resetLink = await generatePasswordResetLink(email, actionCodeSettings);
+        console.log(`Password reset link generated for ${email}: ${resetLink}`);
+        
+        // In production, Firebase will automatically send the email
+        // For development or if you need to customize, you might send the email yourself
         
         return res.status(200).json({
           success: true,
