@@ -17,7 +17,10 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { 
   signInWithGoogle, 
   handleGoogleRedirectResult, 
-  authenticateWithServer 
+  authenticateWithServer,
+  resetPassword,
+  verifyPasswordResetCode,
+  confirmPasswordReset
 } from "@/lib/firebase";
 import { FcGoogle } from "react-icons/fc"; // FC = Flat Color Google icon
 
@@ -271,38 +274,35 @@ export default function AuthPage() {
     setResetRequestSuccess(false);
     
     try {
-      const response = await fetch('/api/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+      // Use the client-side Firebase function to send password reset email
+      await resetPassword(data.email);
+      
+      // If it doesn't throw an error, it succeeded
+      setResetRequestSuccess(true);
+      toast({
+        title: "Reset email sent",
+        description: "If an account with that email exists, you'll receive a password reset link.",
+        variant: "default",
       });
+    } catch (error: any) {
+      console.error("Error requesting password reset:", error);
       
-      const result = await response.json();
-      
-      if (response.ok) {
+      // Handle specific error codes
+      if (error.message?.includes("user-not-found")) {
+        // We still show success to avoid revealing which emails exist
         setResetRequestSuccess(true);
         toast({
           title: "Reset email sent",
           description: "If an account with that email exists, you'll receive a password reset link.",
           variant: "default",
         });
+      } else if (error.message?.includes("auth/invalid-email")) {
+        setResetError("Invalid email address. Please check and try again.");
+      } else if (error.message?.includes("auth/operation-not-allowed")) {
+        setResetError("Password reset is not enabled for this project.");
       } else {
-        setResetError(result.message || "Failed to request password reset. Please try again.");
-        
-        // Special handling for OAuth users trying to reset password
-        if (result.message?.includes("Google Sign-In")) {
-          toast({
-            title: "Cannot reset password",
-            description: result.message,
-            variant: "destructive",
-          });
-        }
+        setResetError("An error occurred. Please try again later.");
       }
-    } catch (error: any) {
-      console.error("Error requesting password reset:", error);
-      setResetError("An error occurred. Please try again later.");
     } finally {
       setIsRequestingPasswordReset(false);
     }
@@ -319,38 +319,43 @@ export default function AuthPage() {
     setResetSuccess(false);
     
     try {
-      const response = await fetch('/api/verify-reset-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          oobCode: resetCode,
-          newPassword: data.newPassword,
-        }),
+      // First verify the code is valid and get the associated email
+      const email = await verifyPasswordResetCode(resetCode);
+      console.log(`Verified reset code for email: ${email}`);
+      
+      // If valid, confirm the password reset with the new password
+      await confirmPasswordReset(resetCode, data.newPassword);
+      
+      // Show success message
+      setResetSuccess(true);
+      toast({
+        title: "Password reset successful",
+        description: "Your password has been reset. You can now login with your new password.",
+        variant: "default",
       });
       
-      const result = await response.json();
-      
-      if (response.ok) {
-        setResetSuccess(true);
-        toast({
-          title: "Password reset successful",
-          description: "Your password has been reset. You can now login with your new password.",
-          variant: "default",
-        });
-        
-        // Clear reset code and redirect to login after a delay
-        setTimeout(() => {
-          setResetCode(null);
-          handleTabChange('login');
-        }, 3000);
-      } else {
-        setResetError(result.message || "Failed to reset password. Please try again.");
-      }
+      // Clear reset code and redirect to login after a delay
+      setTimeout(() => {
+        setResetCode(null);
+        handleTabChange('login');
+      }, 3000);
     } catch (error: any) {
       console.error("Error resetting password:", error);
-      setResetError("An error occurred. Please try again later.");
+      
+      // Handle specific error codes
+      if (error.message?.includes("auth/expired-action-code")) {
+        setResetError("The password reset link has expired. Please request a new one.");
+      } else if (error.message?.includes("auth/invalid-action-code")) {
+        setResetError("The password reset link is invalid. Please request a new one.");
+      } else if (error.message?.includes("auth/weak-password")) {
+        setResetError("The password is too weak. Please choose a stronger password.");
+      } else if (error.message?.includes("auth/user-disabled")) {
+        setResetError("This account has been disabled.");
+      } else if (error.message?.includes("auth/user-not-found")) {
+        setResetError("No account found with this email address.");
+      } else {
+        setResetError("An error occurred. Please try again later.");
+      }
     } finally {
       setIsResettingPassword(false);
     }
