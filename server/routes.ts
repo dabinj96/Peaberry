@@ -9,7 +9,7 @@ import { log } from "./vite";
 import bcrypt from 'bcrypt';
 import { randomBytes, scrypt as scryptCallback } from "crypto";
 import { promisify } from "util";
-import { verifyFirebaseAuthWebhookSignature } from './firebase-admin';
+import { verifyFirebaseAuthWebhookSignature, checkUserExistsInFirebase, listFirebaseUsers } from './firebase-admin';
 
 // Convert the callback-based scrypt to a Promise-based one
 const scryptAsync = promisify(scryptCallback);
@@ -959,7 +959,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return userWithoutPassword;
       });
       
-      res.json(safeUsers);
+      // Get Firebase users for verification
+      let firebaseUsers: any[] = [];
+      try {
+        firebaseUsers = await listFirebaseUsers();
+      } catch (error) {
+        console.warn('Could not fetch Firebase users:', error);
+      }
+      
+      // Create a map of provider UIDs for quick lookup
+      const providerMap = new Map();
+      firebaseUsers.forEach(firebaseUser => {
+        firebaseUser.providerData.forEach((provider: any) => {
+          if (provider.providerId === 'google.com') {
+            providerMap.set(`${provider.providerId}:${provider.uid}`, firebaseUser.uid);
+          }
+        });
+      });
+      
+      // Check Firebase status and add to each user
+      const usersWithStatus = await Promise.all(
+        safeUsers.map(async (user) => {
+          let firebaseStatus = 'unknown';
+          
+          if (user.providerId && user.providerUid) {
+            const providerKey = `${user.providerId}:${user.providerUid}`;
+            const firebaseUid = providerMap.get(providerKey);
+            
+            if (firebaseUid) {
+              firebaseStatus = 'active';
+            } else {
+              firebaseStatus = 'deleted';
+            }
+          } else if (user.username) {
+            // For password auth users, there's no Firebase entry
+            firebaseStatus = 'local-only';
+          }
+          
+          return {
+            ...user,
+            firebaseStatus
+          };
+        })
+      );
+      
+      res.json(usersWithStatus);
     } catch (error) {
       console.error('Error listing users:', error);
       res.status(500).json({ error: 'Failed to list users' });
@@ -1004,6 +1048,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clean up orphaned Firebase users (users in database but deleted from Firebase)
+  app.post('/api/admin/cleanup-orphaned-users', requireAdmin, async (req, res) => {
+    try {
+      // Get all users first
+      const users = await storage.listUsers();
+      
+      // Filter to only keep OAuth users
+      const oauthUsers = users.filter(user => user.providerId && user.providerUid);
+      
+      // Get Firebase users to check against
+      let firebaseUsers: any[] = [];
+      try {
+        firebaseUsers = await listFirebaseUsers();
+      } catch (error) {
+        console.error('Could not fetch Firebase users:', error);
+        return res.status(500).json({ error: 'Failed to fetch Firebase users' });
+      }
+      
+      // Create a map of provider UIDs for quick lookup
+      const providerMap = new Map();
+      firebaseUsers.forEach(firebaseUser => {
+        firebaseUser.providerData.forEach((provider: any) => {
+          if (provider.providerId === 'google.com') {
+            providerMap.set(`${provider.providerId}:${provider.uid}`, firebaseUser.uid);
+          }
+        });
+      });
+      
+      // Find orphaned users (in our DB but not in Firebase)
+      const orphanedUsers = oauthUsers.filter(user => {
+        const providerKey = `${user.providerId}:${user.providerUid}`;
+        return !providerMap.has(providerKey);
+      });
+      
+      if (orphanedUsers.length === 0) {
+        return res.status(200).json({ 
+          message: 'No orphaned users found',
+          count: 0,
+          users: []
+        });
+      }
+      
+      // If just checking, return the list of orphaned users
+      if (req.query.check === 'true') {
+        // Remove sensitive information
+        const safeUsers = orphanedUsers.map(user => {
+          const { password, ...userWithoutPassword } = user;
+          return userWithoutPassword;
+        });
+        
+        return res.status(200).json({ 
+          message: `Found ${orphanedUsers.length} orphaned users`,
+          count: orphanedUsers.length,
+          users: safeUsers
+        });
+      }
+      
+      // Otherwise, clean them up
+      const results = {
+        total: orphanedUsers.length,
+        deleted: 0,
+        failed: 0,
+        errors: [] as string[]
+      };
+      
+      for (const user of orphanedUsers) {
+        try {
+          const success = await storage.deleteUser(user.id);
+          if (success) {
+            results.deleted++;
+          } else {
+            results.failed++;
+            results.errors.push(`Failed to delete user ID ${user.id}`);
+          }
+        } catch (e) {
+          results.failed++;
+          results.errors.push(`Error deleting user ID ${user.id}: ${e}`);
+        }
+      }
+      
+      return res.status(200).json({
+        message: `Cleaned up ${results.deleted} orphaned users`,
+        results
+      });
+    } catch (error) {
+      console.error('Error cleaning up orphaned users:', error);
+      return res.status(500).json({ error: 'Failed to clean up orphaned users' });
+    }
+  });
+  
   // Firebase Auth webhook endpoint for handling user deletion events
   app.post('/api/webhooks/firebase-auth', async (req, res) => {
     try {

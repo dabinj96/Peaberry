@@ -78,3 +78,58 @@ export function verifyFirebaseAuthWebhookSignature(signature: string, body: stri
     return false;
   }
 }
+
+/**
+ * Check if a user exists in Firebase Auth by provider ID and UID
+ * @param providerId The provider ID (e.g., 'google.com')
+ * @param providerUid The provider UID
+ * @returns True if the user exists, false otherwise
+ */
+export async function checkUserExistsInFirebase(providerId: string, providerUid: string): Promise<boolean> {
+  if (!firebaseInitialized) {
+    console.warn('Firebase Admin is not initialized. Cannot check if user exists.');
+    return false;
+  }
+  
+  try {
+    // For google.com provider, the UID is the user's Google ID
+    if (providerId === 'google.com') {
+      try {
+        // Try to get user by email or UID
+        // This is approximate - Firebase Admin SDK doesn't directly support looking up by provider UID
+        const users = await admin.auth().listUsers();
+        return users.users.some(user => 
+          user.providerData.some(provider => 
+            provider.providerId === providerId && provider.uid === providerUid
+          )
+        );
+      } catch (e) {
+        console.error('Error finding Firebase user by provider:', e);
+        return false;
+      }
+    } 
+    return false;
+  } catch (error) {
+    console.error('Error checking if user exists in Firebase:', error);
+    return false;
+  }
+}
+
+/**
+ * Get all Firebase users and their provider information
+ * @returns Array of Firebase user records
+ */
+export async function listFirebaseUsers(): Promise<admin.auth.UserRecord[]> {
+  if (!firebaseInitialized) {
+    console.warn('Firebase Admin is not initialized. Cannot list users.');
+    return [];
+  }
+  
+  try {
+    const listUsersResult = await admin.auth().listUsers();
+    return listUsersResult.users;
+  } catch (error) {
+    console.error('Error listing Firebase users:', error);
+    return [];
+  }
+}
