@@ -197,89 +197,140 @@ export function setupAuth(app: Express) {
   // OAuth with Firebase authentication
   app.post("/api/oauth/login", async (req, res, next) => {
     try {
+      console.log("Processing OAuth login request");
       const { idToken } = req.body;
       
       if (!idToken) {
+        console.error("OAuth error: No ID token provided");
         return res.status(400).send("ID token is required");
       }
       
-      // Verify the Firebase token
-      const decodedToken = await verifyFirebaseToken(idToken);
-      
-      if (!decodedToken) {
-        return res.status(401).send("Invalid ID token");
-      }
-      
-      // Extract user information from the decoded token
-      const { uid, email, name, picture } = decodedToken;
-      
-      if (!email) {
-        return res.status(400).send("Email is required");
-      }
-      
-      // Generate a username based on email if needed
-      const username = email.split('@')[0] + '_' + Math.floor(Math.random() * 1000);
-      
-      // Check if user exists by provider ID and UID
-      let user = await storage.getUserByProviderAuth('google', uid);
-      
-      if (!user) {
-        // Check if user exists with the same email
-        user = await storage.getUserByEmail(email);
+      try {
+        // Verify the Firebase token
+        console.log("Verifying Firebase token...");
+        const decodedToken = await verifyFirebaseToken(idToken);
         
-        if (user) {
-          // Update existing user with OAuth information
-          const updatedUser = await storage.updateUser(user.id, {
-            providerId: 'google',
-            providerUid: uid,
-            photoUrl: picture || null
-          });
+        if (!decodedToken) {
+          console.error("OAuth error: Invalid ID token");
+          return res.status(401).send("Invalid ID token");
+        }
+        
+        console.log("Token verified successfully, uid:", decodedToken.uid);
+        
+        // Extract user information from the decoded token
+        const { uid, email, name, picture } = decodedToken;
+        
+        if (!email) {
+          console.error("OAuth error: No email in token");
+          return res.status(400).send("Email is required");
+        }
+        
+        console.log(`Processing OAuth for email: ${email}`);
+        
+        // Generate a username based on email if needed
+        const username = email.split('@')[0] + '_' + Math.floor(Math.random() * 1000);
+        
+        try {
+          // Check if user exists by provider ID and UID
+          console.log(`Checking if user exists with providerId: google, providerUid: ${uid}`);
+          let user = await storage.getUserByProviderAuth('google', uid);
           
-          if (!updatedUser) {
-            return res.status(500).send("Failed to update user with OAuth information");
+          if (!user) {
+            console.log("User not found by provider auth, checking by email");
+            // Check if user exists with the same email
+            user = await storage.getUserByEmail(email);
+            
+            if (user) {
+              console.log(`Updating existing user ${user.id} with OAuth information`);
+              // Update existing user with OAuth information
+              try {
+                const updatedUser = await storage.updateUser(user.id, {
+                  providerId: 'google',
+                  providerUid: uid,
+                  photoUrl: picture || null
+                });
+                
+                if (!updatedUser) {
+                  console.error("Failed to update user with OAuth information");
+                  return res.status(500).send("Failed to update user with OAuth information");
+                }
+                
+                user = updatedUser;
+                console.log("User updated successfully");
+              } catch (updateError) {
+                console.error("Error updating user:", updateError);
+                return res.status(500).send(`Error updating user: ${updateError.message}`);
+              }
+            } else {
+              console.log("Creating new user for OAuth");
+              // Create a new user
+              try {
+                const oauthUserData = oauthUserSchema.parse({
+                  username,
+                  email,
+                  name: name || email.split('@')[0],
+                  providerId: 'google',
+                  providerUid: uid,
+                  photoUrl: picture,
+                  role: 'user'
+                });
+                
+                // Generate a random secure password for OAuth users
+                // They won't use this password, but we need something in the field
+                const randomPassword = Math.random().toString(36).slice(-10) + 
+                                     Math.random().toString(36).slice(-10).toUpperCase() +
+                                     '!@#$%';
+                
+                console.log("Parsed OAuth user data:", JSON.stringify({
+                  ...oauthUserData,
+                  password: "[REDACTED]",
+                  bio: ''
+                }));
+                
+                user = await storage.createUser({
+                  ...oauthUserData,
+                  password: await hashPassword(randomPassword),
+                  bio: ''
+                });
+                
+                console.log("User created successfully with id:", user.id);
+              } catch (createError) {
+                console.error("Error creating new user:", createError);
+                return res.status(500).send(`Error creating user: ${createError.message}`);
+              }
+            }
+          } else {
+            console.log("Found existing user by provider auth");
           }
           
-          user = updatedUser;
-        } else {
-          // Create a new user
-          const oauthUserData = oauthUserSchema.parse({
-            username,
-            email,
-            name: name || email.split('@')[0],
-            providerId: 'google',
-            providerUid: uid,
-            photoUrl: picture,
-            role: 'user'
-          });
+          if (!user) {
+            console.error("Failed to create or retrieve user after all attempts");
+            return res.status(500).send("Failed to create or retrieve user");
+          }
           
-          // Generate a random secure password for OAuth users
-          // They won't use this password, but we need something in the field
-          const randomPassword = Math.random().toString(36).slice(-10) + 
-                               Math.random().toString(36).slice(-10).toUpperCase() +
-                               '!@#$%';
-          
-          user = await storage.createUser({
-            ...oauthUserData,
-            password: await hashPassword(randomPassword),
-            bio: ''
+          // Log in the user
+          console.log("Logging in user with Passport");
+          req.login(user, (err) => {
+            if (err) {
+              console.error("Error in req.login:", err);
+              return next(err);
+            }
+            // Don't send password back to client
+            const { password, ...userWithoutPassword } = user;
+            console.log("OAuth login successful");
+            res.status(200).json(userWithoutPassword);
           });
+        } catch (userError) {
+          console.error("Error in user lookup/creation:", userError);
+          return res.status(500).send(`User processing error: ${userError.message}`);
         }
+      } catch (tokenError) {
+        console.error("Error verifying token:", tokenError);
+        return res.status(401).send(`Token verification failed: ${tokenError.message}`);
       }
-      
-      if (!user) {
-        return res.status(500).send("Failed to create or retrieve user");
-      }
-      
-      // Log in the user
-      req.login(user, (err) => {
-        if (err) return next(err);
-        // Don't send password back to client
-        const { password, ...userWithoutPassword } = user;
-        res.status(200).json(userWithoutPassword);
-      });
     } catch (error) {
       console.error("OAuth login error:", error);
-      next(error);
+      return res.status(500).send(`OAuth error: ${error.message}`);
     }
   });
 }
