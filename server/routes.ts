@@ -135,6 +135,14 @@ async function fetchCafesFromGooglePlaces(location: string = "Boston, MA") {
   }
 }
 
+// Helper to get the frontend URL based on environment
+function getFrontendUrl(): string {
+  // Get the frontend URL from environment variables
+  // In production, this should be set to the actual domain
+  // In development, default to localhost:3000
+  return process.env.FRONTEND_URL || 'http://localhost:3000';
+}
+
 // Helper to extract neighborhood from address
 function extractNeighborhood(address: string): string {
   // If no address, return null to use the city name later
@@ -1480,7 +1488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Generate and send password reset email through Firebase
         const actionCodeSettings = {
-          url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth?mode=resetPassword`,
+          url: `${getFrontendUrl()}/auth?mode=resetPassword`,
           handleCodeInApp: true
         };
         
