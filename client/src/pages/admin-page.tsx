@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import PlacesAutocomplete from "@/components/places-autocomplete";
+import UserManagement from "@/components/admin/user-management";
 import { 
   Loader2, 
   Database, 
@@ -169,9 +170,10 @@ export default function AdminPage() {
       <p className="text-muted-foreground">Import cafe data from Google Places API and manage your application's content.</p>
       
       <Tabs defaultValue="cafes">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="import">Import & Settings</TabsTrigger>
           <TabsTrigger value="cafes">Manage Cafes</TabsTrigger>
+          <TabsTrigger value="users">Manage Users</TabsTrigger>
         </TabsList>
         
         <TabsContent value="import" className="mt-6">
@@ -460,6 +462,10 @@ export default function AdminPage() {
               </p>
             </CardFooter>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="users" className="mt-6">
+          <UserManagement />
         </TabsContent>
       </Tabs>
     </div>
