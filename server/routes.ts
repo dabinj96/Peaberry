@@ -1481,7 +1481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           handleCodeInApp: true
         };
         
-        await admin.auth().generatePasswordResetLink(email, actionCodeSettings);
+        await firebaseAdmin.generatePasswordResetLink(email, actionCodeSettings);
         console.log(`Password reset link sent to ${email}`);
         
         return res.status(200).json({
@@ -1522,7 +1522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Verify the code is valid
-        const email = await admin.auth().verifyPasswordResetCode(oobCode);
+        const email = await firebaseAdmin.verifyPasswordResetCode(oobCode);
         
         if (!email) {
           console.log('Invalid reset code');
@@ -1546,7 +1546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Update password in Firebase
-        await admin.auth().confirmPasswordReset(oobCode, newPassword);
+        await firebaseAdmin.confirmPasswordReset(oobCode, newPassword);
         console.log('Password updated in Firebase');
         
         // Update password in our database
