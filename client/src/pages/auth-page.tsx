@@ -175,7 +175,7 @@ export default function AuthPage() {
             <p className="text-gray-700">Discover and explore Boston's vibrant specialty coffee scene.</p>
           </div>
           
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs defaultValue={window.location.search.includes('tab=register') ? 'register' : 'login'} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Create Account</TabsTrigger>

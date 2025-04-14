@@ -113,11 +113,15 @@ export default function Header() {
                       <Heart className="mr-2 h-4 w-4" />
                       My Favorites
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate("/admin")}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Admin Dashboard
-                    </DropdownMenuItem>
+                    {user.role === 'admin' && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => navigate("/admin")}>
+                          <Settings className="mr-2 h-4 w-4" />
+                          Admin Dashboard
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} disabled={logoutMutation.isPending}>
                       <LogOut className="mr-2 h-4 w-4" />
@@ -196,12 +200,14 @@ export default function Header() {
                     My Profile
                   </Button>
                 </Link>
-                <Link href="/admin">
-                  <Button variant="outline" className="w-full mb-2 justify-start">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Admin Dashboard
-                  </Button>
-                </Link>
+                {user.role === 'admin' && (
+                  <Link href="/admin">
+                    <Button variant="outline" className="w-full mb-2 justify-start">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Admin Dashboard
+                    </Button>
+                  </Link>
+                )}
                 <Button 
                   className="w-full bg-red-100 hover:bg-red-200 text-red-700 justify-start" 
                   onClick={handleLogout}
