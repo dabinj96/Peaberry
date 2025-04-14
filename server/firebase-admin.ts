@@ -1,5 +1,7 @@
 import admin from 'firebase-admin';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 
 // Initialize Firebase Admin SDK
 let firebaseApp: admin.app.App | undefined;
@@ -10,41 +12,81 @@ try {
   const firebaseProjectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
   const firebaseApiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY;
   
+  // Check for service account file (preferred method)
+  
+  const serviceAccountPaths = [
+    './firebase-service-account.json',
+    './service-account.json',
+    './.firebase-service-account.json'
+  ];
+  
+  let serviceAccountPath = null;
+  
+  // Check if any of the potential service account files exist
+  for (const potentialPath of serviceAccountPaths) {
+    if (fs.existsSync(potentialPath)) {
+      serviceAccountPath = potentialPath;
+      break;
+    }
+  }
+
   // Check if Firebase project ID is available
   if (firebaseProjectId) {
-    // Initialize the app with the proper credentials
-    // First try to get application default credentials (if running in Google Cloud)
-    try {
-      console.log("Attempting to initialize Firebase Admin with application default credentials...");
-      firebaseApp = admin.initializeApp({
-        projectId: firebaseProjectId,
-        credential: admin.credential.applicationDefault()
-      });
-      firebaseInitialized = true;
-    } catch (credentialError) {
-      // If that fails, try with a service account key file if available
-      console.log("Application default credentials failed, trying alternative initialization...");
-      
+    // First try to initialize with service account file if available
+    if (serviceAccountPath) {
       try {
-        // Initialize with just project ID as a fallback
+        console.log(`Attempting to initialize Firebase Admin with service account file: ${serviceAccountPath}`);
+        const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+        
+        firebaseApp = admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+          projectId: firebaseProjectId
+        });
+        console.log("Successfully initialized Firebase Admin with service account");
+        firebaseInitialized = true;
+      } catch (serviceAccountError) {
+        console.error("Error initializing with service account:", serviceAccountError);
+        // Continue to fallback methods
+      }
+    } else {
+      console.log("No service account file found. Checking for alternative initialization methods.");
+    }
+    
+    // If service account initialization failed, try application default credentials
+    if (!firebaseInitialized) {
+      try {
+        console.log("Attempting to initialize Firebase Admin with application default credentials...");
         firebaseApp = admin.initializeApp({
           projectId: firebaseProjectId,
-          // For local development without service account, use cert-free auth
-          credential: admin.credential.cert({
-            projectId: firebaseProjectId,
-            clientEmail: `firebase-adminsdk-${firebaseProjectId.slice(0, 6)}@${firebaseProjectId}.iam.gserviceaccount.com`,
-            // This is a fake private key that will cause actual auth operations to fail
-            // but allows the app to initialize
-            privateKey: '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7VJTUt9Us8cKj\nMzEfYyjiWA4R4/M2bS1GB4t7NXp98C3SC6dVMvDuictGeurT8jNbvJZHtCSuYEvu\nNMoSfm76oqFvAp8Gy0iz5sxjZmSnXyCdPEovGhLa0VzMaQ8s+CLOyS56YyCFGeJZ\n-----END PRIVATE KEY-----\n',
-          }),
+          credential: admin.credential.applicationDefault()
         });
-        
-        console.log("Initialized Firebase Admin with limited functionality (operations requiring auth will fail)");
-        // We're initialized but with limited functionality
+        console.log("Successfully initialized Firebase Admin with application default credentials");
         firebaseInitialized = true;
-      } catch (fallbackError) {
-        console.error("Failed to initialize Firebase Admin even with fallback:", fallbackError);
-        firebaseInitialized = false;
+      } catch (credentialError) {
+        console.log("Application default credentials failed, trying alternative initialization...");
+        
+        // Last resort: initialize with minimal credentials
+        try {
+          // Initialize with just project ID as a fallback
+          firebaseApp = admin.initializeApp({
+            projectId: firebaseProjectId,
+            // For local development without service account, use cert-free auth
+            credential: admin.credential.cert({
+              projectId: firebaseProjectId,
+              clientEmail: `firebase-adminsdk-${firebaseProjectId.slice(0, 6)}@${firebaseProjectId}.iam.gserviceaccount.com`,
+              // This is a fake private key that will cause actual auth operations to fail
+              // but allows the app to initialize
+              privateKey: '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7VJTUt9Us8cKj\nMzEfYyjiWA4R4/M2bS1GB4t7NXp98C3SC6dVMvDuictGeurT8jNbvJZHtCSuYEvu\nNMoSfm76oqFvAp8Gy0iz5sxjZmSnXyCdPEovGhLa0VzMaQ8s+CLOyS56YyCFGeJZ\n-----END PRIVATE KEY-----\n',
+            }),
+          });
+          
+          console.log("Initialized Firebase Admin with limited functionality (operations requiring auth will fail)");
+          // We're initialized but with limited functionality
+          firebaseInitialized = true;
+        } catch (fallbackError) {
+          console.error("Failed to initialize Firebase Admin even with fallback:", fallbackError);
+          firebaseInitialized = false;
+        }
       }
     }
     
