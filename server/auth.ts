@@ -206,35 +206,47 @@ export function setupAuth(app: Express) {
       
       try {
         // First, delete the user from the database
+        console.log(`Attempting to delete user with ID: ${userId} from database`);
         const success = await storage.deleteUser(userId);
         
         if (success) {
           console.log(`Successfully deleted user with ID: ${userId}`);
           
-          // Now log the user out - use a promise wrapper for req.logout which takes a callback
-          await new Promise<void>((resolve, reject) => {
-            req.logout((err) => {
-              if (err) {
-                console.error("Error logging out user during account deletion:", err);
-                reject(err);
-              } else {
-                console.log("User logged out successfully after account deletion");
+          try {
+            // Now log the user out - use a promise wrapper for req.logout which takes a callback
+            await new Promise<void>((resolve, reject) => {
+              req.logout((err) => {
+                if (err) {
+                  console.error("Error logging out user during account deletion:", err);
+                  // Don't reject, just log the error and continue
+                  console.log("Continuing despite logout error");
+                }
+                console.log("User logout processed");
                 resolve();
-              }
+              });
             });
-          });
-          
-          // Also destroy the session explicitly to ensure clean logout
-          await new Promise<void>((resolve) => {
-            req.session.destroy((err) => {
-              if (err) {
-                console.error("Error destroying session:", err);
-                // Continue anyway
+            
+            // Also destroy the session explicitly to ensure clean logout
+            await new Promise<void>((resolve) => {
+              if (!req.session) {
+                console.log("No session to destroy");
+                return resolve();
               }
-              console.log("Session destroyed successfully");
-              resolve();
+              
+              req.session.destroy((err) => {
+                if (err) {
+                  console.error("Error destroying session:", err);
+                  // Continue anyway
+                }
+                console.log("Session destroyed successfully");
+                resolve();
+              });
             });
-          });
+          } catch (sessionError) {
+            // Log but continue even if session handling fails
+            console.error("Session cleanup error:", sessionError);
+            console.log("Continuing with account deletion response despite session error");
+          }
           
           // Send success response
           console.log("Sending successful account deletion response");
@@ -243,9 +255,14 @@ export function setupAuth(app: Express) {
           console.error(`Failed to delete user with ID: ${userId}`);
           return res.status(500).json({ success: false, message: "Failed to delete account" });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error in account deletion process:", err);
-        return res.status(500).json({ success: false, message: "Error deleting user: " + err.message });
+        const errorMessage = err.message || "An unknown error occurred";
+        return res.status(500).json({ 
+          success: false, 
+          message: "Error deleting user: " + errorMessage,
+          error: errorMessage
+        });
       }
     } catch (error) {
       console.error("Account deletion error:", error);

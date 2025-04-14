@@ -443,62 +443,83 @@ function DeleteAccountForm({
       setIsDeleting(true);
       setError(null);
       
-      console.log("Submitting delete account form", { password: data.password ? "provided" : "not provided" });
-      
-      const response = await fetch("/api/delete-account", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          password: data.password
-        }),
-        credentials: "same-origin"
+      console.log("Submitting delete account form", { 
+        password: data.password ? "provided" : "not provided",
+        isOAuthUser 
       });
       
-      console.log("Delete account response status:", response.status);
+      // Create a simple browser-native request to avoid any library issues
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/delete-account', true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
       
-      let responseData;
-      const responseText = await response.text();
-      console.log("Raw response:", responseText);
-      
-      try {
-        if (responseText) {
-          responseData = JSON.parse(responseText);
-        } else {
-          // Handle empty response
-          responseData = { success: response.ok };
-        }
-      } catch (err) {
-        console.error("Error parsing response:", err);
-        if (response.ok) {
-          // If the response is OK but not JSON, we'll assume success
-          responseData = { success: true };
-        } else {
-          throw new Error(responseText || "Failed to parse server response");
-        }
-      }
-      
-      console.log("Delete account parsed response:", responseData);
-      
-      if (!response.ok) {
-        throw new Error(responseData?.message || responseText || "Failed to delete account");
-      }
-      
-      console.log("Account deletion successful");
-      toast({
-        title: "Success",
-        description: "Your account has been successfully deleted.",
-        variant: "default",
+      const requestData = JSON.stringify({
+        password: data.password
       });
       
-      onSuccess();
+      console.log("Sending XHR request:", requestData);
+      
+      // Create a promise to handle the XHR response
+      const xhrPromise = new Promise<{status: number, response: string}>((resolve, reject) => {
+        xhr.onload = function() {
+          if (this.status >= 200 && this.status < 300) {
+            resolve({status: this.status, response: xhr.responseText});
+          } else {
+            reject({
+              status: this.status,
+              response: xhr.responseText
+            });
+          }
+        };
+        
+        xhr.onerror = function() {
+          reject({
+            status: this.status,
+            response: xhr.responseText || "Network error occurred"
+          });
+        };
+      });
+      
+      // Send the request
+      xhr.send(requestData);
+      
+      // Wait for the response
+      const {status, response} = await xhrPromise;
+      console.log("XHR Response:", status, response);
+      
+      // Handle the response
+      if (status >= 200 && status < 300) {
+        console.log("Account deletion successful");
+        toast({
+          title: "Success",
+          description: "Your account has been successfully deleted.",
+          variant: "default",
+        });
+        
+        // Explicitly redirect to homepage
+        window.location.href = "/";
+      } else {
+        throw new Error(response || "Failed to delete account");
+      }
     } catch (err: any) {
       console.error("Account deletion error:", err);
-      setError(err.message || "An unexpected error occurred");
+      let errorMessage = "An unexpected error occurred";
+      
+      if (err.response) {
+        try {
+          const errorData = JSON.parse(err.response);
+          errorMessage = errorData.message || err.response;
+        } catch (e) {
+          errorMessage = err.response;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
       toast({
         title: "Error",
-        description: err.message || "Failed to delete account",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
