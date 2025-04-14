@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PasswordStrengthIndicator } from "@/components/password-strength-indicator";
+import { Separator } from "@/components/ui/separator";
 
 // Login form schema
 const loginSchema = z.object({
@@ -21,8 +23,9 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 // Registration form schema
 const registerSchema = insertUserSchema.extend({
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
+  bio: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -202,6 +205,7 @@ export default function AuthPage() {
                             <FormControl>
                               <Input type="password" placeholder="Create a password" {...field} />
                             </FormControl>
+                            <PasswordStrengthIndicator password={field.value} />
                             <FormMessage />
                           </FormItem>
                         )}

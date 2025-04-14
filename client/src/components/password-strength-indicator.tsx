@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 // Password strength levels
 enum PasswordStrength {
@@ -27,7 +28,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
 
     // Check password strength
     let currentStrength = PasswordStrength.WEAK;
-    let currentFeedback = [];
+    const currentFeedback = [];
 
     // Length check
     if (password.length < 8) {
@@ -60,7 +61,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
     setFeedback(currentFeedback.join(". "));
   }, [password]);
 
-  // Get color based on strength
+  // Get color class based on strength
   const getColorClass = () => {
     switch (strength) {
       case PasswordStrength.EMPTY:
@@ -73,6 +74,8 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
         return "bg-yellow-500";
       case PasswordStrength.STRONG:
         return "bg-green-500";
+      default:
+        return "bg-gray-300";
     }
   };
 
@@ -89,6 +92,8 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
         return "Good";
       case PasswordStrength.STRONG:
         return "Strong";
+      default:
+        return "";
     }
   };
 
@@ -105,14 +110,15 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
   return (
     <div className="mt-2 space-y-1">
       <div className="flex justify-between items-center">
-        <span className="text-xs">{getLabel()}</span>
+        <span className="text-xs font-medium">{getLabel()}</span>
         {feedback && <span className="text-xs text-gray-600">{feedback}</span>}
       </div>
-      <Progress 
-        value={getProgressPercentage()} 
-        className="h-1"
-        indicatorClassName={getColorClass()} 
-      />
+      <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
+        <div 
+          className={cn("h-full transition-all", getColorClass())} 
+          style={{ width: `${getProgressPercentage()}%` }}
+        />
+      </div>
     </div>
   );
 }
