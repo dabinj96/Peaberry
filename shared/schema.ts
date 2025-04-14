@@ -90,10 +90,35 @@ export const favorites = pgTable("favorites", {
   };
 });
 
+// Password validation regex patterns
+const hasUppercase = /[A-Z]/;
+const hasLowercase = /[a-z]/;
+const hasNumber = /[0-9]/;
+const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/;
+
+// Common passwords to reject (simplified list for demo)
+const commonPasswords = ["password", "123456", "qwerty", "welcome", "admin"];
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+}).extend({
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(100, "Password must be less than 100 characters")
+    .refine((password) => {
+      // Check for at least 2 character types
+      let count = 0;
+      if (hasUppercase.test(password)) count++;
+      if (hasLowercase.test(password)) count++;
+      if (hasNumber.test(password)) count++;
+      if (hasSpecialChar.test(password)) count++;
+      return count >= 2;
+    }, "Password must contain at least 2 of: uppercase, lowercase, numbers, or special characters")
+    .refine((password) => {
+      return !commonPasswords.includes(password.toLowerCase());
+    }, "This password is too common and easily guessed")
 });
 
 export const insertCafeSchema = createInsertSchema(cafes).omit({
