@@ -121,7 +121,15 @@ export const authenticateWithServer = async (userCredential: UserCredential) => 
       throw new Error(`Server authentication failed: ${response.statusText}`);
     }
 
-    return await response.json();
+    const userData = await response.json();
+    
+    // Import here to avoid circular dependency
+    const { queryClient } = await import('./queryClient');
+    
+    // Update the query client with the user data
+    queryClient.setQueryData(['/api/user'], userData);
+    
+    return userData;
   } catch (error) {
     console.error('Error authenticating with server:', error);
     throw error;

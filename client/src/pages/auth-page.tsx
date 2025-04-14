@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
 import { 
   signInWithGoogle, 
   handleGoogleRedirectResult, 
@@ -45,6 +46,9 @@ export default function AuthPage() {
   const [isFirebaseLoading, setIsFirebaseLoading] = useState(false);
   const [firebaseError, setFirebaseError] = useState<string | null>(null);
 
+  // Import toast functionality from the UI
+  const { toast } = useToast();
+
   // Handle Google redirect result on page load
   useEffect(() => {
     const handleRedirect = async () => {
@@ -56,9 +60,18 @@ export default function AuthPage() {
         if (result && result.user) {
           console.log("Successfully authenticated with Google, sending to server...");
           try {
-            // Send token to server to create session
-            await authenticateWithServer(result);
-            // Querylient will handle redirect through useAuth
+            // Send token to server to create session and update query client
+            const userData = await authenticateWithServer(result);
+            
+            // Show success toast
+            toast({
+              title: "Successfully signed in with Google",
+              description: `Welcome${userData.name ? ", " + userData.name : ""}! You've been signed in successfully.`,
+              variant: "default",
+            });
+            
+            // Redirect to home page
+            setLocation("/");
           } catch (serverError: any) {
             console.error("Server authentication failed:", serverError);
             setFirebaseError("Server authentication failed: " + serverError.message);
@@ -73,7 +86,7 @@ export default function AuthPage() {
     };
     
     handleRedirect();
-  }, []);
+  }, [setLocation, toast]);
 
   // Handle Google sign-in
   const handleGoogleSignIn = async () => {
@@ -85,9 +98,18 @@ export default function AuthPage() {
       if (result && result.user) {
         console.log("Signed in with Google, sending to server...");
         try {
-          // Send token to server to create session
-          await authenticateWithServer(result);
-          // Querylient will handle redirect through useAuth
+          // Send token to server to create session and update query client
+          const userData = await authenticateWithServer(result);
+          
+          // Show success toast
+          toast({
+            title: "Successfully signed in with Google",
+            description: `Welcome${userData.name ? ", " + userData.name : ""}! You've been signed in successfully.`,
+            variant: "default",
+          });
+          
+          // Redirect to home page
+          setLocation("/");
         } catch (serverError: any) {
           console.error("Server authentication failed:", serverError);
           setFirebaseError("Server authentication failed: " + serverError.message);
