@@ -1199,6 +1199,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Change password endpoint
+  app.post('/api/change-password', requireAuth, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const user = req.user;
+      
+      // Validate inputs
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Both current and new passwords are required" });
+      }
+      
+      // OAuth users cannot change password directly
+      if (user.providerId && user.providerUid) {
+        return res.status(400).json({ 
+          error: "OAuth users cannot change password directly. Please use your OAuth provider's account settings." 
+        });
+      }
+      
+      // Get the current password from the database
+      const dbUser = await storage.getUser(user.id);
+      if (!dbUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Verify the current password
+      const passwordCorrect = await scrypt.comparePasswords(currentPassword, dbUser.password);
+      if (!passwordCorrect) {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+      
+      // Validate the new password complexity
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "New password must be at least 8 characters long" });
+      }
+      
+      // Check for common passwords
+      const commonPasswords = ["password", "123456", "qwerty", "welcome", "admin"];
+      if (commonPasswords.includes(newPassword.toLowerCase())) {
+        return res.status(400).json({ error: "This password is too common and not secure" });
+      }
+      
+      // Check character variety
+      const hasUppercase = /[A-Z]/.test(newPassword);
+      const hasLowercase = /[a-z]/.test(newPassword);
+      const hasNumber = /[0-9]/.test(newPassword);
+      const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
+      
+      const varietyScore = [hasUppercase, hasLowercase, hasNumber, hasSpecial].filter(Boolean).length;
+      if (varietyScore < 2) {
+        return res.status(400).json({
+          error: "Password must include at least 2 of the following: uppercase letters, lowercase letters, numbers, and special characters"
+        });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await scrypt.hashPassword(newPassword);
+      
+      // Update the password
+      const updatedUser = await storage.updateUser(user.id, { password: hashedPassword });
+      
+      if (updatedUser) {
+        return res.status(200).json({ message: "Password changed successfully" });
+      } else {
+        return res.status(500).json({ error: "Failed to update password" });
+      }
+    } catch (error) {
+      console.error("Error changing password:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
+    }
+  });
+  
+  // User self-deletion endpoint
+  app.post('/api/delete-account', requireAuth, async (req, res) => {
+    try {
+      const { password } = req.body;
+      const user = req.user;
+      
+      console.log(`User ${user.id} attempting to delete their account`);
+      
+      // Check if this is an OAuth user
+      const isOAuthUser = !!(user.providerId && user.providerUid);
+      
+      // If not an OAuth user, verify password
+      if (!isOAuthUser && password) {
+        // Get the current password from the database
+        const dbUser = await storage.getUser(user.id);
+        if (!dbUser) {
+          return res.status(404).json({ error: "User not found" });
+        }
+        
+        // Verify the password
+        const passwordCorrect = await scrypt.comparePasswords(password, dbUser.password);
+        if (!passwordCorrect) {
+          return res.status(401).json({ error: "Incorrect password" });
+        }
+      }
+      
+      // For OAuth users, attempt to delete the account from Firebase
+      if (isOAuthUser) {
+        try {
+          console.log(`Attempting to delete Firebase user with provider ${user.providerId}:${user.providerUid}`);
+          const deleted = await storage.deleteUserByProviderAuth(user.providerId, user.providerUid);
+          console.log(`Firebase user deletion result: ${deleted}`);
+        } catch (firebaseError) {
+          console.error("Error deleting Firebase user:", firebaseError);
+          // Continue with local deletion even if Firebase deletion fails
+        }
+      }
+      
+      // Delete the user from our database
+      const success = await storage.deleteUser(user.id);
+      
+      if (success) {
+        // Log the user out
+        req.logout((err) => {
+          if (err) {
+            console.error("Error logging out after account deletion:", err);
+          }
+          
+          return res.status(200).json({ 
+            success: true,
+            message: "Your account has been successfully deleted" 
+          });
+        });
+      } else {
+        return res.status(500).json({ error: "Failed to delete account" });
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
+    }
+  });
+  
   // Manual Firebase sync endpoint for admins
   app.post('/api/admin/sync-firebase-users', requireAdmin, async (req, res) => {
     try {
