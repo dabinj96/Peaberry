@@ -257,7 +257,7 @@ export function setupAuth(app: Express) {
                 
                 user = updatedUser;
                 console.log("User updated successfully");
-              } catch (updateError) {
+              } catch (updateError: any) {
                 console.error("Error updating user:", updateError);
                 return res.status(500).send(`Error updating user: ${updateError.message}`);
               }
@@ -294,7 +294,7 @@ export function setupAuth(app: Express) {
                 });
                 
                 console.log("User created successfully with id:", user.id);
-              } catch (createError) {
+              } catch (createError: any) {
                 console.error("Error creating new user:", createError);
                 return res.status(500).send(`Error creating user: ${createError.message}`);
               }
@@ -320,11 +320,11 @@ export function setupAuth(app: Express) {
             console.log("OAuth login successful");
             res.status(200).json(userWithoutPassword);
           });
-        } catch (userError) {
+        } catch (userError: any) {
           console.error("Error in user lookup/creation:", userError);
           return res.status(500).send(`User processing error: ${userError.message}`);
         }
-      } catch (tokenError) {
+      } catch (tokenError: any) {
         console.error("Error verifying token:", tokenError);
         return res.status(401).send(`Token verification failed: ${tokenError.message}`);
       }
