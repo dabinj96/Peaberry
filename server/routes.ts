@@ -17,7 +17,10 @@ import {
   getFirebaseUserByUid,
   getFirebaseUserByEmail,
   getProviderData,
-  deleteFirebaseUser
+  deleteFirebaseUser,
+  generatePasswordResetLink,
+  verifyPasswordResetCode,
+  confirmPasswordReset
 } from './firebase-admin';
 import { User } from '@shared/schema';
 
@@ -1481,7 +1484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           handleCodeInApp: true
         };
         
-        await firebaseAdmin.generatePasswordResetLink(email, actionCodeSettings);
+        await generatePasswordResetLink(email, actionCodeSettings);
         console.log(`Password reset link sent to ${email}`);
         
         return res.status(200).json({
@@ -1522,7 +1525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Verify the code is valid
-        const email = await firebaseAdmin.verifyPasswordResetCode(oobCode);
+        const email = await verifyPasswordResetCode(oobCode);
         
         if (!email) {
           console.log('Invalid reset code');
@@ -1546,7 +1549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Update password in Firebase
-        await firebaseAdmin.confirmPasswordReset(oobCode, newPassword);
+        await confirmPasswordReset(oobCode, newPassword);
         console.log('Password updated in Firebase');
         
         // Update password in our database
