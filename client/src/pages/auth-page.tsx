@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator";
 import { Separator } from "@/components/ui/separator";
+import { signInWithGoogle, handleGoogleRedirectResult } from "@/lib/firebase";
+import { FcGoogle } from "react-icons/fc"; // FC = Flat Color Google icon
 
 // Login form schema
 const loginSchema = z.object({
@@ -36,6 +38,63 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [, setLocation] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
+  const [isFirebaseLoading, setIsFirebaseLoading] = useState(false);
+  const [firebaseError, setFirebaseError] = useState<string | null>(null);
+
+  // Handle Google redirect result on page load
+  useEffect(() => {
+    const handleRedirect = async () => {
+      try {
+        setFirebaseError(null);
+        setIsFirebaseLoading(true);
+        const result = await handleGoogleRedirectResult();
+        
+        if (result && result.user) {
+          // You would typically send this token to your backend to validate and create a session
+          // For now, we'll just log it
+          console.log("Successfully authenticated with Google:", result.user.email);
+        }
+      } catch (error: any) {
+        console.error("Error handling redirect:", error);
+        setFirebaseError(error.message);
+      } finally {
+        setIsFirebaseLoading(false);
+      }
+    };
+    
+    handleRedirect();
+  }, []);
+
+  // Handle Google sign-in
+  const handleGoogleSignIn = async () => {
+    try {
+      setFirebaseError(null);
+      setIsFirebaseLoading(true);
+      const result = await signInWithGoogle();
+      
+      if (result && result.user) {
+        // Here you would send the user data to your backend to create/sign in the user
+        console.log("Signed in with Google:", result.user.email);
+        
+        // Example of data we could send to the backend
+        // const googleAuthData = {
+        //   name: result.user.displayName,
+        //   email: result.user.email,
+        //   username: result.user.email?.split('@')[0], // Generate a username from the email
+        //   photoUrl: result.user.photoURL,
+        //   providerId: "google",
+        //   uid: result.user.uid
+        // };
+        
+        // This would require a new API endpoint on the backend to handle OAuth authentication
+      }
+    } catch (error: any) {
+      console.error("Error signing in with Google:", error);
+      setFirebaseError(error.message);
+    } finally {
+      setIsFirebaseLoading(false);
+    }
+  };
 
   // Redirect if already logged in
   useEffect(() => {
@@ -141,6 +200,35 @@ export default function AuthPage() {
                       </Button>
                     </form>
                   </Form>
+                  
+                  {/* OAuth sign-in options */}
+                  <div className="mt-6">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-gray-300"></span>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="w-full flex items-center justify-center gap-2"
+                        onClick={handleGoogleSignIn}
+                        disabled={isFirebaseLoading}
+                      >
+                        <FcGoogle className="h-5 w-5" /> 
+                        {isFirebaseLoading ? "Connecting..." : "Sign in with Google"}
+                      </Button>
+                    </div>
+                    
+                    {firebaseError && (
+                      <p className="mt-2 text-sm text-red-600">{firebaseError}</p>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -248,6 +336,35 @@ export default function AuthPage() {
                       </Button>
                     </form>
                   </Form>
+                  
+                  {/* OAuth sign-up options */}
+                  <div className="mt-6">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-gray-300"></span>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">Or sign up with</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="w-full flex items-center justify-center gap-2"
+                        onClick={handleGoogleSignIn}
+                        disabled={isFirebaseLoading}
+                      >
+                        <FcGoogle className="h-5 w-5" /> 
+                        {isFirebaseLoading ? "Connecting..." : "Sign up with Google"}
+                      </Button>
+                    </div>
+                    
+                    {firebaseError && (
+                      <p className="mt-2 text-sm text-red-600">{firebaseError}</p>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
