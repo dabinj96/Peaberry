@@ -9,13 +9,15 @@ import { log } from "./vite";
 import bcrypt from 'bcrypt';
 import { randomBytes, scrypt as scryptCallback } from "crypto";
 import { promisify } from "util";
+import admin from 'firebase-admin';
 import { 
   verifyFirebaseAuthWebhookSignature, 
   checkUserExistsInFirebase, 
   listFirebaseUsers,
   getFirebaseUserByUid,
   getFirebaseUserByEmail,
-  getProviderData
+  getProviderData,
+  deleteFirebaseUser
 } from './firebase-admin';
 import { User } from '@shared/schema';
 
@@ -1280,6 +1282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if this is an OAuth user
       const isOAuthUser = !!(user.providerId && user.providerUid);
+      let firebaseDeleted = false;
       
       // If not an OAuth user, verify password
       if (!isOAuthUser && password) {
@@ -1297,30 +1300,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // For OAuth users, attempt to delete the account from Firebase
-      if (isOAuthUser) {
+      if (isOAuthUser && user.providerUid) {
         try {
-          console.log(`Attempting to delete Firebase user with provider ${user.providerId}:${user.providerUid}`);
-          const deleted = await storage.deleteUserByProviderAuth(user.providerId, user.providerUid);
-          console.log(`Firebase user deletion result: ${deleted}`);
+          console.log(`Attempting to delete Firebase user with uid: ${user.providerUid}`);
+          
+          // Use the Firebase Admin SDK directly to delete the user
+          if (admin && admin.auth) {
+            // First try direct UID deletion (most reliable)
+            try {
+              await admin.auth().deleteUser(user.providerUid);
+              console.log(`Successfully deleted Firebase user with uid: ${user.providerUid}`);
+              firebaseDeleted = true;
+            } catch (directDeleteError) {
+              console.error(`Error directly deleting Firebase user: ${directDeleteError.message}`);
+              console.log("Trying fallback provider-based deletion method...");
+              
+              // Fallback: try to delete via provider UID lookup
+              if (user.providerId && user.providerUid) {
+                try {
+                  const providerUid = user.providerUid;
+                  const providerId = user.providerId || 'google.com';
+                  
+                  // Try to find users by email
+                  const firebaseUsersByEmail = await admin.auth().getUserByEmail(user.email);
+                  if (firebaseUsersByEmail) {
+                    // Check if this is the right provider user
+                    const matchingProvider = firebaseUsersByEmail.providerData.find(
+                      p => p.providerId === providerId && p.uid === providerUid
+                    );
+                    
+                    if (matchingProvider) {
+                      await admin.auth().deleteUser(firebaseUsersByEmail.uid);
+                      console.log(`Successfully deleted Firebase user by email lookup: ${firebaseUsersByEmail.uid}`);
+                      firebaseDeleted = true;
+                    }
+                  }
+                } catch (providerLookupError) {
+                  console.error(`Error with provider lookup deletion: ${providerLookupError.message}`);
+                }
+              }
+            }
+          } else {
+            console.warn("Firebase Admin SDK not properly initialized, skipping Firebase deletion");
+          }
         } catch (firebaseError) {
-          console.error("Error deleting Firebase user:", firebaseError);
+          console.error("Error during Firebase user deletion:", firebaseError);
           // Continue with local deletion even if Firebase deletion fails
         }
       }
       
       // Delete the user from our database
+      console.log(`Deleting user ${user.id} from database...`);
       const success = await storage.deleteUser(user.id);
       
       if (success) {
+        console.log(`Successfully deleted user with ID: ${user.id} from database`);
         // Log the user out
+        console.log("Logging out user...");
         req.logout((err) => {
           if (err) {
             console.error("Error logging out after account deletion:", err);
           }
           
-          return res.status(200).json({ 
-            success: true,
-            message: "Your account has been successfully deleted" 
+          console.log("Logout callback executed");
+          
+          // Destroy the session
+          console.log("Destroying session...");
+          req.session.destroy((sessionErr) => {
+            if (sessionErr) {
+              console.error("Error destroying session:", sessionErr);
+            } else {
+              console.log("Session destroyed successfully");
+            }
+            
+            console.log("Sending successful account deletion response");
+            return res.status(200).json({ 
+              success: true,
+              firebaseDeleted,
+              message: "Account deleted successfully" 
+            });
           });
         });
       } else {
