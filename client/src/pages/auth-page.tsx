@@ -6,13 +6,15 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { insertUserSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { validatePasswordComplexity } from "@/lib/password-validator";
+import { Loader2, AlertCircle } from "lucide-react";
 import { 
   signInWithGoogle, 
   handleGoogleRedirectResult, 
@@ -128,7 +130,20 @@ export default function AuthPage() {
   
   // Handle URL changes
   useEffect(() => {
-    const tabParam = window.location.search.includes('tab=register') ? 'register' : 'login';
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    // Check for reset password mode
+    const mode = searchParams.get('mode');
+    if (mode === 'resetPassword') {
+      const oobCode = searchParams.get('oobCode');
+      if (oobCode) {
+        setActiveTab('resetPassword');
+        setResetCode(oobCode);
+        return;
+      }
+    }
+    
+    const tabParam = searchParams.has('tab') ? searchParams.get('tab') as string : 'login';
     setActiveTab(tabParam);
   }, [window.location.search]);
   
@@ -251,6 +266,18 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
+                      
+                      {/* Forgot Password Link */}
+                      <div className="text-right">
+                        <Button 
+                          type="button" 
+                          variant="link" 
+                          className="p-0 h-auto text-sm text-blue-600 hover:text-blue-800"
+                          onClick={() => handleTabChange('forgotPassword')}
+                        >
+                          Forgot password?
+                        </Button>
+                      </div>
                       
                       <Button 
                         type="submit" 
