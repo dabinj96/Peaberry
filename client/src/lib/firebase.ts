@@ -101,4 +101,31 @@ export const signOut = async (): Promise<void> => {
   }
 };
 
+// Send the Firebase token to our server for authentication
+export const authenticateWithServer = async (userCredential: UserCredential) => {
+  try {
+    // Get ID token
+    const idToken = await userCredential.user.getIdToken();
+    
+    // Send to our server
+    const response = await fetch('/api/oauth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ idToken }),
+      credentials: 'include' // Important: Ensures cookies are sent/received for session
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server authentication failed: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error authenticating with server:', error);
+    throw error;
+  }
+};
+
 export { auth, googleProvider };

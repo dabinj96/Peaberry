@@ -229,11 +229,17 @@ export function setupAuth(app: Express) {
         
         if (user) {
           // Update existing user with OAuth information
-          user = await storage.updateUser(user.id, {
+          const updatedUser = await storage.updateUser(user.id, {
             providerId: 'google',
             providerUid: uid,
             photoUrl: picture || null
           });
+          
+          if (!updatedUser) {
+            return res.status(500).send("Failed to update user with OAuth information");
+          }
+          
+          user = updatedUser;
         } else {
           // Create a new user
           const oauthUserData = oauthUserSchema.parse({
@@ -260,11 +266,16 @@ export function setupAuth(app: Express) {
         }
       }
       
+      if (!user) {
+        return res.status(500).send("Failed to create or retrieve user");
+      }
+      
       // Log in the user
       req.login(user, (err) => {
         if (err) return next(err);
         // Don't send password back to client
-        const { password, ...userWithoutPassword } = user;
+        const userWithoutPassword = { ...user };
+        delete userWithoutPassword.password;
         res.status(200).json(userWithoutPassword);
       });
     } catch (error) {

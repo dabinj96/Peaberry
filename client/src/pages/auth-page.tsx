@@ -12,7 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator";
 import { Separator } from "@/components/ui/separator";
-import { signInWithGoogle, handleGoogleRedirectResult } from "@/lib/firebase";
+import { 
+  signInWithGoogle, 
+  handleGoogleRedirectResult, 
+  authenticateWithServer 
+} from "@/lib/firebase";
 import { FcGoogle } from "react-icons/fc"; // FC = Flat Color Google icon
 
 // Login form schema
