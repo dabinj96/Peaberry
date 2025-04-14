@@ -4,3 +4,8 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Firebase service account
+firebase-service-account.json
+*.firebase-service-account.json
+service-account.json
