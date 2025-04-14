@@ -13,7 +13,8 @@ import {
   Loader2, 
   Lock, 
   AlertTriangle,
-  X 
+  X,
+  Info
 } from "lucide-react";
 import CafeCard from "@/components/cafe-card";
 import { apiRequest } from "@/lib/queryClient";
@@ -427,7 +428,11 @@ function DeleteAccountForm({
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const isOAuthUser = !!user.providerId;
+  
+  // Check if this is an OAuth user by looking for providerId
+  console.log("User data for OAuth check:", user);
+  const isOAuthUser = !!(user.providerId || user.providerUid);
+  console.log("Is OAuth user?", isOAuthUser);
   
   // Delete account form
   const deleteForm = useForm<DeleteAccountFormValues>({
@@ -531,7 +536,12 @@ function DeleteAccountForm({
     <>
       <Form {...deleteForm}>
         <form onSubmit={deleteForm.handleSubmit(onSubmitDelete)} className="space-y-6 py-4">
-          {!isOAuthUser && (
+          {isOAuthUser ? (
+            <div className="text-sm text-muted-foreground mb-4">
+              <Info className="h-4 w-4 inline-block mr-1" />
+              You're logged in with Google. No password is required to delete your account.
+            </div>
+          ) : (
             <FormField
               control={deleteForm.control}
               name="password"
