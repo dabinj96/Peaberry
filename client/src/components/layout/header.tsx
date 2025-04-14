@@ -133,10 +133,26 @@ export default function Header() {
             ) : (
               // Not logged in view
               <div className="hidden md:block">
-                <Link href="/auth">
+                <Link href="/auth" onClick={(e) => {
+                  // If already on the auth page, just update the URL and handle the tab change
+                  if (window.location.pathname === '/auth') {
+                    e.preventDefault();
+                    window.history.replaceState(null, '', '/auth');
+                    // Dispatch a custom event that the auth page can listen for
+                    window.dispatchEvent(new CustomEvent('tabChange', { detail: 'login' }));
+                  }
+                }}>
                   <Button variant="outline" className="mr-2">Login</Button>
                 </Link>
-                <Link href="/auth?tab=register">
+                <Link href="/auth?tab=register" onClick={(e) => {
+                  // If already on the auth page, just update the URL and handle the tab change
+                  if (window.location.pathname === '/auth') {
+                    e.preventDefault();
+                    window.history.replaceState(null, '', '/auth?tab=register');
+                    // Dispatch a custom event that the auth page can listen for
+                    window.dispatchEvent(new CustomEvent('tabChange', { detail: 'register' }));
+                  }
+                }}>
                   <Button className="bg-[#A0522D] hover:bg-[#8B4513]">Create Account</Button>
                 </Link>
               </div>
@@ -218,10 +234,26 @@ export default function Header() {
               </div>
             ) : (
               <div className="py-2 border-t mt-2 pt-2">
-                <Link href="/auth">
+                <Link href="/auth" onClick={(e) => {
+                  // If already on the auth page, just update the URL and handle the tab change
+                  if (window.location.pathname === '/auth') {
+                    e.preventDefault();
+                    window.history.replaceState(null, '', '/auth');
+                    // Dispatch a custom event that the auth page can listen for
+                    window.dispatchEvent(new CustomEvent('tabChange', { detail: 'login' }));
+                  }
+                }}>
                   <Button variant="outline" className="mr-2 w-full mb-2">Login</Button>
                 </Link>
-                <Link href="/auth?tab=register">
+                <Link href="/auth?tab=register" onClick={(e) => {
+                  // If already on the auth page, just update the URL and handle the tab change
+                  if (window.location.pathname === '/auth') {
+                    e.preventDefault();
+                    window.history.replaceState(null, '', '/auth?tab=register');
+                    // Dispatch a custom event that the auth page can listen for
+                    window.dispatchEvent(new CustomEvent('tabChange', { detail: 'register' }));
+                  }
+                }}>
                   <Button className="bg-[#A0522D] hover:bg-[#8B4513] w-full">Create Account</Button>
                 </Link>
               </div>

@@ -132,6 +132,21 @@ export default function AuthPage() {
     setActiveTab(tabParam);
   }, [window.location.search]);
   
+  // Listen for tab change events from the header component
+  useEffect(() => {
+    const handleTabChangeEvent = (event: CustomEvent<string>) => {
+      setActiveTab(event.detail);
+    };
+    
+    // Add event listener
+    window.addEventListener('tabChange', handleTabChangeEvent as EventListener);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('tabChange', handleTabChangeEvent as EventListener);
+    };
+  }, []);
+  
   // Update URL when tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value);
