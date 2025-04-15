@@ -6,7 +6,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, oauthUserSchema } from "@shared/schema";
 import bcrypt from 'bcrypt';
-import { verifyFirebaseToken } from "./firebase-admin";
+import { verifyFirebaseToken, createFirebaseUser } from "./firebase-admin";
 
 declare global {
   namespace Express {

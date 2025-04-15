@@ -357,3 +357,47 @@ export async function confirmPasswordReset(code: string, newPassword: string): P
     throw error;
   }
 }
+
+/**
+ * Create a new Firebase user with email and password
+ * @param email User's email address
+ * @param password User's password (cleartext)
+ * @param displayName Optional display name for the user
+ * @returns The Firebase Auth user record with UID
+ */
+export async function createFirebaseUser(email: string, password: string, displayName?: string): Promise<admin.auth.UserRecord | null> {
+  if (!firebaseInitialized) {
+    console.warn('Firebase Admin is not initialized. Cannot create Firebase user.');
+    return null;
+  }
+  
+  try {
+    // Check if a user with this email already exists
+    try {
+      const existingUser = await admin.auth().getUserByEmail(email);
+      if (existingUser) {
+        console.log(`User with email ${email} already exists in Firebase`);
+        return existingUser;
+      }
+    } catch (error: any) {
+      // If error code is auth/user-not-found, that's fine - we'll create the user
+      if (error.code !== 'auth/user-not-found') {
+        throw error; // For any other error, rethrow it
+      }
+    }
+    
+    // Create the user in Firebase Auth
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+      displayName: displayName || email.split('@')[0], // Use part before @ as default display name
+      emailVerified: false // Require email verification
+    });
+    
+    console.log(`Successfully created Firebase user: ${userRecord.uid}`);
+    return userRecord;
+  } catch (error: any) {
+    console.error("Error creating Firebase user:", error);
+    throw new Error(`Failed to create Firebase user: ${error.message}`);
+  }
+}
