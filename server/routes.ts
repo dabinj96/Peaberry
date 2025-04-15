@@ -1519,79 +1519,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Verify and complete password reset
+  // Database update after client-side password reset
   app.post('/api/verify-reset-token', async (req, res) => {
     try {
-      const { oobCode, newPassword } = req.body;
+      const { email, newPassword } = req.body;
       
-      if (!oobCode || !newPassword) {
+      if (!email || !newPassword) {
         return res.status(400).json({
           success: false,
-          message: "Reset code and new password are required"
+          message: "Email and new password are required"
         });
       }
       
-      console.log('Verifying password reset token and updating password');
+      console.log('Updating password in database after client-side Firebase reset');
       
-      try {
-        // Verify the code is valid
-        const email = await verifyPasswordResetCode(oobCode);
-        
-        if (!email) {
-          console.log('Invalid reset code');
-          return res.status(400).json({
-            success: false,
-            message: "Invalid or expired reset code"
-          });
-        }
-        
-        console.log(`Reset code valid for email: ${email}`);
-        
-        // Get user by email
-        const user = await storage.getUserByEmail(email);
-        
-        if (!user) {
-          console.log(`No user found with email: ${email}`);
-          return res.status(404).json({
-            success: false,
-            message: "User not found"
-          });
-        }
-        
-        // Update password in Firebase
-        await confirmPasswordReset(oobCode, newPassword);
-        console.log('Password updated in Firebase');
-        
-        // Update password in our database
-        const hashedPassword = await scrypt.hashPassword(newPassword);
-        await storage.updateUser(user.id, { password: hashedPassword });
-        console.log(`Password updated in database for user ID: ${user.id}`);
-        
-        return res.status(200).json({
-          success: true,
-          message: "Password has been reset successfully"
-        });
-      } catch (firebaseError: any) {
-        console.error('Firebase error verifying/confirming reset:', firebaseError);
-        
-        let errorMessage = "An error occurred while resetting your password. The link may be invalid or expired.";
-        if (firebaseError.code === 'auth/expired-action-code') {
-          errorMessage = "The password reset link has expired. Please request a new one.";
-        } else if (firebaseError.code === 'auth/invalid-action-code') {
-          errorMessage = "The password reset link is invalid. Please request a new one.";
-        } else if (firebaseError.code === 'auth/user-disabled') {
-          errorMessage = "This account has been disabled.";
-        } else if (firebaseError.code === 'auth/user-not-found') {
-          errorMessage = "No account found with this email address.";
-        } else if (firebaseError.code === 'auth/weak-password') {
-          errorMessage = "The password is too weak. Please choose a stronger password.";
-        }
-        
-        return res.status(400).json({
+      // Get user by email
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        console.log(`No user found with email: ${email}`);
+        return res.status(404).json({
           success: false,
-          message: errorMessage
+          message: "User not found"
         });
       }
+      
+      // Update password in our database
+      // Firebase password was already updated on the client side
+      const hashedPassword = await scrypt.hashPassword(newPassword);
+      await storage.updateUser(user.id, { password: hashedPassword });
+      console.log(`Password updated in database for user ID: ${user.id}`);
+      
+      return res.status(200).json({
+        success: true,
+        message: "Password has been reset successfully"
+      });
     } catch (error) {
       console.error('Error in password reset verification:', error);
       return res.status(500).json({
