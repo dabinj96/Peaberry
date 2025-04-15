@@ -321,42 +321,20 @@ export async function generatePasswordResetLink(
   }
 }
 
-/**
- * Verify a password reset code
- * @param code The password reset code
- * @returns The email associated with the code if valid
- */
-export async function verifyPasswordResetCode(code: string): Promise<string> {
-  if (!firebaseInitialized) {
-    throw new Error('Firebase Admin is not initialized. Cannot verify password reset code.');
-  }
-  
-  try {
-    const email = await admin.auth().verifyPasswordResetCode(code);
-    return email;
-  } catch (error) {
-    console.error('Error verifying password reset code:', error);
-    throw error;
-  }
-}
+// Second implementation removed to fix duplication
 
-/**
- * Confirm a password reset
- * @param code The password reset code
- * @param newPassword The new password
- */
-export async function confirmPasswordReset(code: string, newPassword: string): Promise<void> {
-  if (!firebaseInitialized) {
-    throw new Error('Firebase Admin is not initialized. Cannot confirm password reset.');
-  }
-  
-  try {
-    await admin.auth().confirmPasswordReset(code, newPassword);
-  } catch (error) {
-    console.error('Error confirming password reset:', error);
-    throw error;
-  }
-}
+// Note: Password reset verification and confirmation should be handled client-side
+// with the Firebase client SDK. For reference, the client code would look like:
+// 
+// import { getAuth, verifyPasswordResetCode, confirmPasswordReset } from "firebase/auth";
+// 
+// // To verify a code:
+// const auth = getAuth();
+// const email = await verifyPasswordResetCode(auth, code);
+// 
+// // To confirm reset:
+// const auth = getAuth();
+// await confirmPasswordReset(auth, code, newPassword);
 
 /**
  * Create a new Firebase user with email and password

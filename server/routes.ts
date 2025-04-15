@@ -18,9 +18,7 @@ import {
   getFirebaseUserByEmail,
   getProviderData,
   deleteFirebaseUser,
-  generatePasswordResetLink,
-  verifyPasswordResetCode,
-  confirmPasswordReset
+  generatePasswordResetLink
 } from './firebase-admin';
 import { User } from '@shared/schema';
 
