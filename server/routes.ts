@@ -18,7 +18,8 @@ import {
   getFirebaseUserByEmail,
   getProviderData,
   deleteFirebaseUser,
-  generatePasswordResetLink
+  generatePasswordResetLink,
+  updateFirebaseUserPassword
 } from './firebase-admin';
 import { User } from '@shared/schema';
 
@@ -1267,8 +1268,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash the new password
       const hashedPassword = await scrypt.hashPassword(newPassword);
       
-      // Update the password
+      // Update the password in our database
       const updatedUser = await storage.updateUser(user.id, { password: hashedPassword });
+      
+      // Also update the password in Firebase if the user has a Firebase account
+      if (dbUser.email) {
+        try {
+          // Check if user exists in Firebase by email
+          const firebaseUser = await getFirebaseUserByEmail(dbUser.email);
+          if (firebaseUser) {
+            // Update Firebase password
+            const success = await updateFirebaseUserPassword(firebaseUser.uid, newPassword);
+            if (success) {
+              console.log(`Successfully updated Firebase password for user with email: ${dbUser.email}`);
+            } else {
+              console.warn(`Failed to update Firebase password for user with email: ${dbUser.email}`);
+            }
+          }
+        } catch (firebaseError) {
+          console.error("Error updating Firebase password:", firebaseError);
+          // We still consider this a success since the local DB was updated
+        }
+      }
       
       if (updatedUser) {
         return res.status(200).json({ message: "Password changed successfully" });
