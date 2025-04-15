@@ -332,6 +332,25 @@ export default function AuthPage() {
       // If valid, confirm the password reset with the new password
       await confirmPasswordReset(resetCode, data.newPassword);
       
+      // Now also update the password in our database
+      try {
+        const response = await fetch('/api/verify-reset-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            newPassword: data.newPassword
+          })
+        });
+        
+        if (!response.ok) {
+          console.warn('Database password update failed, but Firebase password was updated');
+        }
+      } catch (dbError) {
+        console.error('Error updating password in database:', dbError);
+        // Still continue with success since Firebase password is updated
+      }
+      
       // Show success message
       setResetSuccess(true);
       toast({
