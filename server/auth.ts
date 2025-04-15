@@ -6,7 +6,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, oauthUserSchema } from "@shared/schema";
 import bcrypt from 'bcrypt';
-import { verifyFirebaseToken, createFirebaseUser } from "./firebase-admin";
+import { verifyFirebaseToken, createFirebaseUser, updateFirebaseUserPassword, deleteFirebaseUser } from "./firebase-admin";
 
 declare global {
   namespace Express {
@@ -107,21 +107,57 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      // Check if username is already taken
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
         return res.status(400).send("Username already exists");
       }
 
+      // Check if email is already in use
+      const existingEmail = await storage.getUserByEmail(req.body.email);
+      if (existingEmail) {
+        return res.status(400).send("Email is already registered");
+      }
+
+      // Hash the password for our database
+      const hashedPassword = await hashPassword(req.body.password);
+      
+      // First, create the user in Firebase
+      let firebaseUser = null;
+      try {
+        console.log(`Creating Firebase user for email: ${req.body.email}`);
+        firebaseUser = await createFirebaseUser(
+          req.body.email, 
+          req.body.password, 
+          req.body.name || req.body.username
+        );
+        console.log(`Firebase user created successfully: ${firebaseUser?.uid}`);
+      } catch (firebaseError: any) {
+        console.error("Error creating Firebase user:", firebaseError);
+        // Don't block registration if Firebase creation fails, but log it
+        // This ensures users can still register with our system
+      }
+
+      // Now create the user in our database, including Firebase UID if available
       const user = await storage.createUser({
         ...req.body,
-        password: await hashPassword(req.body.password),
+        password: hashedPassword,
+        // If Firebase user was created, store the provider info
+        ...(firebaseUser ? {
+          providerId: 'password',  // Using 'password' as the provider ID for email/password
+          providerUid: firebaseUser.uid
+        } : {})
       });
 
+      // Log in the user
       req.login(user, (err) => {
         if (err) return next(err);
         // Don't send password back to client
         const { password, ...userWithoutPassword } = user;
-        res.status(201).json(userWithoutPassword);
+        res.status(201).json({
+          ...userWithoutPassword,
+          firebaseLinked: !!firebaseUser
+        });
       });
     } catch (error) {
       next(error);
@@ -205,13 +241,11 @@ export function setupAuth(app: Express) {
         console.log("No password verification needed for OAuth user");
       }
       
-      // For OAuth users, attempt to delete the Firebase account
+      // For any users with a Firebase account (OAuth or password-based), attempt to delete it
       let firebaseDeleteResult = false;
-      if (isOAuthUser && req.user.providerUid) {
+      if (req.user.providerUid) {
         try {
-          // Import the deleteFirebaseUser function
-          const { deleteFirebaseUser } = await import('./firebase-admin');
-          
+          // Use the imported function directly
           console.log(`Attempting to delete Firebase user with UID: ${req.user.providerUid}`);
           firebaseDeleteResult = await deleteFirebaseUser(req.user.providerUid);
           console.log(`Firebase user deletion result: ${firebaseDeleteResult}`);
@@ -219,6 +253,8 @@ export function setupAuth(app: Express) {
           console.error("Error during Firebase user deletion:", firebaseError);
           // Continue with local account deletion even if Firebase deletion fails
         }
+      } else {
+        console.log("No Firebase UID found, skipping Firebase deletion");
       }
       
       // Delete user data from database
@@ -332,17 +368,36 @@ export function setupAuth(app: Express) {
         return res.status(400).send("Current password is incorrect");
       }
       
-      // Hash the new password
+      // Hash the new password for our database
       const hashedPassword = await hashPassword(newPassword);
       
-      // Update the user's password
+      // If user has a Firebase account, update Firebase password first
+      let firebasePasswordUpdated = false;
+      if (user.providerId === 'password' && user.providerUid) {
+        try {
+          console.log(`Updating Firebase password for user with UID: ${user.providerUid}`);
+          firebasePasswordUpdated = await updateFirebaseUserPassword(user.providerUid, newPassword);
+          console.log(`Firebase password update result: ${firebasePasswordUpdated}`);
+        } catch (firebaseError) {
+          console.error("Error updating Firebase password:", firebaseError);
+          // Continue with local password update even if Firebase update fails
+        }
+      }
+      
+      // Update the user's password in our database
       const updatedUser = await storage.updateUser(req.user.id, { password: hashedPassword });
       if (!updatedUser) {
         return res.status(500).send("Failed to update password");
       }
       
-      res.status(200).send("Password changed successfully");
+      // Send back success response with info about Firebase status
+      res.status(200).json({
+        success: true,
+        firebaseUpdated: firebasePasswordUpdated,
+        message: "Password changed successfully"
+      });
     } catch (error) {
+      console.error("Password change error:", error);
       next(error);
     }
   });

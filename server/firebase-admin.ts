@@ -401,3 +401,31 @@ export async function createFirebaseUser(email: string, password: string, displa
     throw new Error(`Failed to create Firebase user: ${error.message}`);
   }
 }
+
+/**
+ * Update a Firebase user's password
+ * @param uid The Firebase UID of the user
+ * @param newPassword The new password to set
+ * @returns True if update was successful, false otherwise
+ */
+export async function updateFirebaseUserPassword(uid: string, newPassword: string): Promise<boolean> {
+  if (!firebaseInitialized) {
+    console.warn('Firebase Admin is not initialized. Cannot update Firebase user password.');
+    return false;
+  }
+  
+  try {
+    await admin.auth().updateUser(uid, {
+      password: newPassword
+    });
+    console.log(`Successfully updated password for Firebase user: ${uid}`);
+    return true;
+  } catch (error: any) {
+    console.error(`Error updating Firebase user password: ${error.message}`);
+    // Log detailed error info for debugging
+    if (error.code) {
+      console.error(`Firebase error code: ${error.code}`);
+    }
+    return false;
+  }
+}
