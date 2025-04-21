@@ -1565,11 +1565,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Update password in our database
+      // Update password in our database and unlock account if it was locked
       // Firebase password was already updated on the client side
       const hashedPassword = await scrypt.hashPassword(newPassword);
-      await storage.updateUser(user.id, { password: hashedPassword });
-      console.log(`Password updated in database for user ID: ${user.id}`);
+      await storage.updateUser(user.id, { 
+        password: hashedPassword,
+        failedLoginAttempts: 0,
+        accountLocked: false,
+        accountLockedAt: null,
+        lockoutExpiresAt: null
+      });
+      console.log(`Password updated in database for user ID: ${user.id}. Account unlocked if it was locked.`);
       
       return res.status(200).json({
         success: true,
