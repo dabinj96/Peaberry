@@ -459,8 +459,8 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="flex items-center">
-                              Username <span className="text-red-500 ml-1">*</span>
+                            <FormLabel>
+                              Username
                             </FormLabel>
                             <FormControl>
                               <Input placeholder="Enter your username" {...field} />
