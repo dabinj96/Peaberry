@@ -475,8 +475,8 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="flex items-center">
-                              Password <span className="text-red-500 ml-1">*</span>
+                            <FormLabel>
+                              Password
                             </FormLabel>
                             <FormControl>
                               <div className="relative">
@@ -576,8 +576,8 @@ export default function AuthPage() {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="flex items-center">
-                              Email <span className="text-red-500 ml-1">*</span>
+                            <FormLabel>
+                              Email
                             </FormLabel>
                             <FormControl>
                               <Input type="email" placeholder="Enter your email address" {...field} />
@@ -643,8 +643,8 @@ export default function AuthPage() {
                           name="newPassword"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="flex items-center">
-                                New Password <span className="text-red-500 ml-1">*</span>
+                              <FormLabel>
+                                New Password
                               </FormLabel>
                               <FormControl>
                                 <div className="relative">
@@ -682,8 +682,8 @@ export default function AuthPage() {
                           name="confirmNewPassword"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="flex items-center">
-                                Confirm New Password <span className="text-red-500 ml-1">*</span>
+                              <FormLabel>
+                                Confirm New Password
                               </FormLabel>
                               <FormControl>
                                 <div className="relative">
@@ -873,6 +873,20 @@ export default function AuthPage() {
                               </div>
                             </FormControl>
                             <FormMessage />
+                            {field.value && registerForm.watch('password') !== field.value && (
+                              <div className="text-red-500 text-xs mt-1 flex items-center">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Passwords don't match
+                              </div>
+                            )}
+                            {field.value && registerForm.watch('password') === field.value && field.value.length > 0 && (
+                              <div className="text-green-500 text-xs mt-1 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Passwords match
+                              </div>
+                            )}
                           </FormItem>
                         )}
                       />
