@@ -33,8 +33,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      try {
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(credentials),
+          credentials: "include",
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          let errorMessage = data.message || "Authentication failed";
+          
+          // Format the error message to be more user-friendly
+          if (data.attemptsRemaining !== undefined) {
+            errorMessage += `. You have ${data.attemptsRemaining} login ${data.attemptsRemaining === 1 ? 'attempt' : 'attempts'} remaining.`;
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        return data;
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error("Login failed. Please try again.");
+      }
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -54,8 +80,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: InsertUser) => {
-      const res = await apiRequest("POST", "/api/register", credentials);
-      return await res.json();
+      try {
+        const res = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(credentials),
+          credentials: "include",
+        });
+        
+        if (!res.ok) {
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await res.json();
+            throw new Error(data.message || data.error || "Registration failed");
+          } else {
+            const text = await res.text();
+            throw new Error(text || "Registration failed");
+          }
+        }
+        
+        return await res.json();
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error("Registration failed. Please try again.");
+      }
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
