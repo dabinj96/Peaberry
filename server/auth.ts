@@ -7,6 +7,7 @@ import { storage } from "./storage";
 import { User as SelectUser, oauthUserSchema } from "@shared/schema";
 import bcrypt from 'bcrypt';
 import { verifyFirebaseToken, createFirebaseUser, updateFirebaseUserPassword, deleteFirebaseUser } from "./firebase-admin";
+import crypto from 'crypto';
 
 declare global {
   namespace Express {
@@ -62,6 +63,41 @@ export const requireCafeOwnerOrAdmin = (req: any, res: any, next: any) => {
   
   next();
 };
+
+/**
+ * Generate a secure password reset token
+ * @returns Object containing the token and its expiration date
+ */
+export function generatePasswordResetToken(): { token: string, expiresAt: Date } {
+  // Generate a secure random token
+  const token = crypto.randomBytes(32).toString('hex');
+  
+  // Set token expiration to 1 hour from now
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + 1);
+  
+  return { token, expiresAt };
+}
+
+/**
+ * Validate a password reset token
+ * @param token The token to validate
+ * @param storedExpiresAt The token's expiration date from the database
+ * @returns Boolean indicating if the token is valid
+ */
+export function isPasswordResetTokenValid(token: string, storedExpiresAt: Date | null): boolean {
+  if (!token || !storedExpiresAt) {
+    return false;
+  }
+  
+  // Check if token has expired
+  const now = new Date();
+  if (now > new Date(storedExpiresAt)) {
+    return false;
+  }
+  
+  return true;
+}
 
 export function setupAuth(app: Express) {
   const sessionSecret = process.env.SESSION_SECRET || "peaberry-coffee-secret-key";
@@ -507,6 +543,215 @@ export function setupAuth(app: Express) {
   });
   
   // OAuth with Firebase authentication
+  // Password reset request endpoint
+  app.post("/api/request-password-reset", async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: "Email is required"
+        });
+      }
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      
+      // Don't reveal if the email exists or not for security
+      if (!user) {
+        console.log(`Password reset requested for non-existent email: ${email}`);
+        return res.status(200).json({
+          success: true,
+          message: "If the email exists, a password reset link has been sent"
+        });
+      }
+      
+      // Generate a password reset token
+      const { token, expiresAt } = generatePasswordResetToken();
+      
+      // Update the user with the token
+      await storage.updateUser(user.id, {
+        passwordResetToken: token,
+        passwordResetTokenExpiresAt: expiresAt
+      });
+      
+      // In a real application, you would send the token via email here
+      // For development purposes, we'll return it in the response
+      console.log(`Generated password reset token for ${email}: ${token}`);
+      
+      // Send the token back for testing (in production, send via email)
+      return res.status(200).json({
+        success: true,
+        message: "If the email exists, a password reset link has been sent",
+        // Include debug info for development only
+        debug: {
+          token,
+          expiresAt,
+          resetUrl: `${req.protocol}://${req.get('host')}/reset-password?token=${token}`
+        }
+      });
+    } catch (error) {
+      console.error("Password reset request error:", error);
+      next(error);
+    }
+  });
+  
+  // Verify reset token endpoint
+  app.post("/api/verify-reset-token", async (req, res, next) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: "Token is required"
+        });
+      }
+      
+      // Find user by reset token
+      const user = await storage.getUserByResetToken(token);
+      
+      if (!user || !user.passwordResetTokenExpiresAt) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired token"
+        });
+      }
+      
+      // Verify the token's validity
+      const isValid = isPasswordResetTokenValid(token, user.passwordResetTokenExpiresAt);
+      
+      if (!isValid) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired token"
+        });
+      }
+      
+      // Token is valid
+      return res.status(200).json({
+        success: true,
+        message: "Token is valid",
+        username: user.username,
+        email: user.email
+      });
+    } catch (error) {
+      console.error("Token verification error:", error);
+      next(error);
+    }
+  });
+  
+  // Reset password with token endpoint
+  app.post("/api/reset-password", async (req, res, next) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "Token and new password are required"
+        });
+      }
+      
+      // Find user by reset token
+      const user = await storage.getUserByResetToken(token);
+      
+      if (!user || !user.passwordResetTokenExpiresAt) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired token"
+        });
+      }
+      
+      // Verify the token's validity
+      const isValid = isPasswordResetTokenValid(token, user.passwordResetTokenExpiresAt);
+      
+      if (!isValid) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired token"
+        });
+      }
+      
+      // Validate new password
+      if (newPassword.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: "Password must be at least 8 characters long"
+        });
+      }
+      
+      // Validate password complexity
+      const hasUppercase = /[A-Z]/.test(newPassword);
+      const hasLowercase = /[a-z]/.test(newPassword);
+      const hasNumber = /[0-9]/.test(newPassword);
+      const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
+      
+      // Check if password meets minimum complexity requirements
+      const varietyScore = [hasUppercase, hasLowercase, hasNumber, hasSpecial].filter(Boolean).length;
+      if (varietyScore < 2) {
+        return res.status(400).json({
+          success: false,
+          message: "Password must include at least 2 of the following: uppercase letters, lowercase letters, numbers, and special characters"
+        });
+      }
+      
+      // Check for common passwords
+      const commonPasswords = ["password", "123456", "qwerty", "welcome", "admin"];
+      if (commonPasswords.includes(newPassword.toLowerCase())) {
+        return res.status(400).json({
+          success: false,
+          message: "This password is too common and not secure"
+        });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update Firebase password if applicable
+      let firebasePasswordUpdated = false;
+      if (user.providerId === 'password' && user.providerUid) {
+        try {
+          console.log(`Updating Firebase password for user with UID: ${user.providerUid}`);
+          firebasePasswordUpdated = await updateFirebaseUserPassword(user.providerUid, newPassword);
+          console.log(`Firebase password update result: ${firebasePasswordUpdated}`);
+        } catch (firebaseError) {
+          console.error("Error updating Firebase password:", firebaseError);
+          // Continue with local password update even if Firebase update fails
+        }
+      }
+      
+      // Update the user's password and clear the reset token
+      const updatedUser = await storage.updateUser(user.id, {
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetTokenExpiresAt: null,
+        failedLoginAttempts: 0,
+        accountLocked: false,
+        accountLockedAt: null,
+        lockoutExpiresAt: null
+      });
+      
+      if (!updatedUser) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update password"
+        });
+      }
+      
+      // Return success response
+      return res.status(200).json({
+        success: true,
+        firebaseUpdated: firebasePasswordUpdated,
+        message: "Password has been reset successfully. You can now log in with your new password."
+      });
+    } catch (error) {
+      console.error("Password reset error:", error);
+      next(error);
+    }
+  });
+  
   app.post("/api/oauth/login", async (req, res, next) => {
     try {
       console.log("Processing OAuth login request");
