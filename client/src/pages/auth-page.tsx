@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { 
   signInWithGoogle, 
   handleGoogleRedirectResult, 
@@ -67,6 +67,13 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [isFirebaseLoading, setIsFirebaseLoading] = useState(false);
   const [firebaseError, setFirebaseError] = useState<string | null>(null);
+  
+  // Password visibility states
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   
   // Password reset states
   const [resetCode, setResetCode] = useState<string | null>(null);
@@ -452,7 +459,9 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel className="flex items-center">
+                              Username <span className="text-red-500 ml-1">*</span>
+                            </FormLabel>
                             <FormControl>
                               <Input placeholder="Enter your username" {...field} />
                             </FormControl>
@@ -466,9 +475,33 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel className="flex items-center">
+                              Password <span className="text-red-500 ml-1">*</span>
+                            </FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Enter your password" {...field} />
+                              <div className="relative">
+                                <Input 
+                                  type={showLoginPassword ? "text" : "password"} 
+                                  placeholder="Enter your password" 
+                                  {...field} 
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                                  tabIndex={-1}
+                                >
+                                  {showLoginPassword ? (
+                                    <EyeOff className="h-4 w-4 text-gray-500" />
+                                  ) : (
+                                    <Eye className="h-4 w-4 text-gray-500" />
+                                  )}
+                                  <span className="sr-only">
+                                    {showLoginPassword ? "Hide password" : "Show password"}
+                                  </span>
+                                </Button>
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
