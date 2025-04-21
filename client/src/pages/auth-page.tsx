@@ -576,7 +576,9 @@ export default function AuthPage() {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel className="flex items-center">
+                              Email <span className="text-red-500 ml-1">*</span>
+                            </FormLabel>
                             <FormControl>
                               <Input type="email" placeholder="Enter your email address" {...field} />
                             </FormControl>
@@ -641,9 +643,33 @@ export default function AuthPage() {
                           name="newPassword"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>New Password</FormLabel>
+                              <FormLabel className="flex items-center">
+                                New Password <span className="text-red-500 ml-1">*</span>
+                              </FormLabel>
                               <FormControl>
-                                <Input type="password" placeholder="Enter new password" {...field} />
+                                <div className="relative">
+                                  <Input 
+                                    type={showNewPassword ? "text" : "password"} 
+                                    placeholder="Enter new password" 
+                                    {...field} 
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                    tabIndex={-1}
+                                  >
+                                    {showNewPassword ? (
+                                      <EyeOff className="h-4 w-4 text-gray-500" />
+                                    ) : (
+                                      <Eye className="h-4 w-4 text-gray-500" />
+                                    )}
+                                    <span className="sr-only">
+                                      {showNewPassword ? "Hide password" : "Show password"}
+                                    </span>
+                                  </Button>
+                                </div>
                               </FormControl>
                               <PasswordStrengthIndicator password={field.value} />
                               <FormMessage />
@@ -656,9 +682,33 @@ export default function AuthPage() {
                           name="confirmNewPassword"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Confirm New Password</FormLabel>
+                              <FormLabel className="flex items-center">
+                                Confirm New Password <span className="text-red-500 ml-1">*</span>
+                              </FormLabel>
                               <FormControl>
-                                <Input type="password" placeholder="Confirm new password" {...field} />
+                                <div className="relative">
+                                  <Input 
+                                    type={showConfirmNewPassword ? "text" : "password"} 
+                                    placeholder="Confirm new password" 
+                                    {...field} 
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                                    tabIndex={-1}
+                                  >
+                                    {showConfirmNewPassword ? (
+                                      <EyeOff className="h-4 w-4 text-gray-500" />
+                                    ) : (
+                                      <Eye className="h-4 w-4 text-gray-500" />
+                                    )}
+                                    <span className="sr-only">
+                                      {showConfirmNewPassword ? "Hide password" : "Show password"}
+                                    </span>
+                                  </Button>
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -707,7 +757,9 @@ export default function AuthPage() {
                         name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Full Name</FormLabel>
+                            <FormLabel className="flex items-center">
+                              Full Name <span className="text-red-500 ml-1">*</span>
+                            </FormLabel>
                             <FormControl>
                               <Input placeholder="Enter your full name" {...field} />
                             </FormControl>
@@ -721,7 +773,9 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel className="flex items-center">
+                              Username <span className="text-red-500 ml-1">*</span>
+                            </FormLabel>
                             <FormControl>
                               <Input placeholder="Choose a username" {...field} />
                             </FormControl>
@@ -735,7 +789,9 @@ export default function AuthPage() {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel className="flex items-center">
+                              Email <span className="text-red-500 ml-1">*</span>
+                            </FormLabel>
                             <FormControl>
                               <Input type="email" placeholder="Enter your email" {...field} />
                             </FormControl>
@@ -749,9 +805,33 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel className="flex items-center">
+                              Password <span className="text-red-500 ml-1">*</span>
+                            </FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Create a password" {...field} />
+                              <div className="relative">
+                                <Input 
+                                  type={showRegisterPassword ? "text" : "password"} 
+                                  placeholder="Create a password" 
+                                  {...field} 
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                  onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                                  tabIndex={-1}
+                                >
+                                  {showRegisterPassword ? (
+                                    <EyeOff className="h-4 w-4 text-gray-500" />
+                                  ) : (
+                                    <Eye className="h-4 w-4 text-gray-500" />
+                                  )}
+                                  <span className="sr-only">
+                                    {showRegisterPassword ? "Hide password" : "Show password"}
+                                  </span>
+                                </Button>
+                              </div>
                             </FormControl>
                             <PasswordStrengthIndicator password={field.value} />
                             <FormMessage />
@@ -764,9 +844,33 @@ export default function AuthPage() {
                         name="confirmPassword"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Confirm Password</FormLabel>
+                            <FormLabel className="flex items-center">
+                              Confirm Password <span className="text-red-500 ml-1">*</span>
+                            </FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Confirm your password" {...field} />
+                              <div className="relative">
+                                <Input 
+                                  type={showConfirmPassword ? "text" : "password"} 
+                                  placeholder="Confirm your password" 
+                                  {...field} 
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                  tabIndex={-1}
+                                >
+                                  {showConfirmPassword ? (
+                                    <EyeOff className="h-4 w-4 text-gray-500" />
+                                  ) : (
+                                    <Eye className="h-4 w-4 text-gray-500" />
+                                  )}
+                                  <span className="sr-only">
+                                    {showConfirmPassword ? "Hide password" : "Show password"}
+                                  </span>
+                                </Button>
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
