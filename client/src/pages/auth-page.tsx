@@ -339,8 +339,9 @@ export default function AuthPage() {
       // If valid, confirm the password reset with the new password
       await confirmPasswordReset(resetCode, data.newPassword);
       
-      // Now also update the password in our database
+      // Now also update the password in our database and ensure account is unlocked
       try {
+        console.log('Updating database with new password and unlocking account if needed');
         const response = await fetch('/api/verify-reset-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -350,8 +351,13 @@ export default function AuthPage() {
           })
         });
         
+        const responseData = await response.json();
+        console.log('Database password update response:', responseData);
+        
         if (!response.ok) {
           console.warn('Database password update failed, but Firebase password was updated');
+        } else {
+          console.log('Database password updated successfully and account unlocked if needed');
         }
       } catch (dbError) {
         console.error('Error updating password in database:', dbError);

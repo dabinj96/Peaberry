@@ -128,8 +128,11 @@ export function setupAuth(app: Express) {
         
         // Check if account is locked
         if (user.accountLocked) {
+          console.log(`Account for user ${user.username} is locked. Checking if lockout period expired.`);
+          
           // Check if lockout period has expired
           if (user.lockoutExpiresAt && new Date() > new Date(user.lockoutExpiresAt)) {
+            console.log(`Lockout period expired for user ${user.username}. Automatically unlocking account.`);
             // Automatically unlock the account if lockout period expired
             await storage.updateUser(user.id, {
               accountLocked: false,
@@ -138,8 +141,10 @@ export function setupAuth(app: Express) {
               lockoutExpiresAt: null
             });
             // Continue with normal authentication flow
+            console.log(`Account for user ${user.username} automatically unlocked.`);
           } else {
             // Account is still locked
+            console.log(`Account for user ${user.username} is still locked. Locked at: ${user.accountLockedAt}, expires at: ${user.lockoutExpiresAt}`);
             return done(null, false, { 
               message: "Your account has been temporarily locked due to multiple failed login attempts. Please reset your password or try again later.",
               locked: true

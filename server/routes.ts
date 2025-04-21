@@ -1565,21 +1565,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Update password in our database and unlock account if it was locked
+      console.log(`Found user by email: ${email}, ID: ${user.id}, Account locked: ${user.accountLocked}`);
+      
+      // Update password in our database and explicitly unlock account 
       // Firebase password was already updated on the client side
       const hashedPassword = await scrypt.hashPassword(newPassword);
-      await storage.updateUser(user.id, { 
+      
+      const updateResult = await storage.updateUser(user.id, { 
         password: hashedPassword,
         failedLoginAttempts: 0,
         accountLocked: false,
         accountLockedAt: null,
         lockoutExpiresAt: null
       });
-      console.log(`Password updated in database for user ID: ${user.id}. Account unlocked if it was locked.`);
+      
+      // Double-check that account was unlocked
+      if (updateResult) {
+        console.log(`Password updated in database for user ID: ${user.id}. Account unlocked successfully.`);
+      } else {
+        console.error(`Failed to update user ${user.id} in database during password reset.`);
+      }
+      
+      // Verify account is unlocked after update
+      const updatedUser = await storage.getUser(user.id);
+      console.log(`User account status after update - Locked: ${updatedUser?.accountLocked}, Failed attempts: ${updatedUser?.failedLoginAttempts}`);
       
       return res.status(200).json({
         success: true,
-        message: "Password has been reset successfully"
+        message: "Password has been reset successfully",
+        accountUnlocked: true
       });
     } catch (error) {
       console.error('Error in password reset verification:', error);

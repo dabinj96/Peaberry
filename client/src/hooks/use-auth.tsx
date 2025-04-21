@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       try {
+        console.log("Attempting login with username:", credentials.username);
         const res = await fetch("/api/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         
         const data = await res.json();
+        console.log("Login response:", data);
         
         if (!res.ok) {
           let errorMessage = data.message || "Authentication failed";
@@ -49,6 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Format the error message to be more user-friendly
           if (data.attemptsRemaining !== undefined) {
             errorMessage += `. You have ${data.attemptsRemaining} login ${data.attemptsRemaining === 1 ? 'attempt' : 'attempts'} remaining.`;
+          }
+          
+          // Log additional details about locked account
+          if (data.locked) {
+            console.error("Account is locked. This should have been unlocked after password reset.");
           }
           
           throw new Error(errorMessage);
