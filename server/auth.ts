@@ -84,11 +84,83 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
-          return done(null, false);
-        } else {
-          return done(null, user);
+        
+        // User doesn't exist - return generic error (don't reveal user existence)
+        if (!user) {
+          return done(null, false, { message: "Invalid username or password" });
         }
+        
+        // Check if account is locked
+        if (user.accountLocked) {
+          // Check if lockout period has expired
+          if (user.lockoutExpiresAt && new Date() > new Date(user.lockoutExpiresAt)) {
+            // Automatically unlock the account if lockout period expired
+            await storage.updateUser(user.id, {
+              accountLocked: false,
+              failedLoginAttempts: 0,
+              accountLockedAt: null,
+              lockoutExpiresAt: null
+            });
+            // Continue with normal authentication flow
+          } else {
+            // Account is still locked
+            return done(null, false, { 
+              message: "Your account has been temporarily locked due to multiple failed login attempts. Please reset your password or try again later.",
+              locked: true
+            });
+          }
+        }
+        
+        // Check password
+        const passwordMatches = await comparePasswords(password, user.password);
+        
+        if (!passwordMatches) {
+          // Increment failed attempts
+          const failedAttempts = (user.failedLoginAttempts || 0) + 1;
+          const MAX_FAILED_ATTEMPTS = 5;
+          
+          if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
+            // Lock the account - 30 minute lockout period
+            const lockoutPeriod = 30 * 60 * 1000; // 30 minutes in milliseconds
+            const now = new Date();
+            const expiresAt = new Date(now.getTime() + lockoutPeriod);
+            
+            await storage.updateUser(user.id, {
+              failedLoginAttempts: failedAttempts,
+              accountLocked: true,
+              accountLockedAt: now,
+              lockoutExpiresAt: expiresAt
+            });
+            
+            return done(null, false, {
+              message: "Your account has been temporarily locked due to multiple failed login attempts. Please reset your password or try again later.",
+              locked: true
+            });
+          } else {
+            // Update failed attempts
+            await storage.updateUser(user.id, {
+              failedLoginAttempts: failedAttempts
+            });
+            
+            return done(null, false, {
+              message: "Invalid username or password",
+              attemptsRemaining: MAX_FAILED_ATTEMPTS - failedAttempts
+            });
+          }
+        }
+        
+        // Password matched - reset failed attempts counter
+        if (user.failedLoginAttempts > 0) {
+          await storage.updateUser(user.id, { 
+            failedLoginAttempts: 0,
+            accountLocked: false,
+            accountLockedAt: null,
+            lockoutExpiresAt: null
+          });
+        }
+        
+        // Successful login
+        return done(null, user);
       } catch (error) {
         return done(error);
       }
@@ -164,13 +236,45 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    if (!req.user) {
-      return res.status(401).send("Authentication failed");
-    }
-    // Don't send password back to client
-    const { password, ...userWithoutPassword } = req.user;
-    res.status(200).json(userWithoutPassword);
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+      if (err) {
+        return next(err);
+      }
+      
+      // Handle authentication failure cases
+      if (!user) {
+        // Check if account is locked
+        if (info && info.locked) {
+          return res.status(403).json({
+            success: false,
+            locked: true,
+            message: info.message
+          });
+        }
+        
+        // Regular authentication failure
+        return res.status(401).json({
+          success: false,
+          message: info && info.message ? info.message : "Invalid username or password",
+          attemptsRemaining: info && info.attemptsRemaining
+        });
+      }
+      
+      // Success - log in the user
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          return next(loginErr);
+        }
+        
+        // Don't send password back to client
+        const { password, ...userWithoutPassword } = user;
+        return res.status(200).json({
+          success: true,
+          ...userWithoutPassword
+        });
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {

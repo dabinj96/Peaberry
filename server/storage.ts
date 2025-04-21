@@ -17,6 +17,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByProviderAuth(providerId: string, providerUid: string): Promise<User | undefined>;
+  getUserByResetToken(token: string): Promise<User | undefined>;
   listUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
@@ -130,6 +131,15 @@ export class MemStorage implements IStorage {
   async getUserByProviderAuth(providerId: string, providerUid: string): Promise<User | undefined> {
     for (const user of this.usersMap.values()) {
       if (user.providerId === providerId && user.providerUid === providerUid) {
+        return user;
+      }
+    }
+    return undefined;
+  }
+  
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    for (const user of this.usersMap.values()) {
+      if (user.passwordResetToken === token) {
         return user;
       }
     }

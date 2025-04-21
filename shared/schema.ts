@@ -22,6 +22,14 @@ export const users = pgTable("users", {
   providerId: text("provider_id"),    // e.g. 'google', 'facebook'
   providerUid: text("provider_uid"),  // unique ID from the provider
   photoUrl: text("photo_url"),        // profile photo URL
+  
+  // Account security and lockout fields
+  failedLoginAttempts: integer("failed_login_attempts").default(0),
+  accountLocked: boolean("account_locked").default(false),
+  accountLockedAt: timestamp("account_locked_at"),
+  lockoutExpiresAt: timestamp("lockout_expires_at"),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetTokenExpiresAt: timestamp("password_reset_token_expires_at"),
 });
 
 // Cafes table
