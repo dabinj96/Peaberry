@@ -1543,9 +1543,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Database update after client-side password reset
   app.post('/api/verify-reset-token', async (req, res) => {
     try {
-      const { email, newPassword } = req.body;
+      const { email, username, newPassword } = req.body;
+      
+      console.log(`Processing password reset verification: email=${email}, username=${username || 'not provided'}`);
       
       if (!email || !newPassword) {
+        console.warn('Missing required fields for password reset');
         return res.status(400).json({
           success: false,
           message: "Email and new password are required"
@@ -1554,8 +1557,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Updating password in database after client-side Firebase reset');
       
-      // Get user by email
-      const user = await storage.getUserByEmail(email);
+      // If username is provided, try to get user by username first
+      let user;
+      if (username) {
+        console.log(`Username provided: ${username}, attempting to find user by username first`);
+        user = await storage.getUserByUsername(username);
+        
+        if (user) {
+          console.log(`Found user by username: ${username}, ID: ${user.id}`);
+        } else {
+          console.log(`No user found with username: ${username}, falling back to email lookup`);
+        }
+      }
+      
+      // If we couldn't find the user by username or no username was provided, try by email
+      if (!user) {
+        user = await storage.getUserByEmail(email);
+      }
       
       if (!user) {
         console.log(`No user found with email: ${email}`);
