@@ -165,30 +165,30 @@ export function wasPasswordRecentlyUpdated(user: admin.auth.UserRecord): boolean
   if (!user) return false;
   
   try {
-    // Check if passwordUpdatedAt exists and is different from createdAt
-    // This would indicate a password change separate from account creation
-    if (user.metadata.passwordUpdatedAt && user.metadata.creationTime) {
-      const passwordUpdateTime = new Date(user.metadata.passwordUpdatedAt).getTime();
-      const creationTime = new Date(user.metadata.creationTime).getTime();
-      const lastSignInTime = user.metadata.lastSignInTime 
-        ? new Date(user.metadata.lastSignInTime).getTime() 
-        : 0;
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    
+    // Primary approach: check if tokens were revoked recently
+    // Token revocation often happens with password changes
+    if (user.tokensValidAfterTime) {
+      const tokensValidAfter = new Date(user.tokensValidAfterTime).getTime();
       
-      // Consider a password updated if:
-      // 1. It was updated after creation (not just the initial password set)
-      // 2. It was updated recently (within the last hour)
-      const oneHourAgo = Date.now() - (60 * 60 * 1000);
-      
-      // Password was updated after account creation
-      const updatedAfterCreation = passwordUpdateTime > creationTime;
-      
-      // Password was updated recently (within the last hour)
-      const updatedRecently = passwordUpdateTime > oneHourAgo;
-      
-      // If updated after creation AND recently or updated after last sign in
-      return (updatedAfterCreation && updatedRecently) || 
-             (lastSignInTime > 0 && passwordUpdateTime > lastSignInTime);
+      // If tokens were invalidated in the last hour, it's likely due to a password change
+      if (tokensValidAfter > oneHourAgo) {
+        return true;
+      }
     }
+    
+    // Secondary approach: check for recent sign-in
+    if (user.metadata && user.metadata.lastSignInTime) {
+      const lastSignIn = new Date(user.metadata.lastSignInTime).getTime();
+      
+      // If user signed in very recently, might indicate password reset
+      if (lastSignIn > oneHourAgo) {
+        return true;
+      }
+    }
+    
+    // No evidence of recent password change
     return false;
   } catch (error) {
     console.error('Error checking if password was updated:', error);

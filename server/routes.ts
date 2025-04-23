@@ -19,7 +19,8 @@ import {
   getProviderData,
   deleteFirebaseUser,
   generatePasswordResetLink,
-  updateFirebaseUserPassword
+  updateFirebaseUserPassword,
+  wasPasswordRecentlyUpdated
 } from './firebase-admin';
 import { User } from '@shared/schema';
 
