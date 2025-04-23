@@ -596,11 +596,18 @@ export function setupAuth(app: Express) {
       // Generate a password reset token
       const { token, expiresAt } = generatePasswordResetToken();
       
-      // Update the user with the token
+      // Update the user with the token and unlock the account
+      // IMPORTANT: We unlock the account immediately when a password reset is requested
       await storage.updateUser(user.id, {
         passwordResetToken: token,
-        passwordResetTokenExpiresAt: expiresAt
+        passwordResetTokenExpiresAt: expiresAt,
+        accountLocked: false,
+        failedLoginAttempts: 0,
+        accountLockedAt: null,
+        lockoutExpiresAt: null
       });
+      
+      console.log(`Account unlocked for ${user.username} due to password reset request`);
       
       // In a real application, you would send the token via email here
       // For development purposes, we'll return it in the response
