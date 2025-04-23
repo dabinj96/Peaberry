@@ -47,6 +47,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 // Password reset request schema
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
+  username: z.string().min(1, "Username is required"),
 });
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
@@ -263,6 +264,7 @@ export default function AuthPage() {
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       email: "",
+      username: "",
     },
   });
   
@@ -281,6 +283,10 @@ export default function AuthPage() {
     setResetRequestSuccess(false);
     
     try {
+      // Save username for the email in localStorage to retrieve during reset
+      localStorage.setItem(`passwordReset_${data.email}`, data.username);
+      console.log(`Stored username ${data.username} for email ${data.email} in localStorage for password reset`);
+      
       // Use the client-side Firebase function to send password reset email
       await resetPassword(data.email);
       
@@ -352,6 +358,10 @@ export default function AuthPage() {
       const email = await verifyPasswordResetCode(resetCode);
       console.log(`Verified reset code for email: ${email}`);
       
+      // Retrieve the username associated with this email from localStorage
+      const username = localStorage.getItem(`passwordReset_${email}`);
+      console.log(`Retrieved username from localStorage: ${username || 'none found'} for email ${email}`);
+      
       // If valid, confirm the password reset with the new password
       await confirmPasswordReset(resetCode, data.newPassword);
       
@@ -363,6 +373,7 @@ export default function AuthPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email,
+            username, // Include the username so server knows which account to update
             newPassword: data.newPassword
           })
         });
@@ -379,18 +390,25 @@ export default function AuthPage() {
           // Auto-login with new credentials after successful update
           try {
             console.log('Attempting automatic login with new credentials');
-            // First, try logging in with the email username (before @)
-            const username = email.split('@')[0];
-            console.log(`Attempting login with extracted username: ${username}`);
+            // Use the stored username if available, otherwise fallback to email prefix
+            const loginUsername = username || email.split('@')[0];
+            console.log(`Attempting login with username: ${loginUsername}`);
             
             // Use the already defined setLocation from component
             
             loginMutation.mutate({
-              username,
+              username: loginUsername,
               password: data.newPassword
             }, {
               onSuccess: (userData) => {
                 console.log('Auto-login successful after password reset:', userData);
+                
+                // Clean up localStorage after successful reset and login
+                if (email) {
+                  localStorage.removeItem(`passwordReset_${email}`);
+                  console.log(`Removed passwordReset_${email} from localStorage after successful reset`);
+                }
+                
                 toast({
                   title: "Logged in successfully",
                   description: "You've been automatically logged in with your new password.",
@@ -619,6 +637,22 @@ export default function AuthPage() {
                 <CardContent>
                   <Form {...forgotPasswordForm}>
                     <form onSubmit={forgotPasswordForm.handleSubmit(onForgotPasswordSubmit)} className="space-y-4">
+                      <FormField
+                        control={forgotPasswordForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              Username
+                            </FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter your username" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
                       <FormField
                         control={forgotPasswordForm.control}
                         name="email"
