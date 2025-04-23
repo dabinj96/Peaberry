@@ -156,6 +156,47 @@ export function verifyFirebaseAuthWebhookSignature(signature: string, body: stri
 }
 
 /**
+ * Detect if a user's password was updated in Firebase
+ * This function analyzes Firebase User Record metadata to detect password changes
+ * @param user The Firebase user record
+ * @returns Boolean indicating if password was recently updated
+ */
+export function wasPasswordRecentlyUpdated(user: admin.auth.UserRecord): boolean {
+  if (!user) return false;
+  
+  try {
+    // Check if passwordUpdatedAt exists and is different from createdAt
+    // This would indicate a password change separate from account creation
+    if (user.metadata.passwordUpdatedAt && user.metadata.creationTime) {
+      const passwordUpdateTime = new Date(user.metadata.passwordUpdatedAt).getTime();
+      const creationTime = new Date(user.metadata.creationTime).getTime();
+      const lastSignInTime = user.metadata.lastSignInTime 
+        ? new Date(user.metadata.lastSignInTime).getTime() 
+        : 0;
+      
+      // Consider a password updated if:
+      // 1. It was updated after creation (not just the initial password set)
+      // 2. It was updated recently (within the last hour)
+      const oneHourAgo = Date.now() - (60 * 60 * 1000);
+      
+      // Password was updated after account creation
+      const updatedAfterCreation = passwordUpdateTime > creationTime;
+      
+      // Password was updated recently (within the last hour)
+      const updatedRecently = passwordUpdateTime > oneHourAgo;
+      
+      // If updated after creation AND recently or updated after last sign in
+      return (updatedAfterCreation && updatedRecently) || 
+             (lastSignInTime > 0 && passwordUpdateTime > lastSignInTime);
+    }
+    return false;
+  } catch (error) {
+    console.error('Error checking if password was updated:', error);
+    return false;
+  }
+}
+
+/**
  * Check if a user exists in Firebase Auth by provider ID and UID
  * @param providerId The provider ID (e.g., 'google.com')
  * @param providerUid The provider UID

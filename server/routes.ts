@@ -1992,6 +1992,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
           }
           
+          // Check if password was updated using our helper function
+          const passwordWasUpdated = wasPasswordRecentlyUpdated(firebaseUser);
+          console.log(`Firebase user ${uid} password updated? ${passwordWasUpdated}`);
+          
+          // Track user for unlocking
+          let userToUpdate = null;
+          
           // For each provider, check if we have a user and update accordingly
           for (const provider of firebaseUser.providerData) {
             if (provider.providerId === 'google.com') {
@@ -1999,6 +2006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               if (existingUser) {
                 console.log(`Updating user ${existingUser.id} with new Firebase data`);
+                userToUpdate = existingUser;
                 
                 // Update user with latest Firebase data
                 await storage.updateUser(existingUser.id, {
@@ -2007,24 +2015,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   photoUrl: photoURL || existingUser.photoUrl
                 });
               }
+            } else if (provider.providerId === 'password' && passwordWasUpdated) {
+              // If password was updated through Firebase, try to find user
+              const existingUser = await storage.getUserByProviderAuth('password', uid);
+              
+              if (existingUser) {
+                console.log(`Password was updated for user ${existingUser.id} via Firebase reset flow`);
+                userToUpdate = existingUser;
+              }
             }
           }
           
           // Also check by email in case the provider data doesn't match
-          const userByEmail = await storage.getUserByEmail(email);
+          if (!userToUpdate) {
+            const userByEmail = await storage.getUserByEmail(email);
+            if (userByEmail) {
+              userToUpdate = userByEmail;
+            }
+          }
           
-          if (userByEmail && (!userByEmail.providerId || !userByEmail.providerUid)) {
-            console.log(`Updating user ${userByEmail.id} with Firebase auth provider details`);
+          // If password was updated via Firebase, unlock the account
+          if (passwordWasUpdated && userToUpdate && userToUpdate.accountLocked) {
+            console.log(`Unlocking account for user ${userToUpdate.username} (ID: ${userToUpdate.id}) after Firebase password reset`);
+            
+            await storage.updateUser(userToUpdate.id, {
+              accountLocked: false,
+              failedLoginAttempts: 0,
+              accountLockedAt: null,
+              lockoutExpiresAt: null
+            });
+            
+            console.log(`Account successfully unlocked for user ${userToUpdate.username} after Firebase password reset`);
+          }
+          
+          // Handle provider data linking if needed
+          if (userToUpdate && (!userToUpdate.providerId || !userToUpdate.providerUid)) {
+            console.log(`Updating user ${userToUpdate.id} with Firebase auth provider details`);
             
             // Get the Google provider data
             const googleProvider = getProviderData(firebaseUser, 'google.com');
             
             if (googleProvider) {
-              await storage.updateUser(userByEmail.id, {
+              await storage.updateUser(userToUpdate.id, {
                 providerId: 'google.com',
                 providerUid: googleProvider.uid,
-                name: displayName || userByEmail.name,
-                photoUrl: photoURL || userByEmail.photoUrl
+                name: displayName || userToUpdate.name,
+                photoUrl: photoURL || userToUpdate.photoUrl
               });
             }
           }
