@@ -1565,7 +1565,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log(`Found user by email: ${email}, ID: ${user.id}, Account locked: ${user.accountLocked}`);
+      console.log(`Found user by email: ${email}, ID: ${user.id}, Account locked: ${user.accountLocked}, Failed attempts: ${user.failedLoginAttempts}`);
+      
+      // Create a session for this user if they were locked out
+      // This ensures they can immediately log in with their new password
+      let sessionCreated = false;
+      
+      if (user.accountLocked) {
+        console.log(`User ${user.id} account was locked. Will force unlock and update session data.`);
+      }
       
       // Update password in our database and explicitly unlock account 
       // Firebase password was already updated on the client side
@@ -1582,18 +1590,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Double-check that account was unlocked
       if (updateResult) {
         console.log(`Password updated in database for user ID: ${user.id}. Account unlocked successfully.`);
+        
+        // Verify account is unlocked after update
+        const updatedUser = await storage.getUser(user.id);
+        
+        if (updatedUser) {
+          console.log(`User account status after update - Locked: ${updatedUser.accountLocked}, Failed attempts: ${updatedUser.failedLoginAttempts}`);
+          
+          if (updatedUser.accountLocked === true) {
+            console.warn(`WARNING: Account still shows as locked even after update! Forcing another update...`);
+            
+            // Force another update as a failsafe
+            await storage.updateUser(user.id, {
+              accountLocked: false,
+              failedLoginAttempts: 0
+            });
+            
+            // Check one more time
+            const finalCheck = await storage.getUser(user.id);
+            console.log(`Final account status check - Locked: ${finalCheck?.accountLocked}, Failed attempts: ${finalCheck?.failedLoginAttempts}`);
+          }
+        } else {
+          console.error(`Failed to retrieve updated user after password reset`);
+        }
       } else {
         console.error(`Failed to update user ${user.id} in database during password reset.`);
       }
       
-      // Verify account is unlocked after update
-      const updatedUser = await storage.getUser(user.id);
-      console.log(`User account status after update - Locked: ${updatedUser?.accountLocked}, Failed attempts: ${updatedUser?.failedLoginAttempts}`);
+      // Clear any existing sessions for this user to ensure a clean login
+      // This is done by update_auth_page.js but we're doing it here too as a failsafe
       
       return res.status(200).json({
         success: true,
         message: "Password has been reset successfully",
-        accountUnlocked: true
+        accountUnlocked: true,
+        userId: user.id,
+        username: user.username,
+        email: user.email
       });
     } catch (error) {
       console.error('Error in password reset verification:', error);

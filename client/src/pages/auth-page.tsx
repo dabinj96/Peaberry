@@ -331,6 +331,22 @@ export default function AuthPage() {
     setIsResettingPassword(true);
     setResetSuccess(false);
     
+    // Define function to handle standard success flow
+    const showStandardResetSuccess = () => {
+      setResetSuccess(true);
+      toast({
+        title: "Password reset successful",
+        description: "Your password has been reset. You can now login with your new password.",
+        variant: "default",
+      });
+      
+      // Clear reset code and redirect to login after a delay
+      setTimeout(() => {
+        setResetCode(null);
+        handleTabChange('login');
+      }, 3000);
+    };
+
     try {
       // First verify the code is valid and get the associated email
       const email = await verifyPasswordResetCode(resetCode);
@@ -356,14 +372,21 @@ export default function AuthPage() {
         
         if (!response.ok) {
           console.warn('Database password update failed, but Firebase password was updated');
+          showStandardResetSuccess();
         } else {
           console.log('Database password updated successfully and account unlocked if needed');
           
           // Auto-login with new credentials after successful update
           try {
             console.log('Attempting automatic login with new credentials');
+            // First, try logging in with the email username (before @)
+            const username = email.split('@')[0];
+            console.log(`Attempting login with extracted username: ${username}`);
+            
+            // Use the already defined setLocation from component
+            
             loginMutation.mutate({
-              username: email.split('@')[0], // Extract username from email
+              username,
               password: data.newPassword
             }, {
               onSuccess: (userData) => {
@@ -371,12 +394,12 @@ export default function AuthPage() {
                 toast({
                   title: "Logged in successfully",
                   description: "You've been automatically logged in with your new password.",
-                  variant: "success",
+                  variant: "default",
                 });
                 
                 // Redirect to home page after successful login
                 setTimeout(() => {
-                  navigate('/');
+                  setLocation('/');
                 }, 1500);
                 return;
               },
@@ -396,22 +419,6 @@ export default function AuthPage() {
         // Still continue with success since Firebase password is updated
         showStandardResetSuccess();
       }
-      
-      // Function to handle standard success flow
-      const showStandardResetSuccess = () => {
-        setResetSuccess(true);
-        toast({
-          title: "Password reset successful",
-          description: "Your password has been reset. You can now login with your new password.",
-          variant: "default",
-        });
-        
-        // Clear reset code and redirect to login after a delay
-        setTimeout(() => {
-          setResetCode(null);
-          handleTabChange('login');
-        }, 3000);
-      };
     } catch (error: any) {
       console.error("Error resetting password:", error);
       
