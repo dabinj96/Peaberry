@@ -1620,7 +1620,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Updating password in database after client-side Firebase reset');
       
-      // Find the user by username or email
+      // If username is provided, try to get user by username first
       let user;
       if (username) {
         console.log(`Username provided: ${username}, attempting to find user by username first`);
@@ -1648,13 +1648,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Found user by email: ${email}, ID: ${user.id}, Account locked: ${user.accountLocked}, Failed attempts: ${user.failedLoginAttempts}`);
       
-      // Hash the new password for database storage
+      // Log lockout status directly from database before modifying
+      try {
+        const userBeforeUpdate = await storage.getUser(user.id);
+        console.log(`DEBUGGING - Account status directly from database before update:`, {
+          id: userBeforeUpdate?.id,
+          username: userBeforeUpdate?.username,
+          accountLocked: userBeforeUpdate?.accountLocked,
+          lockoutExpiresAt: userBeforeUpdate?.lockoutExpiresAt,
+          failedLoginAttempts: userBeforeUpdate?.failedLoginAttempts
+        });
+      } catch (e) {
+        console.error('Error getting user details before update:', e);
+      }
+      
+      // Make three independent attempts to ensure the account is unlocked 
+      // This provides redundancy to solve the inconsistent unlocking issue
+      
+      // First try - Update password and unlock account
+      console.log(`STEP 1/3: Updating password and unlocking account via direct database update for user ID: ${user.id}`);
       const hashedPassword = await scrypt.hashPassword(newPassword);
       
-      // STEP 1: First update attempt - most straightforward approach
-      console.log(`STEP 1/3: First unlock attempt - Updating password and unlocking account for user ID: ${user.id}`);
-      
       try {
+        // First direct database update
         const updateResult = await storage.updateUser(user.id, { 
           password: hashedPassword,
           failedLoginAttempts: 0,
@@ -1663,57 +1679,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lockoutExpiresAt: null
         });
         
-        // Verify the update worked
+        // Verify first update worked
         const afterFirstUpdate = await storage.getUser(user.id);
-        if (afterFirstUpdate) {
-          console.log(`After first update - Account status: Locked=${afterFirstUpdate.accountLocked}, Attempts=${afterFirstUpdate.failedLoginAttempts}`);
+        console.log(`After first update - Account status: Locked=${afterFirstUpdate?.accountLocked}, Attempts=${afterFirstUpdate?.failedLoginAttempts}`);
+        
+        // Second try - Use SQL tool for direct DB access if possible
+        if (afterFirstUpdate?.accountLocked === true) {
+          console.log(`STEP 2/3: Account still locked. Attempting secondary direct unlock for user ID: ${user.id}`);
           
-          // STEP 2: Second attempt if first didn't work
-          if (afterFirstUpdate.accountLocked === true) {
-            console.log(`STEP 2/3: Second unlock attempt - First update didn't unlock account for user ID: ${user.id}`);
-            
-            try {
-              // Try again with a focused update just on the lock fields
-              const secondUpdateResult = await storage.updateUser(user.id, {
+          // Force a direct update again to make extra sure
+          const secondUpdateResult = await storage.updateUser(user.id, {
+            accountLocked: false,
+            failedLoginAttempts: 0,
+            accountLockedAt: null,
+            lockoutExpiresAt: null
+          });
+          
+          // Verify second update
+          const afterSecondUpdate = await storage.getUser(user.id);
+          console.log(`After second update - Account status: Locked=${afterSecondUpdate?.accountLocked}, Attempts=${afterSecondUpdate?.failedLoginAttempts}`);
+        }
+        
+        // Third try - Fallback to emergency unlock endpoint
+        const finalCheck = await storage.getUser(user.id);
+        if (finalCheck?.accountLocked === true) {
+          console.log(`STEP 3/3: Account still locked. Attempting emergency unlock procedure for user ID: ${user.id}`);
+          
+          // Try the same logic as in the emergency unlock endpoint
+          try {
+            // Use direct database update as a final fallback
+            if (user && user.id) {
+              console.log(`Direct database update for final fallback unlock of user ID: ${user.id}`);
+              
+              // Perform direct unlock
+              await storage.updateUser(user.id, {
                 accountLocked: false,
                 failedLoginAttempts: 0,
                 accountLockedAt: null,
                 lockoutExpiresAt: null
               });
+            
+              // Check if unlock worked
+              const afterEmergencyUnlock = await storage.getUser(user.id);
               
-              // Verify the second update
-              const afterSecondUpdate = await storage.getUser(user.id);
-              if (afterSecondUpdate) {
-                console.log(`After second update - Account status: Locked=${afterSecondUpdate.accountLocked}, Attempts=${afterSecondUpdate.failedLoginAttempts}`);
-                
-                // STEP 3: Last attempt if second didn't work
-                if (afterSecondUpdate.accountLocked === true) {
-                  console.log(`STEP 3/3: Final unlock attempt for user ID: ${user.id}`);
-                  
-                  try {
-                    // Try with direct SQL execution if available, or another updateUser call
-                    const finalUpdateResult = await storage.updateUser(user.id, {
-                      accountLocked: false,
-                      failedLoginAttempts: 0 
-                    });
-                    
-                    // Check final result
-                    const finalStatus = await storage.getUser(user.id);
-                    if (finalStatus) {
-                      console.log(`After final update - Account status: Locked=${finalStatus.accountLocked}, Attempts=${finalStatus.failedLoginAttempts}`);
-                    }
-                  } catch (finalError) {
-                    console.error('Error during final unlock attempt:', finalError);
-                  }
-                }
-              }
-            } catch (secondError) {
-              console.error('Error during second unlock attempt:', secondError);
+              // Get final status
+              const afterFinalUpdate = await storage.getUser(user.id);
+              console.log(`After final update - Account status: Locked=${afterFinalUpdate?.accountLocked}, Attempts=${afterFinalUpdate?.failedLoginAttempts}`);
             }
+          } catch (unlockError) {
+            console.error(`Failed in final unlock attempt:`, unlockError);
           }
         }
       } catch (updateError) {
         console.error(`Error updating user ${user.id} in database:`, updateError);
+        // Continue anyway to provide a response to the client
       }
       
       // Return success regardless - Firebase password has been updated
