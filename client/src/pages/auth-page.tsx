@@ -274,6 +274,25 @@ export default function AuthPage() {
             description: "Your account has been temporarily locked. Please use the 'Forgot Password' option to reset your password and unlock your account.",
             variant: "destructive",
           });
+          
+          // Auto-switch to forgot password tab after a brief delay
+          setTimeout(() => {
+            handleTabChange('forgotPassword');
+          }, 1500);
+        } else if (error?.message?.includes('Invalid username or password')) {
+          // For generic credential errors, be helpful but not too specific (security best practice)
+          toast({
+            title: "Login failed",
+            description: "Please check your username and password and try again.",
+            variant: "destructive",
+          });
+        } else {
+          // For other unhandled errors
+          toast({
+            title: "Login error",
+            description: error?.message || "An unexpected error occurred. Please try again later.",
+            variant: "destructive",
+          });
         }
       }
     });

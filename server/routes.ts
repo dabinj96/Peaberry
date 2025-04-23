@@ -1594,39 +1594,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // This will also help when we need to verify the token
       const { token, expiresAt } = generatePasswordResetToken();
       
+      // Even if not explicitly locked, we want to make sure all lockout attributes are cleared
+      console.log(`Resetting password and unlocking account for user ${user.id}`);
+      
       try {
+        // First, force a direct update of the locked status separately
+        await storage.updateUser(user.id, {
+          accountLocked: false,
+          failedLoginAttempts: 0,
+          accountLockedAt: null,
+          lockoutExpiresAt: null
+        });
+        
+        // Then do the password update
         const updateResult = await storage.updateUser(user.id, { 
           password: hashedPassword,
-          failedLoginAttempts: 0,
-          accountLocked: false,
-          accountLockedAt: null,
-          lockoutExpiresAt: null,
           passwordResetToken: token,
           passwordResetTokenExpiresAt: expiresAt
         });
         
-        console.log(`Updated user password and credentials for user ${user.id}, unlocked account: ${user.accountLocked}`);
-        
-        // Verify the update worked by finding the user by the reset token
-        const updatedUser = await storage.getUserByResetToken(token);
-        
-        if (updatedUser && !updatedUser.accountLocked) {
-          console.log(`Successfully verified user ${updatedUser.id} unlocked status: Locked=${updatedUser.accountLocked}, Using token verification`);
-        } else if (updatedUser) {
-          console.log(`User found by token but still locked: Locked=${updatedUser.accountLocked}`);
-          // Try one more time to unlock
-          await storage.updateUser(updatedUser.id, {
-            accountLocked: false,
-            failedLoginAttempts: 0
-          });
-        } else {
-          console.log('Failed to verify user with token after update');
+        // Verify account is unlocked with a direct query
+        const verifiedUser = await storage.getUser(user.id);
+        if (verifiedUser) {
+          console.log(`Verification of user ${user.id} after reset: Locked status=${verifiedUser.accountLocked}, Failed attempts=${verifiedUser.failedLoginAttempts}`);
+          
+          // Do an emergency unlock if we find it's still locked somehow
+          if (verifiedUser.accountLocked) {
+            console.log('CRITICAL: Account still locked after reset, attempting emergency unlock');
+            await storage.updateUser(user.id, {
+              accountLocked: false,
+              failedLoginAttempts: 0,
+              accountLockedAt: null,
+              lockoutExpiresAt: null
+            });
+            
+            // Make a direct SQL query as a last resort for especially stubborn cases
+            try {
+              const db = require('./db').db;
+              const { eq } = require('drizzle-orm');
+              const { users } = require('@shared/schema');
+              
+              console.log('Attempting direct SQL unlock as last resort');
+              await db.update(users)
+                .set({
+                  accountLocked: false,
+                  failedLoginAttempts: 0,
+                  accountLockedAt: null,
+                  lockoutExpiresAt: null
+                })
+                .where(eq(users.id, user.id));
+                
+              console.log('Emergency direct SQL unlock completed');
+            } catch (sqlError) {
+              console.error('Error during emergency SQL unlock:', sqlError);
+            }
+            
+            // Final verification
+            const finalCheck = await storage.getUser(user.id);
+            console.log(`Final verification after emergency measures: Locked=${finalCheck ? finalCheck.accountLocked : 'user not found'}`);
+          }
         }
       } catch (updateError) {
         console.error(`Error updating user ${user.id} in database:`, updateError);
       }
       
-      // Return success regardless - Firebase password has been updated
+      // Return success regardless - Firebase password is updated
       // and the client will try to log in with the new password
       return res.status(200).json({
         success: true,
