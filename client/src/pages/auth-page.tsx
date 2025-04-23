@@ -173,8 +173,16 @@ export default function AuthPage() {
     if (mode === 'resetPassword') {
       const oobCode = searchParams.get('oobCode');
       if (oobCode) {
+        console.log(`Detected Firebase password reset code: ${oobCode.substring(0, 5)}...`);
         setActiveTab('resetPassword');
         setResetCode(oobCode);
+        
+        // Setting up debug logging to trace the flow
+        const apiKey = searchParams.get('apiKey');
+        const lang = searchParams.get('lang');
+        if (apiKey && lang) {
+          console.log(`Confirmed this is a Firebase password reset: apiKey=${apiKey.substring(0, 5)}..., lang=${lang}`);
+        }
         return;
       }
     }
