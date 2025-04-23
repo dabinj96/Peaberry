@@ -249,57 +249,23 @@ export default function AuthPage() {
     },
   });
 
-  // Emergency account unlock function
-  const emergencyUnlockAccount = async (username: string) => {
-    try {
-      console.log(`Attempting emergency unlock for account: ${username}`);
-      const response = await fetch('/api/emergency-unlock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username })
-      });
-      
-      const result = await response.json();
-      console.log('Emergency unlock result:', result);
-      
-      if (result.success) {
-        toast({
-          title: "Account unlocked",
-          description: "Your account has been unlocked. You can now try to login.",
-          variant: "default",
-        });
-        return true;
-      } else {
-        console.error('Failed to unlock account:', result);
-        return false;
-      }
-    } catch (error) {
-      console.error('Error during emergency unlock:', error);
-      return false;
-    }
-  };
+  // Removed emergency account unlock functionality
 
   // Form submission handlers
   const onLoginSubmit = (data: LoginFormValues) => {
     console.log("Attempting login with username:", data.username);
     loginMutation.mutate(data, {
-      onError: async (error: any) => {
+      onError: (error: any) => {
         console.error("Login error:", error);
         
-        // If the error message indicates account is locked, offer to unlock it
+        // If the error message indicates account is locked, show a message
         if (error?.message?.includes('account has been temporarily locked')) {
-          console.error('Account is locked. This should have been unlocked after password reset.');
-          
-          // If the account is locked, try an emergency unlock
-          const unlocked = await emergencyUnlockAccount(data.username);
-          
-          if (unlocked) {
-            // Try login again after a short delay
-            setTimeout(() => {
-              console.log('Attempting login again after emergency unlock');
-              loginMutation.mutate(data);
-            }, 1000);
-          }
+          console.error('Account is locked. Password reset is required to unlock it.');
+          toast({
+            title: "Account locked",
+            description: "Your account has been temporarily locked. Please use the 'Forgot Password' option to reset your password and unlock your account.",
+            variant: "destructive",
+          });
         }
       }
     });
