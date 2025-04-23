@@ -1543,11 +1543,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Database update after client-side password reset follows
   
   // Database update after client-side password reset
-  app.post('/api/verify-reset-token', async (req, res) => {
+  app.post('/api/complete-firebase-reset', async (req, res) => {
     try {
-      const { email, username, newPassword, forceUnlock } = req.body;
+      const { email, username, newPassword, resetToken } = req.body;
       
-      console.log(`Processing password reset verification: email=${email}, username=${username || 'not provided'}, forceUnlock=${forceUnlock || false}`);
+      console.log(`Processing Firebase password reset completion: email=${email}, username=${username || 'not provided'}`);
       
       if (!email || !newPassword) {
         console.warn('Missing required fields for password reset');
@@ -1590,8 +1590,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash the new password for database storage
       const hashedPassword = await scrypt.hashPassword(newPassword);
       
-      // STEP 1: First update attempt - most straightforward approach
-      console.log(`STEP 1/3: First unlock attempt - Updating password and unlocking account for user ID: ${user.id}`);
+      // Generate a database token that we'll use as a "proof" of reset
+      // This will also help when we need to verify the token
+      const { token, expiresAt } = generatePasswordResetToken();
       
       try {
         const updateResult = await storage.updateUser(user.id, { 
@@ -1599,57 +1600,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           failedLoginAttempts: 0,
           accountLocked: false,
           accountLockedAt: null,
-          lockoutExpiresAt: null
+          lockoutExpiresAt: null,
+          passwordResetToken: token,
+          passwordResetTokenExpiresAt: expiresAt
         });
         
-        // Verify the update worked
-        const afterFirstUpdate = await storage.getUser(user.id);
-        if (afterFirstUpdate) {
-          console.log(`After first update - Account status: Locked=${afterFirstUpdate.accountLocked}, Attempts=${afterFirstUpdate.failedLoginAttempts}`);
-          
-          // STEP 2: Second attempt if first didn't work
-          if (afterFirstUpdate.accountLocked === true) {
-            console.log(`STEP 2/3: Second unlock attempt - First update didn't unlock account for user ID: ${user.id}`);
-            
-            try {
-              // Try again with a focused update just on the lock fields
-              const secondUpdateResult = await storage.updateUser(user.id, {
-                accountLocked: false,
-                failedLoginAttempts: 0,
-                accountLockedAt: null,
-                lockoutExpiresAt: null
-              });
-              
-              // Verify the second update
-              const afterSecondUpdate = await storage.getUser(user.id);
-              if (afterSecondUpdate) {
-                console.log(`After second update - Account status: Locked=${afterSecondUpdate.accountLocked}, Attempts=${afterSecondUpdate.failedLoginAttempts}`);
-                
-                // STEP 3: Last attempt if second didn't work
-                if (afterSecondUpdate.accountLocked === true) {
-                  console.log(`STEP 3/3: Final unlock attempt for user ID: ${user.id}`);
-                  
-                  try {
-                    // Try with direct SQL execution if available, or another updateUser call
-                    const finalUpdateResult = await storage.updateUser(user.id, {
-                      accountLocked: false,
-                      failedLoginAttempts: 0 
-                    });
-                    
-                    // Check final result
-                    const finalStatus = await storage.getUser(user.id);
-                    if (finalStatus) {
-                      console.log(`After final update - Account status: Locked=${finalStatus.accountLocked}, Attempts=${finalStatus.failedLoginAttempts}`);
-                    }
-                  } catch (finalError) {
-                    console.error('Error during final unlock attempt:', finalError);
-                  }
-                }
-              }
-            } catch (secondError) {
-              console.error('Error during second unlock attempt:', secondError);
-            }
-          }
+        console.log(`Updated user password and credentials for user ${user.id}, unlocked account: ${user.accountLocked}`);
+        
+        // Verify the update worked by finding the user by the reset token
+        const updatedUser = await storage.getUserByResetToken(token);
+        
+        if (updatedUser && !updatedUser.accountLocked) {
+          console.log(`Successfully verified user ${updatedUser.id} unlocked status: Locked=${updatedUser.accountLocked}, Using token verification`);
+        } else if (updatedUser) {
+          console.log(`User found by token but still locked: Locked=${updatedUser.accountLocked}`);
+          // Try one more time to unlock
+          await storage.updateUser(updatedUser.id, {
+            accountLocked: false,
+            failedLoginAttempts: 0
+          });
+        } else {
+          console.log('Failed to verify user with token after update');
         }
       } catch (updateError) {
         console.error(`Error updating user ${user.id} in database:`, updateError);
