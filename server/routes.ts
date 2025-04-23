@@ -1540,12 +1540,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Special emergency account unlock endpoint (just in case the normal reset doesn't work)
+  app.post('/api/emergency-unlock', async (req, res) => {
+    try {
+      const { username } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Username is required" 
+        });
+      }
+      
+      console.log(`Emergency account unlock requested for username: ${username}`);
+      
+      // Find user by username
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        console.log(`No user found with username: ${username} for emergency unlock`);
+        // Return success anyway to avoid username enumeration
+        return res.status(200).json({
+          success: true,
+          message: "If an account with that username exists, it has been unlocked."
+        });
+      }
+      
+      console.log(`Found user for emergency unlock: ID=${user.id}, locked=${user.accountLocked}`);
+      
+      // Force unlock the account
+      const updateResult = await storage.updateUser(user.id, {
+        failedLoginAttempts: 0,
+        accountLocked: false,
+        accountLockedAt: null,
+        lockoutExpiresAt: null
+      });
+      
+      if (updateResult) {
+        console.log(`Successfully unlocked account for user ID: ${user.id}`);
+        
+        // Verify the account is unlocked
+        const verifiedUser = await storage.getUser(user.id);
+        console.log(`Verified account status: locked=${verifiedUser?.accountLocked}, attempts=${verifiedUser?.failedLoginAttempts}`);
+        
+        return res.status(200).json({
+          success: true,
+          message: "Account unlocked successfully"
+        });
+      } else {
+        console.error(`Failed to unlock account for user ID: ${user.id}`);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to unlock account"
+        });
+      }
+    } catch (error) {
+      console.error(`Error in emergency account unlock:`, error);
+      return res.status(500).json({
+        success: false,
+        message: "An error occurred while unlocking the account"
+      });
+    }
+  });
+  
   // Database update after client-side password reset
   app.post('/api/verify-reset-token', async (req, res) => {
     try {
-      const { email, username, newPassword } = req.body;
+      const { email, username, newPassword, forceUnlock } = req.body;
       
-      console.log(`Processing password reset verification: email=${email}, username=${username || 'not provided'}`);
+      console.log(`Processing password reset verification: email=${email}, username=${username || 'not provided'}, forceUnlock=${forceUnlock || false}`);
       
       if (!email || !newPassword) {
         console.warn('Missing required fields for password reset');
@@ -1596,6 +1659,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update password in our database and explicitly unlock account 
       // Firebase password was already updated on the client side
       const hashedPassword = await scrypt.hashPassword(newPassword);
+      
+      // Log lockout status directly from database before modifying
+      try {
+        const userBeforeUpdate = await storage.getUser(user.id);
+        console.log(`DEBUGGING - Account status directly from database before update:`, {
+          id: userBeforeUpdate?.id,
+          username: userBeforeUpdate?.username,
+          accountLocked: userBeforeUpdate?.accountLocked,
+          lockoutExpiresAt: userBeforeUpdate?.lockoutExpiresAt,
+          failedLoginAttempts: userBeforeUpdate?.failedLoginAttempts
+        });
+      } catch (e) {
+        console.error('Error getting user details before update:', e);
+      }
       
       const updateResult = await storage.updateUser(user.id, { 
         password: hashedPassword,

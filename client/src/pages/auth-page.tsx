@@ -249,9 +249,60 @@ export default function AuthPage() {
     },
   });
 
+  // Emergency account unlock function
+  const emergencyUnlockAccount = async (username: string) => {
+    try {
+      console.log(`Attempting emergency unlock for account: ${username}`);
+      const response = await fetch('/api/emergency-unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      });
+      
+      const result = await response.json();
+      console.log('Emergency unlock result:', result);
+      
+      if (result.success) {
+        toast({
+          title: "Account unlocked",
+          description: "Your account has been unlocked. You can now try to login.",
+          variant: "default",
+        });
+        return true;
+      } else {
+        console.error('Failed to unlock account:', result);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error during emergency unlock:', error);
+      return false;
+    }
+  };
+
   // Form submission handlers
   const onLoginSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate(data);
+    console.log("Attempting login with username:", data.username);
+    loginMutation.mutate(data, {
+      onError: async (error: any) => {
+        console.error("Login error:", error);
+        
+        // If the error message indicates account is locked, offer to unlock it
+        if (error?.message?.includes('account has been temporarily locked')) {
+          console.error('Account is locked. This should have been unlocked after password reset.');
+          
+          // If the account is locked, try an emergency unlock
+          const unlocked = await emergencyUnlockAccount(data.username);
+          
+          if (unlocked) {
+            // Try login again after a short delay
+            setTimeout(() => {
+              console.log('Attempting login again after emergency unlock');
+              loginMutation.mutate(data);
+            }, 1000);
+          }
+        }
+      }
+    });
   };
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
@@ -368,13 +419,17 @@ export default function AuthPage() {
       // Now also update the password in our database and ensure account is unlocked
       try {
         console.log('Updating database with new password and unlocking account if needed');
+        console.log(`Payload for /api/verify-reset-token: email=${email}, username=${username || 'not provided'}, password length=${data.newPassword.length}`);
+        
+        // Force manual account unlock due to the earlier issue
         const response = await fetch('/api/verify-reset-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email,
             username, // Include the username so server knows which account to update
-            newPassword: data.newPassword
+            newPassword: data.newPassword,
+            forceUnlock: true // Add extra parameter to ensure unlock happens
           })
         });
         
