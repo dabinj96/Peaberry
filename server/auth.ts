@@ -596,18 +596,13 @@ export function setupAuth(app: Express) {
       // Generate a password reset token
       const { token, expiresAt } = generatePasswordResetToken();
       
-      // Update the user with the token and unlock the account
-      // IMPORTANT: We unlock the account immediately when a password reset is requested
+      // Update the user with the token - we'll only unlock after successful reset
       await storage.updateUser(user.id, {
         passwordResetToken: token,
-        passwordResetTokenExpiresAt: expiresAt,
-        accountLocked: false,
-        failedLoginAttempts: 0,
-        accountLockedAt: null,
-        lockoutExpiresAt: null
+        passwordResetTokenExpiresAt: expiresAt
       });
       
-      console.log(`Account unlocked for ${user.username} due to password reset request`);
+      console.log(`Generated reset token for ${user.username}: ${token}`);
       
       // In a real application, you would send the token via email here
       // For development purposes, we'll return it in the response
@@ -675,7 +670,56 @@ export function setupAuth(app: Express) {
     }
   });
   
-  // Reset password with token endpoint
+  // Dedicated account unlock endpoint
+  app.post("/api/unlock-account", async (req, res, next) => {
+    try {
+      const { identifier } = req.body;
+      
+      if (!identifier) {
+        return res.status(400).json({
+          success: false,
+          message: "Username or email is required"
+        });
+      }
+      
+      // Find user by username or email
+      let user = await storage.getUserByUsername(identifier);
+      
+      if (!user) {
+        // Try email lookup if username lookup failed
+        user = await storage.getUserByEmail(identifier);
+      }
+      
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+      
+      // Unlock the account
+      console.log(`Explicitly unlocking account for user ${user.username} (ID: ${user.id})`);
+      
+      const updatedUser = await storage.updateUser(user.id, {
+        accountLocked: false,
+        failedLoginAttempts: 0,
+        accountLockedAt: null,
+        lockoutExpiresAt: null
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: "Account has been unlocked successfully"
+      });
+    } catch (error) {
+      console.error("Account unlock error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "An error occurred while unlocking the account"
+      });
+    }
+  });
+
   app.post("/api/reset-password", async (req, res, next) => {
     try {
       const { token, newPassword } = req.body;
