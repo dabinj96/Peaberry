@@ -358,25 +358,60 @@ export default function AuthPage() {
           console.warn('Database password update failed, but Firebase password was updated');
         } else {
           console.log('Database password updated successfully and account unlocked if needed');
+          
+          // Auto-login with new credentials after successful update
+          try {
+            console.log('Attempting automatic login with new credentials');
+            loginMutation.mutate({
+              username: email.split('@')[0], // Extract username from email
+              password: data.newPassword
+            }, {
+              onSuccess: (userData) => {
+                console.log('Auto-login successful after password reset:', userData);
+                toast({
+                  title: "Logged in successfully",
+                  description: "You've been automatically logged in with your new password.",
+                  variant: "success",
+                });
+                
+                // Redirect to home page after successful login
+                setTimeout(() => {
+                  navigate('/');
+                }, 1500);
+                return;
+              },
+              onError: (error) => {
+                console.error('Auto-login failed after password reset:', error);
+                // Continue with standard flow if auto-login fails
+                showStandardResetSuccess();
+              }
+            });
+          } catch (loginError) {
+            console.error('Exception during auto-login attempt:', loginError);
+            showStandardResetSuccess();
+          }
         }
       } catch (dbError) {
         console.error('Error updating password in database:', dbError);
         // Still continue with success since Firebase password is updated
+        showStandardResetSuccess();
       }
       
-      // Show success message
-      setResetSuccess(true);
-      toast({
-        title: "Password reset successful",
-        description: "Your password has been reset. You can now login with your new password.",
-        variant: "default",
-      });
-      
-      // Clear reset code and redirect to login after a delay
-      setTimeout(() => {
-        setResetCode(null);
-        handleTabChange('login');
-      }, 3000);
+      // Function to handle standard success flow
+      const showStandardResetSuccess = () => {
+        setResetSuccess(true);
+        toast({
+          title: "Password reset successful",
+          description: "Your password has been reset. You can now login with your new password.",
+          variant: "default",
+        });
+        
+        // Clear reset code and redirect to login after a delay
+        setTimeout(() => {
+          setResetCode(null);
+          handleTabChange('login');
+        }, 3000);
+      };
     } catch (error: any) {
       console.error("Error resetting password:", error);
       
