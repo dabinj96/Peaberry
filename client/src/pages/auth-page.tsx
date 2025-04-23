@@ -385,17 +385,17 @@ export default function AuthPage() {
       // Now also update the password in our database and ensure account is unlocked
       try {
         console.log('Updating database with new password and unlocking account if needed');
-        console.log(`Payload for /api/verify-reset-token: email=${email}, username=${username || 'not provided'}, password length=${data.newPassword.length}`);
+        console.log(`Payload for /api/complete-firebase-reset: email=${email}, username=${username || 'not provided'}, password length=${data.newPassword.length}`);
         
-        // Force manual account unlock due to the earlier issue
-        const response = await fetch('/api/verify-reset-token', {
+        // Use our dedicated endpoint for Firebase resets
+        const response = await fetch('/api/complete-firebase-reset', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email,
             username, // Include the username so server knows which account to update
             newPassword: data.newPassword,
-            forceUnlock: true // Add extra parameter to ensure unlock happens
+            resetToken: resetCode // Send the original Firebase reset code as a reference
           })
         });
         
