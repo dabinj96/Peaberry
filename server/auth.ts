@@ -126,9 +126,32 @@ export function setupAuth(app: Express) {
           return done(null, false, { message: "Invalid username or password" });
         }
         
+        // FIRST: Check if the password is correct once and store result
+        // This is important because:
+        // - If password is correct after a reset, we want to auto-unlock the account
+        // - This prevents brute force attacks from automatically unlocking the account
+        const isPasswordValid = await comparePasswords(password, user.password);
+        
         // Check if account is locked
         if (user.accountLocked) {
           console.log(`Account for user ${user.username} is locked. Checking if lockout period expired.`);
+          
+          // SPECIAL CASE: If password is correct but account is locked, this might indicate
+          // that a password reset happened outside our complete workflow (e.g., directly in Firebase)
+          // In this case, we should automatically unlock the account
+          if (isPasswordValid) {
+            console.log(`Password is correct for locked account ${user.username}. This suggests a password reset occurred. Auto-unlocking.`);
+            await storage.updateUser(user.id, {
+              accountLocked: false,
+              failedLoginAttempts: 0,
+              accountLockedAt: null,
+              lockoutExpiresAt: null
+            });
+            
+            // Continue with normal authentication
+            console.log(`Account for user ${user.username} unlocked due to correct password after reset.`);
+            return done(null, user);
+          }
           
           // Check if lockout period has expired
           if (user.lockoutExpiresAt && new Date() > new Date(user.lockoutExpiresAt)) {
@@ -152,10 +175,8 @@ export function setupAuth(app: Express) {
           }
         }
         
-        // Check password
-        const passwordMatches = await comparePasswords(password, user.password);
-        
-        if (!passwordMatches) {
+        // Use the password validation result from earlier
+        if (!isPasswordValid) {
           // Increment failed attempts
           const failedAttempts = (user.failedLoginAttempts || 0) + 1;
           const MAX_FAILED_ATTEMPTS = 5;

@@ -409,6 +409,26 @@ export default function AuthPage() {
       // If valid, confirm the password reset with the new password
       await confirmPasswordReset(resetCode, data.newPassword);
       
+      // CRITICAL: First explicitly unlock the account using our dedicated endpoint
+      // This is to ensure the account is unlocked even if the password update has issues
+      try {
+        console.log('First step: Explicitly unlocking account before password update');
+        
+        const unlockResponse = await fetch('/api/unlock-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            identifier: username || email // Use either one that's available
+          })
+        });
+        
+        const unlockData = await unlockResponse.json();
+        console.log('Account unlock response:', unlockData);
+      } catch (unlockError) {
+        console.error('Error unlocking account before password update:', unlockError);
+        // Continue anyway since we have multiple fallbacks
+      }
+      
       // Now also update the password in our database and ensure account is unlocked
       try {
         console.log('Updating database with new password and unlocking account if needed');

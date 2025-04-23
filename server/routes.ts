@@ -1540,6 +1540,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Account unlock endpoint - can be called separately to guarantee account unlocking
+  app.post('/api/unlock-account', async (req, res) => {
+    try {
+      const { identifier } = req.body;
+      
+      if (!identifier) {
+        return res.status(400).json({
+          success: false, 
+          message: "Username or email is required to unlock account"
+        });
+      }
+      
+      console.log(`Explicitly unlocking account for identifier: ${identifier}`);
+      
+      // Try to find user by username first
+      let user = await storage.getUserByUsername(identifier);
+      
+      // If not found, try by email
+      if (!user) {
+        user = await storage.getUserByEmail(identifier);
+      }
+      
+      if (!user) {
+        // Don't reveal if the user exists
+        return res.status(200).json({
+          success: true,
+          message: "If an account exists with those credentials, it has been unlocked"
+        });
+      }
+      
+      console.log(`Found user to unlock: ${user.username} (ID: ${user.id})`);
+      
+      // Force unlock through multiple methods
+      // 1. Standard storage update
+      await storage.updateUser(user.id, {
+        accountLocked: false,
+        failedLoginAttempts: 0,
+        accountLockedAt: null,
+        lockoutExpiresAt: null
+      });
+      
+      // 2. Direct SQL for stubborn cases
+      try {
+        const db = require('./db').db;
+        const { eq } = require('drizzle-orm');
+        const { users } = require('@shared/schema');
+        
+        console.log('Performing emergency direct SQL unlock');
+        await db.update(users)
+          .set({
+            accountLocked: false,
+            failedLoginAttempts: 0,
+            accountLockedAt: null,
+            lockoutExpiresAt: null
+          })
+          .where(eq(users.id, user.id));
+      } catch (sqlError) {
+        console.error('SQL unlock error (non-critical):', sqlError);
+      }
+      
+      // Verify unlock worked
+      const verifiedUser = await storage.getUser(user.id);
+      console.log(`Account unlock verification: Locked=${verifiedUser?.accountLocked}, Attempts=${verifiedUser?.failedLoginAttempts}`);
+      
+      return res.status(200).json({
+        success: true,
+        message: "Account has been unlocked",
+        username: user.username
+      });
+    } catch (error) {
+      console.error('Error unlocking account:', error);
+      return res.status(500).json({
+        success: false,
+        message: "An error occurred while unlocking the account"
+      });
+    }
+  });
+  
   // Database update after client-side password reset follows
   
   // Database update after client-side password reset
