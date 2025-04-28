@@ -1984,6 +1984,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
         }
         
+        case 'password.update': {
+          // Password was updated in Firebase Auth
+          const { uid, email } = data;
+          console.log(`Processing password update event for uid: ${uid}, email: ${email}`);
+          
+          // Find user in our database by email
+          const user = await storage.getUserByEmail(email);
+          
+          if (!user) {
+            console.warn(`No user found with email ${email} for password update`);
+            break;
+          }
+          
+          // Generate a random secure password since we can't access the actual password
+          // This is okay because authentication happens through Firebase
+          const randomPassword = randomBytes(24).toString('hex');
+          const hashedPassword = await scrypt.hashPassword(randomPassword);
+          
+          // Update the password in our database
+          await storage.updateUser(user.id, { 
+            password: hashedPassword,
+            // Ensure Firebase provider info is set
+            providerId: 'firebase',
+            providerUid: uid
+          });
+          
+          console.log(`Updated password hash for user ${user.id} (${email}) after Firebase password change`);
+          break;
+        }
+        
         default:
           console.log(`Ignoring unsupported Firebase Auth event: ${event}`);
       }
