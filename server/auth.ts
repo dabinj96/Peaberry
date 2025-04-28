@@ -126,72 +126,13 @@ export function setupAuth(app: Express) {
           return done(null, false, { message: "Invalid username or password" });
         }
         
-        // Check if account is locked
-        if (user.accountLocked) {
-          // Check if lockout period has expired
-          if (user.lockoutExpiresAt && new Date() > new Date(user.lockoutExpiresAt)) {
-            // Automatically unlock the account if lockout period expired
-            await storage.updateUser(user.id, {
-              accountLocked: false,
-              failedLoginAttempts: 0,
-              accountLockedAt: null,
-              lockoutExpiresAt: null
-            });
-            // Continue with normal authentication flow
-          } else {
-            // Account is still locked
-            return done(null, false, { 
-              message: "Your account has been temporarily locked due to multiple failed login attempts. Please reset your password or try again later.",
-              locked: true
-            });
-          }
-        }
-        
         // Check password
         const passwordMatches = await comparePasswords(password, user.password);
         
         if (!passwordMatches) {
-          // Increment failed attempts
-          const failedAttempts = (user.failedLoginAttempts || 0) + 1;
-          const MAX_FAILED_ATTEMPTS = 5;
-          
-          if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
-            // Lock the account - 30 minute lockout period
-            const lockoutPeriod = 30 * 60 * 1000; // 30 minutes in milliseconds
-            const now = new Date();
-            const expiresAt = new Date(now.getTime() + lockoutPeriod);
-            
-            await storage.updateUser(user.id, {
-              failedLoginAttempts: failedAttempts,
-              accountLocked: true,
-              accountLockedAt: now,
-              lockoutExpiresAt: expiresAt
-            });
-            
-            return done(null, false, {
-              message: "Your account has been temporarily locked due to multiple failed login attempts. Please reset your password or try again later.",
-              locked: true
-            });
-          } else {
-            // Update failed attempts
-            await storage.updateUser(user.id, {
-              failedLoginAttempts: failedAttempts
-            });
-            
-            return done(null, false, {
-              message: "Invalid username or password",
-              attemptsRemaining: MAX_FAILED_ATTEMPTS - failedAttempts
-            });
-          }
-        }
-        
-        // Password matched - reset failed attempts counter
-        if (user.failedLoginAttempts > 0) {
-          await storage.updateUser(user.id, { 
-            failedLoginAttempts: 0,
-            accountLocked: false,
-            accountLockedAt: null,
-            lockoutExpiresAt: null
+          // Simply return invalid credentials message with no lockout functionality
+          return done(null, false, {
+            message: "Invalid username or password"
           });
         }
         
@@ -280,20 +221,10 @@ export function setupAuth(app: Express) {
       
       // Handle authentication failure cases
       if (!user) {
-        // Check if account is locked
-        if (info && info.locked) {
-          return res.status(403).json({
-            success: false,
-            locked: true,
-            message: info.message
-          });
-        }
-        
-        // Regular authentication failure
+        // Regular authentication failure with simple error message
         return res.status(401).json({
           success: false,
-          message: info && info.message ? info.message : "Invalid username or password",
-          attemptsRemaining: info && info.attemptsRemaining
+          message: info && info.message ? info.message : "Invalid username or password"
         });
       }
       
@@ -726,11 +657,7 @@ export function setupAuth(app: Express) {
       const updatedUser = await storage.updateUser(user.id, {
         password: hashedPassword,
         passwordResetToken: null,
-        passwordResetTokenExpiresAt: null,
-        failedLoginAttempts: 0,
-        accountLocked: false,
-        accountLockedAt: null,
-        lockoutExpiresAt: null
+        passwordResetTokenExpiresAt: null
       });
       
       if (!updatedUser) {
