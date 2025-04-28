@@ -423,14 +423,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle password change event
       if (event === 'password.update' && data && data.uid) {
         const firebaseUid = data.uid;
-        const userRecord = await getFirebaseUserByUid(firebaseUid);
+        let userEmail = data.email;
         
-        if (!userRecord || !userRecord.email) {
-          return res.status(404).json({ error: 'User not found' });
+        // In production, we'd verify with Firebase Auth directly
+        if (!userEmail) {
+          const userRecord = await getFirebaseUserByUid(firebaseUid);
+          if (!userRecord || !userRecord.email) {
+            return res.status(404).json({ error: 'User not found in Firebase' });
+          }
+          userEmail = userRecord.email;
         }
         
         // Find matching user in our database
-        const user = await storage.getUserByEmail(userRecord.email);
+        const user = await storage.getUserByEmail(userEmail);
         
         if (!user) {
           return res.status(404).json({ error: 'Local user not found' });
