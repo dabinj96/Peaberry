@@ -439,7 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update the user's password hash
         // Note: Since we can't retrieve the actual password from Firebase, we set a random secure password
         // that matches between systems. The user will authenticate via Firebase, not our direct password check.
-        const randomPassword = crypto.randomBytes(24).toString('hex');
+        const randomPassword = randomBytes(24).toString('hex');
         const hashedPassword = await scrypt.hashPassword(randomPassword);
         
         await storage.updateUser(user.id, { 
@@ -453,7 +453,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(200).json({ success: true });
       }
       
-      // Handle other Firebase Auth events as needed (account creation, deletion, etc.)
+      // Handle user creation event
+      if (event === 'user.create' && data && data.uid && data.email) {
+        console.log(`Received user creation webhook for ${data.email}`);
+        
+        // Check if user already exists in our database
+        const existingUser = await storage.getUserByEmail(data.email);
+        
+        if (existingUser) {
+          console.log(`User ${data.email} already exists, updating Firebase provider info`);
+          
+          // Update the user's Firebase provider info
+          await storage.updateUser(existingUser.id, {
+            providerId: 'firebase',
+            providerUid: data.uid,
+            photoUrl: data.photoURL || existingUser.photoUrl
+          });
+          
+          return res.status(200).json({ success: true, message: 'User updated' });
+        } else {
+          console.log(`Creating new user for ${data.email} from Firebase`);
+          
+          // Create a new user based on Firebase user info
+          const randomPassword = crypto.randomBytes(24).toString('hex');
+          const hashedPassword = await scrypt.hashPassword(randomPassword);
+          
+          const newUser = await storage.createUser({
+            username: data.email.split('@')[0], // Simple username derivation
+            email: data.email,
+            password: hashedPassword,
+            name: data.displayName || data.email.split('@')[0],
+            role: 'user',
+            providerId: 'firebase',
+            providerUid: data.uid,
+            photoUrl: data.photoURL || null
+          });
+          
+          return res.status(201).json({ success: true, message: 'User created' });
+        }
+      }
+      
+      // Handle user deletion event
+      if (event === 'user.delete' && data && data.uid) {
+        console.log(`Received user deletion webhook for Firebase UID: ${data.uid}`);
+        
+        // Find the user in our database by Firebase UID
+        const user = await storage.getUserByProviderAuth('firebase', data.uid);
+        
+        if (user) {
+          console.log(`Deleting user ${user.id} (${user.email}) from our database`);
+          
+          const success = await storage.deleteUser(user.id);
+          
+          if (success) {
+            return res.status(200).json({ success: true, message: 'User deleted' });
+          } else {
+            return res.status(500).json({ error: 'Failed to delete user' });
+          }
+        } else {
+          console.log(`No matching user found for Firebase UID: ${data.uid}`);
+          return res.status(404).json({ error: 'User not found' });
+        }
+      }
       
       // Return success for any event we don't explicitly handle
       return res.status(200).json({ success: true });
