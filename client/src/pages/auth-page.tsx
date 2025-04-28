@@ -47,7 +47,6 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 // Password reset request schema
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  username: z.string().min(1, "Username is required"),
 });
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
@@ -173,16 +172,8 @@ export default function AuthPage() {
     if (mode === 'resetPassword') {
       const oobCode = searchParams.get('oobCode');
       if (oobCode) {
-        console.log(`Detected Firebase password reset code: ${oobCode.substring(0, 5)}...`);
         setActiveTab('resetPassword');
         setResetCode(oobCode);
-        
-        // Setting up debug logging to trace the flow
-        const apiKey = searchParams.get('apiKey');
-        const lang = searchParams.get('lang');
-        if (apiKey && lang) {
-          console.log(`Confirmed this is a Firebase password reset: apiKey=${apiKey.substring(0, 5)}..., lang=${lang}`);
-        }
         return;
       }
     }
@@ -257,45 +248,9 @@ export default function AuthPage() {
     },
   });
 
-  // Removed emergency account unlock functionality
-
   // Form submission handlers
   const onLoginSubmit = (data: LoginFormValues) => {
-    console.log("Attempting login with username:", data.username);
-    loginMutation.mutate(data, {
-      onError: (error: any) => {
-        console.error("Login error:", error);
-        
-        // If the error message indicates account is locked, show a message
-        if (error?.message?.includes('account has been temporarily locked')) {
-          console.error('Account is locked. Password reset is required to unlock it.');
-          toast({
-            title: "Account locked",
-            description: "Your account has been temporarily locked. Please use the 'Forgot Password' option to reset your password and unlock your account.",
-            variant: "destructive",
-          });
-          
-          // Auto-switch to forgot password tab after a brief delay
-          setTimeout(() => {
-            handleTabChange('forgotPassword');
-          }, 1500);
-        } else if (error?.message?.includes('Invalid username or password')) {
-          // For generic credential errors, be helpful but not too specific (security best practice)
-          toast({
-            title: "Login failed",
-            description: "Please check your username and password and try again.",
-            variant: "destructive",
-          });
-        } else {
-          // For other unhandled errors
-          toast({
-            title: "Login error",
-            description: error?.message || "An unexpected error occurred. Please try again later.",
-            variant: "destructive",
-          });
-        }
-      }
-    });
+    loginMutation.mutate(data);
   };
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
@@ -308,7 +263,6 @@ export default function AuthPage() {
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       email: "",
-      username: "",
     },
   });
   
@@ -327,10 +281,6 @@ export default function AuthPage() {
     setResetRequestSuccess(false);
     
     try {
-      // Save username for the email in localStorage to retrieve during reset
-      localStorage.setItem(`passwordReset_${data.email}`, data.username);
-      console.log(`Stored username ${data.username} for email ${data.email} in localStorage for password reset`);
-      
       // Use the client-side Firebase function to send password reset email
       await resetPassword(data.email);
       
@@ -381,8 +331,34 @@ export default function AuthPage() {
     setIsResettingPassword(true);
     setResetSuccess(false);
     
-    // Define function to handle standard success flow
-    const showStandardResetSuccess = () => {
+    try {
+      // First verify the code is valid and get the associated email
+      const email = await verifyPasswordResetCode(resetCode);
+      console.log(`Verified reset code for email: ${email}`);
+      
+      // If valid, confirm the password reset with the new password
+      await confirmPasswordReset(resetCode, data.newPassword);
+      
+      // Now also update the password in our database
+      try {
+        const response = await fetch('/api/verify-reset-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            newPassword: data.newPassword
+          })
+        });
+        
+        if (!response.ok) {
+          console.warn('Database password update failed, but Firebase password was updated');
+        }
+      } catch (dbError) {
+        console.error('Error updating password in database:', dbError);
+        // Still continue with success since Firebase password is updated
+      }
+      
+      // Show success message
       setResetSuccess(true);
       toast({
         title: "Password reset successful",
@@ -395,116 +371,6 @@ export default function AuthPage() {
         setResetCode(null);
         handleTabChange('login');
       }, 3000);
-    };
-
-    try {
-      // First verify the code is valid and get the associated email
-      const email = await verifyPasswordResetCode(resetCode);
-      console.log(`Verified reset code for email: ${email}`);
-      
-      // Retrieve the username associated with this email from localStorage
-      const username = localStorage.getItem(`passwordReset_${email}`);
-      console.log(`Retrieved username from localStorage: ${username || 'none found'} for email ${email}`);
-      
-      // If valid, confirm the password reset with the new password
-      await confirmPasswordReset(resetCode, data.newPassword);
-      
-      // CRITICAL: First explicitly unlock the account using our dedicated endpoint
-      // This is to ensure the account is unlocked even if the password update has issues
-      try {
-        console.log('First step: Explicitly unlocking account before password update');
-        
-        const unlockResponse = await fetch('/api/unlock-account', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            identifier: username || email // Use either one that's available
-          })
-        });
-        
-        const unlockData = await unlockResponse.json();
-        console.log('Account unlock response:', unlockData);
-      } catch (unlockError) {
-        console.error('Error unlocking account before password update:', unlockError);
-        // Continue anyway since we have multiple fallbacks
-      }
-      
-      // Now also update the password in our database and ensure account is unlocked
-      try {
-        console.log('Updating database with new password and unlocking account if needed');
-        console.log(`Payload for /api/complete-firebase-reset: email=${email}, username=${username || 'not provided'}, password length=${data.newPassword.length}`);
-        
-        // Use our dedicated endpoint for Firebase resets
-        const response = await fetch('/api/complete-firebase-reset', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            username, // Include the username so server knows which account to update
-            newPassword: data.newPassword,
-            resetToken: resetCode // Send the original Firebase reset code as a reference
-          })
-        });
-        
-        const responseData = await response.json();
-        console.log('Database password update response:', responseData);
-        
-        if (!response.ok) {
-          console.warn('Database password update failed, but Firebase password was updated');
-          showStandardResetSuccess();
-        } else {
-          console.log('Database password updated successfully and account unlocked if needed');
-          
-          // Auto-login with new credentials after successful update
-          try {
-            console.log('Attempting automatic login with new credentials');
-            // Use the stored username if available, otherwise fallback to email prefix
-            const loginUsername = username || email.split('@')[0];
-            console.log(`Attempting login with username: ${loginUsername}`);
-            
-            // Use the already defined setLocation from component
-            
-            loginMutation.mutate({
-              username: loginUsername,
-              password: data.newPassword
-            }, {
-              onSuccess: (userData) => {
-                console.log('Auto-login successful after password reset:', userData);
-                
-                // Clean up localStorage after successful reset and login
-                if (email) {
-                  localStorage.removeItem(`passwordReset_${email}`);
-                  console.log(`Removed passwordReset_${email} from localStorage after successful reset`);
-                }
-                
-                toast({
-                  title: "Logged in successfully",
-                  description: "You've been automatically logged in with your new password.",
-                  variant: "default",
-                });
-                
-                // Redirect to home page after successful login
-                setTimeout(() => {
-                  setLocation('/');
-                }, 1500);
-                return;
-              },
-              onError: (error) => {
-                console.error('Auto-login failed after password reset:', error);
-                // Continue with standard flow if auto-login fails
-                showStandardResetSuccess();
-              }
-            });
-          } catch (loginError) {
-            console.error('Exception during auto-login attempt:', loginError);
-            showStandardResetSuccess();
-          }
-        }
-      } catch (dbError) {
-        console.error('Error updating password in database:', dbError);
-        // Still continue with success since Firebase password is updated
-        showStandardResetSuccess();
-      }
     } catch (error: any) {
       console.error("Error resetting password:", error);
       
@@ -705,22 +571,6 @@ export default function AuthPage() {
                 <CardContent>
                   <Form {...forgotPasswordForm}>
                     <form onSubmit={forgotPasswordForm.handleSubmit(onForgotPasswordSubmit)} className="space-y-4">
-                      <FormField
-                        control={forgotPasswordForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              Username
-                            </FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter your username" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
                       <FormField
                         control={forgotPasswordForm.control}
                         name="email"

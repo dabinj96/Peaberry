@@ -156,47 +156,6 @@ export function verifyFirebaseAuthWebhookSignature(signature: string, body: stri
 }
 
 /**
- * Detect if a user's password was updated in Firebase
- * This function analyzes Firebase User Record metadata to detect password changes
- * @param user The Firebase user record
- * @returns Boolean indicating if password was recently updated
- */
-export function wasPasswordRecentlyUpdated(user: admin.auth.UserRecord): boolean {
-  if (!user) return false;
-  
-  try {
-    const oneHourAgo = Date.now() - (60 * 60 * 1000);
-    
-    // Primary approach: check if tokens were revoked recently
-    // Token revocation often happens with password changes
-    if (user.tokensValidAfterTime) {
-      const tokensValidAfter = new Date(user.tokensValidAfterTime).getTime();
-      
-      // If tokens were invalidated in the last hour, it's likely due to a password change
-      if (tokensValidAfter > oneHourAgo) {
-        return true;
-      }
-    }
-    
-    // Secondary approach: check for recent sign-in
-    if (user.metadata && user.metadata.lastSignInTime) {
-      const lastSignIn = new Date(user.metadata.lastSignInTime).getTime();
-      
-      // If user signed in very recently, might indicate password reset
-      if (lastSignIn > oneHourAgo) {
-        return true;
-      }
-    }
-    
-    // No evidence of recent password change
-    return false;
-  } catch (error) {
-    console.error('Error checking if password was updated:', error);
-    return false;
-  }
-}
-
-/**
  * Check if a user exists in Firebase Auth by provider ID and UID
  * @param providerId The provider ID (e.g., 'google.com')
  * @param providerUid The provider UID

@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, requireAuth, requireAdmin, requireCafeOwnerOrAdmin, generatePasswordResetToken } from "./auth";
+import { setupAuth, requireAuth, requireAdmin, requireCafeOwnerOrAdmin } from "./auth";
 import { cafeFilterSchema, insertRatingSchema, insertFavoriteSchema, insertCafeSchema, insertCafeRoastLevelSchema, insertCafeBrewingMethodSchema } from "@shared/schema";
 import { z } from "zod";
 import axios from "axios";
@@ -19,8 +19,7 @@ import {
   getProviderData,
   deleteFirebaseUser,
   generatePasswordResetLink,
-  updateFirebaseUserPassword,
-  wasPasswordRecentlyUpdated
+  updateFirebaseUserPassword
 } from './firebase-admin';
 import { User } from '@shared/schema';
 
@@ -1541,95 +1540,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Account unlock endpoint - can be called separately to guarantee account unlocking
-  app.post('/api/unlock-account', async (req, res) => {
-    try {
-      const { identifier } = req.body;
-      
-      if (!identifier) {
-        return res.status(400).json({
-          success: false, 
-          message: "Username or email is required to unlock account"
-        });
-      }
-      
-      console.log(`Explicitly unlocking account for identifier: ${identifier}`);
-      
-      // Try to find user by username first
-      let user = await storage.getUserByUsername(identifier);
-      
-      // If not found, try by email
-      if (!user) {
-        user = await storage.getUserByEmail(identifier);
-      }
-      
-      if (!user) {
-        // Don't reveal if the user exists
-        return res.status(200).json({
-          success: true,
-          message: "If an account exists with those credentials, it has been unlocked"
-        });
-      }
-      
-      console.log(`Found user to unlock: ${user.username} (ID: ${user.id})`);
-      
-      // Force unlock through multiple methods
-      // 1. Standard storage update
-      await storage.updateUser(user.id, {
-        accountLocked: false,
-        failedLoginAttempts: 0,
-        accountLockedAt: null,
-        lockoutExpiresAt: null
-      });
-      
-      // 2. Direct SQL for stubborn cases
-      try {
-        const db = require('./db').db;
-        const { eq } = require('drizzle-orm');
-        const { users } = require('@shared/schema');
-        
-        console.log('Performing emergency direct SQL unlock');
-        await db.update(users)
-          .set({
-            accountLocked: false,
-            failedLoginAttempts: 0,
-            accountLockedAt: null,
-            lockoutExpiresAt: null
-          })
-          .where(eq(users.id, user.id));
-      } catch (sqlError) {
-        console.error('SQL unlock error (non-critical):', sqlError);
-      }
-      
-      // Verify unlock worked
-      const verifiedUser = await storage.getUser(user.id);
-      console.log(`Account unlock verification: Locked=${verifiedUser?.accountLocked}, Attempts=${verifiedUser?.failedLoginAttempts}`);
-      
-      return res.status(200).json({
-        success: true,
-        message: "Account has been unlocked",
-        username: user.username
-      });
-    } catch (error) {
-      console.error('Error unlocking account:', error);
-      return res.status(500).json({
-        success: false,
-        message: "An error occurred while unlocking the account"
-      });
-    }
-  });
-  
-  // Database update after client-side password reset follows
-  
   // Database update after client-side password reset
-  app.post('/api/complete-firebase-reset', async (req, res) => {
+  app.post('/api/verify-reset-token', async (req, res) => {
     try {
-      const { email, username, newPassword, resetToken } = req.body;
-      
-      console.log(`Processing Firebase password reset completion: email=${email}, username=${username || 'not provided'}`);
+      const { email, newPassword } = req.body;
       
       if (!email || !newPassword) {
-        console.warn('Missing required fields for password reset');
         return res.status(400).json({
           success: false,
           message: "Email and new password are required"
@@ -1638,23 +1554,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Updating password in database after client-side Firebase reset');
       
-      // Find the user by username or email
-      let user;
-      if (username) {
-        console.log(`Username provided: ${username}, attempting to find user by username first`);
-        user = await storage.getUserByUsername(username);
-        
-        if (user) {
-          console.log(`Found user by username: ${username}, ID: ${user.id}`);
-        } else {
-          console.log(`No user found with username: ${username}, falling back to email lookup`);
-        }
-      }
-      
-      // If we couldn't find the user by username or no username was provided, try by email
-      if (!user) {
-        user = await storage.getUserByEmail(email);
-      }
+      // Get user by email
+      const user = await storage.getUserByEmail(email);
       
       if (!user) {
         console.log(`No user found with email: ${email}`);
@@ -1664,88 +1565,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log(`Found user by email: ${email}, ID: ${user.id}, Account locked: ${user.accountLocked}, Failed attempts: ${user.failedLoginAttempts}`);
-      
-      // Hash the new password for database storage
+      // Update password in our database
+      // Firebase password was already updated on the client side
       const hashedPassword = await scrypt.hashPassword(newPassword);
+      await storage.updateUser(user.id, { password: hashedPassword });
+      console.log(`Password updated in database for user ID: ${user.id}`);
       
-      // Generate a database token that we'll use as a "proof" of reset
-      // This will also help when we need to verify the token
-      const { token, expiresAt } = generatePasswordResetToken();
-      
-      // Even if not explicitly locked, we want to make sure all lockout attributes are cleared
-      console.log(`Resetting password and unlocking account for user ${user.id}`);
-      
-      try {
-        // First, force a direct update of the locked status separately
-        await storage.updateUser(user.id, {
-          accountLocked: false,
-          failedLoginAttempts: 0,
-          accountLockedAt: null,
-          lockoutExpiresAt: null
-        });
-        
-        // Then do the password update
-        const updateResult = await storage.updateUser(user.id, { 
-          password: hashedPassword,
-          passwordResetToken: token,
-          passwordResetTokenExpiresAt: expiresAt
-        });
-        
-        // Verify account is unlocked with a direct query
-        const verifiedUser = await storage.getUser(user.id);
-        if (verifiedUser) {
-          console.log(`Verification of user ${user.id} after reset: Locked status=${verifiedUser.accountLocked}, Failed attempts=${verifiedUser.failedLoginAttempts}`);
-          
-          // Do an emergency unlock if we find it's still locked somehow
-          if (verifiedUser.accountLocked) {
-            console.log('CRITICAL: Account still locked after reset, attempting emergency unlock');
-            await storage.updateUser(user.id, {
-              accountLocked: false,
-              failedLoginAttempts: 0,
-              accountLockedAt: null,
-              lockoutExpiresAt: null
-            });
-            
-            // Make a direct SQL query as a last resort for especially stubborn cases
-            try {
-              const db = require('./db').db;
-              const { eq } = require('drizzle-orm');
-              const { users } = require('@shared/schema');
-              
-              console.log('Attempting direct SQL unlock as last resort');
-              await db.update(users)
-                .set({
-                  accountLocked: false,
-                  failedLoginAttempts: 0,
-                  accountLockedAt: null,
-                  lockoutExpiresAt: null
-                })
-                .where(eq(users.id, user.id));
-                
-              console.log('Emergency direct SQL unlock completed');
-            } catch (sqlError) {
-              console.error('Error during emergency SQL unlock:', sqlError);
-            }
-            
-            // Final verification
-            const finalCheck = await storage.getUser(user.id);
-            console.log(`Final verification after emergency measures: Locked=${finalCheck ? finalCheck.accountLocked : 'user not found'}`);
-          }
-        }
-      } catch (updateError) {
-        console.error(`Error updating user ${user.id} in database:`, updateError);
-      }
-      
-      // Return success regardless - Firebase password is updated
-      // and the client will try to log in with the new password
       return res.status(200).json({
         success: true,
-        message: "Password has been reset successfully",
-        accountUnlocked: true,
-        userId: user.id,
-        username: user.username,
-        email: user.email
+        message: "Password has been reset successfully"
       });
     } catch (error) {
       console.error('Error in password reset verification:', error);
@@ -1993,13 +1821,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
           }
           
-          // Check if password was updated using our helper function
-          const passwordWasUpdated = wasPasswordRecentlyUpdated(firebaseUser);
-          console.log(`Firebase user ${uid} password updated? ${passwordWasUpdated}`);
-          
-          // Track user for unlocking
-          let userToUpdate = null;
-          
           // For each provider, check if we have a user and update accordingly
           for (const provider of firebaseUser.providerData) {
             if (provider.providerId === 'google.com') {
@@ -2007,7 +1828,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               if (existingUser) {
                 console.log(`Updating user ${existingUser.id} with new Firebase data`);
-                userToUpdate = existingUser;
                 
                 // Update user with latest Firebase data
                 await storage.updateUser(existingUser.id, {
@@ -2016,52 +1836,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   photoUrl: photoURL || existingUser.photoUrl
                 });
               }
-            } else if (provider.providerId === 'password' && passwordWasUpdated) {
-              // If password was updated through Firebase, try to find user
-              const existingUser = await storage.getUserByProviderAuth('password', uid);
-              
-              if (existingUser) {
-                console.log(`Password was updated for user ${existingUser.id} via Firebase reset flow`);
-                userToUpdate = existingUser;
-              }
             }
           }
           
           // Also check by email in case the provider data doesn't match
-          if (!userToUpdate) {
-            const userByEmail = await storage.getUserByEmail(email);
-            if (userByEmail) {
-              userToUpdate = userByEmail;
-            }
-          }
+          const userByEmail = await storage.getUserByEmail(email);
           
-          // If password was updated via Firebase, unlock the account
-          if (passwordWasUpdated && userToUpdate && userToUpdate.accountLocked) {
-            console.log(`Unlocking account for user ${userToUpdate.username} (ID: ${userToUpdate.id}) after Firebase password reset`);
-            
-            await storage.updateUser(userToUpdate.id, {
-              accountLocked: false,
-              failedLoginAttempts: 0,
-              accountLockedAt: null,
-              lockoutExpiresAt: null
-            });
-            
-            console.log(`Account successfully unlocked for user ${userToUpdate.username} after Firebase password reset`);
-          }
-          
-          // Handle provider data linking if needed
-          if (userToUpdate && (!userToUpdate.providerId || !userToUpdate.providerUid)) {
-            console.log(`Updating user ${userToUpdate.id} with Firebase auth provider details`);
+          if (userByEmail && (!userByEmail.providerId || !userByEmail.providerUid)) {
+            console.log(`Updating user ${userByEmail.id} with Firebase auth provider details`);
             
             // Get the Google provider data
             const googleProvider = getProviderData(firebaseUser, 'google.com');
             
             if (googleProvider) {
-              await storage.updateUser(userToUpdate.id, {
+              await storage.updateUser(userByEmail.id, {
                 providerId: 'google.com',
                 providerUid: googleProvider.uid,
-                name: displayName || userToUpdate.name,
-                photoUrl: photoURL || userToUpdate.photoUrl
+                name: displayName || userByEmail.name,
+                photoUrl: photoURL || userByEmail.photoUrl
               });
             }
           }

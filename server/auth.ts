@@ -126,36 +126,10 @@ export function setupAuth(app: Express) {
           return done(null, false, { message: "Invalid username or password" });
         }
         
-        // FIRST: Check if the password is correct once and store result
-        // This is important because:
-        // - If password is correct after a reset, we want to auto-unlock the account
-        // - This prevents brute force attacks from automatically unlocking the account
-        const isPasswordValid = await comparePasswords(password, user.password);
-        
         // Check if account is locked
         if (user.accountLocked) {
-          console.log(`Account for user ${user.username} is locked. Checking if lockout period expired.`);
-          
-          // SPECIAL CASE: If password is correct but account is locked, this might indicate
-          // that a password reset happened outside our complete workflow (e.g., directly in Firebase)
-          // In this case, we should automatically unlock the account
-          if (isPasswordValid) {
-            console.log(`Password is correct for locked account ${user.username}. This suggests a password reset occurred. Auto-unlocking.`);
-            await storage.updateUser(user.id, {
-              accountLocked: false,
-              failedLoginAttempts: 0,
-              accountLockedAt: null,
-              lockoutExpiresAt: null
-            });
-            
-            // Continue with normal authentication
-            console.log(`Account for user ${user.username} unlocked due to correct password after reset.`);
-            return done(null, user);
-          }
-          
           // Check if lockout period has expired
           if (user.lockoutExpiresAt && new Date() > new Date(user.lockoutExpiresAt)) {
-            console.log(`Lockout period expired for user ${user.username}. Automatically unlocking account.`);
             // Automatically unlock the account if lockout period expired
             await storage.updateUser(user.id, {
               accountLocked: false,
@@ -164,10 +138,8 @@ export function setupAuth(app: Express) {
               lockoutExpiresAt: null
             });
             // Continue with normal authentication flow
-            console.log(`Account for user ${user.username} automatically unlocked.`);
           } else {
             // Account is still locked
-            console.log(`Account for user ${user.username} is still locked. Locked at: ${user.accountLockedAt}, expires at: ${user.lockoutExpiresAt}`);
             return done(null, false, { 
               message: "Your account has been temporarily locked due to multiple failed login attempts. Please reset your password or try again later.",
               locked: true
@@ -175,8 +147,10 @@ export function setupAuth(app: Express) {
           }
         }
         
-        // Use the password validation result from earlier
-        if (!isPasswordValid) {
+        // Check password
+        const passwordMatches = await comparePasswords(password, user.password);
+        
+        if (!passwordMatches) {
           // Increment failed attempts
           const failedAttempts = (user.failedLoginAttempts || 0) + 1;
           const MAX_FAILED_ATTEMPTS = 5;
@@ -596,13 +570,11 @@ export function setupAuth(app: Express) {
       // Generate a password reset token
       const { token, expiresAt } = generatePasswordResetToken();
       
-      // Update the user with the token - we'll only unlock after successful reset
+      // Update the user with the token
       await storage.updateUser(user.id, {
         passwordResetToken: token,
         passwordResetTokenExpiresAt: expiresAt
       });
-      
-      console.log(`Generated reset token for ${user.username}: ${token}`);
       
       // In a real application, you would send the token via email here
       // For development purposes, we'll return it in the response
@@ -670,56 +642,7 @@ export function setupAuth(app: Express) {
     }
   });
   
-  // Dedicated account unlock endpoint
-  app.post("/api/unlock-account", async (req, res, next) => {
-    try {
-      const { identifier } = req.body;
-      
-      if (!identifier) {
-        return res.status(400).json({
-          success: false,
-          message: "Username or email is required"
-        });
-      }
-      
-      // Find user by username or email
-      let user = await storage.getUserByUsername(identifier);
-      
-      if (!user) {
-        // Try email lookup if username lookup failed
-        user = await storage.getUserByEmail(identifier);
-      }
-      
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found"
-        });
-      }
-      
-      // Unlock the account
-      console.log(`Explicitly unlocking account for user ${user.username} (ID: ${user.id})`);
-      
-      const updatedUser = await storage.updateUser(user.id, {
-        accountLocked: false,
-        failedLoginAttempts: 0,
-        accountLockedAt: null,
-        lockoutExpiresAt: null
-      });
-      
-      return res.status(200).json({
-        success: true,
-        message: "Account has been unlocked successfully"
-      });
-    } catch (error) {
-      console.error("Account unlock error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "An error occurred while unlocking the account"
-      });
-    }
-  });
-
+  // Reset password with token endpoint
   app.post("/api/reset-password", async (req, res, next) => {
     try {
       const { token, newPassword } = req.body;
