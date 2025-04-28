@@ -404,6 +404,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Setup periodic Firebase sync job (every 24 hours)
   setupPeriodicFirebaseSync();
+  
+  // Webhook endpoint for Firebase Auth events
+  app.post("/api/webhooks/firebase-auth", async (req, res) => {
+    try {
+      const signature = req.headers['x-firebase-auth-signature'] as string;
+      const rawBody = JSON.stringify(req.body);
+      
+      // Verify webhook signature
+      if (!signature || !verifyFirebaseAuthWebhookSignature(signature, rawBody)) {
+        console.error('Invalid Firebase Auth webhook signature');
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+      
+      const { event, data } = req.body;
+      console.log(`Firebase Auth webhook received: ${event}`);
+      
+      // Handle password change event
+      if (event === 'password.update' && data && data.uid) {
+        const firebaseUid = data.uid;
+        const userRecord = await getFirebaseUserByUid(firebaseUid);
+        
+        if (!userRecord || !userRecord.email) {
+          return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Find matching user in our database
+        const user = await storage.getUserByEmail(userRecord.email);
+        
+        if (!user) {
+          return res.status(404).json({ error: 'Local user not found' });
+        }
+        
+        // Update the user's password hash
+        // Note: Since we can't retrieve the actual password from Firebase, we set a random secure password
+        // that matches between systems. The user will authenticate via Firebase, not our direct password check.
+        const randomPassword = crypto.randomBytes(24).toString('hex');
+        const hashedPassword = await scrypt.hashPassword(randomPassword);
+        
+        await storage.updateUser(user.id, { 
+          password: hashedPassword,
+          // Also update other fields if needed
+          providerId: 'firebase',
+          providerUid: firebaseUid
+        });
+        
+        console.log(`Updated password hash for user ${user.id} after Firebase password change`);
+        return res.status(200).json({ success: true });
+      }
+      
+      // Handle other Firebase Auth events as needed (account creation, deletion, etc.)
+      
+      // Return success for any event we don't explicitly handle
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      console.error('Error handling Firebase Auth webhook:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
 
   // Cafe routes
   app.get("/api/cafes", async (req, res) => {
