@@ -44,12 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await res.json();
         
         if (!res.ok) {
+          // Simple error message with no attempt counting
           let errorMessage = data.message || "Authentication failed";
-          
-          // Format the error message to be more user-friendly
-          if (data.attemptsRemaining !== undefined) {
-            errorMessage += `. You have ${data.attemptsRemaining} login ${data.attemptsRemaining === 1 ? 'attempt' : 'attempts'} remaining.`;
-          }
           
           throw new Error(errorMessage);
         }
