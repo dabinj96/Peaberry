@@ -475,7 +475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Creating new user for ${data.email} from Firebase`);
           
           // Create a new user based on Firebase user info
-          const randomPassword = crypto.randomBytes(24).toString('hex');
+          const randomPassword = randomBytes(24).toString('hex');
           const hashedPassword = await scrypt.hashPassword(randomPassword);
           
           const newUser = await storage.createUser({
