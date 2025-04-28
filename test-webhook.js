@@ -25,7 +25,7 @@ async function testPasswordChangeWebhook() {
   try {
     // Prepare webhook payload
     const payload = {
-      event: 'password.update',
+      event: 'user.password-updated',
       data: {
         uid: 'test-firebase-uid-123',
         email: 'dabin12jang@gmail.com', // Use an email that exists in the database

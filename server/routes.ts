@@ -1984,7 +1984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
         }
         
-        case 'password.update': {
+        case 'user.password-updated': {
           // Password was updated in Firebase Auth
           const { uid, email } = data;
           console.log(`Processing password update event for uid: ${uid}, email: ${email}`);
