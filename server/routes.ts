@@ -1984,7 +1984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
         }
         
-        case 'user.password-updated': {
+        case 'password.update': {
           // Password was updated in Firebase Auth
           const { uid, email } = data;
           console.log(`Processing password update event for uid: ${uid}, email: ${email}`);
@@ -2038,6 +2038,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error processing Firebase Auth webhook:', error);
       return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Test password update endpoint (remove in production)
+  app.post('/api/test-password-update', async (req, res) => {
+    try {
+      const { email, uid } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      console.log(`Found user for test password update: ID ${user.id}, username ${user.username}`);
+      
+      // Get current password hash for comparison
+      const oldPasswordHash = user.password;
+      console.log(`Current password hash: ${oldPasswordHash.substring(0, 15)}...`);
+      
+      // Generate a new random secure password
+      const randomPassword = randomBytes(24).toString('hex');
+      const hashedPassword = await scrypt.hashPassword(randomPassword);
+      console.log(`New password hash: ${hashedPassword.substring(0, 15)}...`);
+      
+      // Update the user's password in our database
+      const updatedUser = await storage.updateUser(user.id, {
+        password: hashedPassword,
+        providerId: 'firebase',
+        providerUid: uid || 'test-uid'
+      });
+      
+      if (updatedUser) {
+        console.log(`Successfully updated password hash for user ${user.id}`);
+        
+        // Verify update by fetching the user again
+        const verifiedUser = await storage.getUserByEmail(email);
+        console.log(`Verified password hash: ${verifiedUser?.password.substring(0, 15)}...`);
+        
+        return res.status(200).json({
+          success: true,
+          message: "Password updated successfully",
+          oldHash: oldPasswordHash.substring(0, 15) + "...",
+          newHash: hashedPassword.substring(0, 15) + "...",
+          verifiedHash: verifiedUser?.password.substring(0, 15) + "..."
+        });
+      } else {
+        console.error(`Failed to update password for user ${user.id}`);
+        return res.status(500).json({ error: "Failed to update password" });
+      }
+    } catch (error) {
+      console.error("Error in test password update:", error);
+      return res.status(500).json({ error: "Internal server error" });
     }
   });
 
