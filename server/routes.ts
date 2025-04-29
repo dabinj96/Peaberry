@@ -224,28 +224,28 @@ function shuffleArray<T>(array: T[]): T[] {
 function setupPeriodicFirebaseSync(intervalHours = 24) {
   // Skip setup in development mode unless explicitly enabled
   if (process.env.NODE_ENV === 'development' && process.env.ENABLE_FIREBASE_SYNC !== 'true') {
-    console.log('Periodic Firebase sync is disabled in development mode');
+    console.log('Periodic Google OAuth user sync is disabled in development mode');
     return;
   }
   
   // Initial sync after 2 minutes to allow server to fully start up
   setTimeout(() => {
-    console.log('Running initial Firebase user synchronization');
+    console.log('Running initial Google OAuth user synchronization');
     syncFirebaseUsers().catch(err => {
-      console.error('Error during initial Firebase user synchronization:', err);
+      console.error('Error during initial Google OAuth user synchronization:', err);
     });
     
     // Then set up periodic sync every 24 hours (or as configured)
     const intervalMs = intervalHours * 60 * 60 * 1000;
     setInterval(() => {
-      console.log(`Running scheduled Firebase user synchronization (${intervalHours}h interval)`);
+      console.log(`Running scheduled Google OAuth user synchronization (${intervalHours}h interval)`);
       syncFirebaseUsers().catch(err => {
-        console.error('Error during scheduled Firebase user synchronization:', err);
+        console.error('Error during scheduled Google OAuth user synchronization:', err);
       });
     }, intervalMs);
   }, 2 * 60 * 1000);
   
-  console.log(`Scheduled periodic Firebase user synchronization every ${intervalHours} hours`);
+  console.log(`Scheduled periodic Google OAuth user synchronization every ${intervalHours} hours`);
 }
 
 // Synchronize Google OAuth users between Firebase Auth and our database
@@ -1683,24 +1683,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Manual Firebase sync endpoint for admins
+  // Manual Google OAuth sync endpoint for admins
   app.post('/api/admin/sync-firebase-users', requireAdmin, async (req, res) => {
     try {
-      console.log('Manual Firebase user synchronization triggered by admin');
+      console.log('Manual Google OAuth user synchronization triggered by admin');
       
       // Run the sync function
       const results = await syncFirebaseUsers();
       
       res.json({
         success: true,
-        message: 'Firebase user synchronization completed',
+        message: 'Google OAuth user synchronization completed',
         results
       });
     } catch (error) {
-      console.error('Error during manual Firebase sync:', error);
+      console.error('Error during manual Google OAuth sync:', error);
       res.status(500).json({
         success: false,
-        message: 'Firebase user synchronization failed',
+        message: 'Google OAuth user synchronization failed',
         error: error.message
       });
     }
