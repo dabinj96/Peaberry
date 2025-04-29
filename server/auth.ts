@@ -554,19 +554,22 @@ export function setupAuth(app: Express) {
       }
       
       // Token is valid - set it in an HTTP-only cookie and redirect to the reset form
+      // Make sure cookie settings are compatible with both development and production
       res.cookie('password_reset_token', user.passwordResetToken, {
         httpOnly: true, // Only accessible by the server
-        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+        secure: false, // Allow non-HTTPS in development
         maxAge: 60 * 60 * 1000, // 1 hour expiry (matching token expiry)
-        sameSite: 'lax' // Changed to lax to work with redirects from email links
+        sameSite: 'lax', // Changed to lax to work with redirects from email links
+        path: '/' // Ensure the cookie is available on all paths
       });
       
       // Set user ID in a cookie for reference
-      res.cookie('password_reset_user_id', userId, {
+      res.cookie('password_reset_user_id', userId.toString(), {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Allow non-HTTPS in development
         maxAge: 60 * 60 * 1000,
-        sameSite: 'lax' // Changed to lax to work with redirects from email links
+        sameSite: 'lax', // Changed to lax to work with redirects from email links
+        path: '/' // Ensure the cookie is available on all paths
       });
       
       // Redirect to reset password form with tab parameter to set the active tab
@@ -580,8 +583,14 @@ export function setupAuth(app: Express) {
   // Verify reset token endpoint (keep for backward compatibility)
   app.post("/api/verify-reset-token", async (req, res, next) => {
     try {
+      // Log request cookies and body for debugging
+      console.log("Verify token request cookies:", req.cookies);
+      console.log("Verify token request body:", req.body);
+      
       // Get token from cookie first, then body as fallback
-      const token = req.cookies.password_reset_token || req.body.token;
+      const token = (req.cookies && req.cookies.password_reset_token) || req.body.token;
+      
+      console.log("Using token for verification:", token ? "Token found" : "No token");
       
       if (!token) {
         return res.status(400).json({
@@ -626,9 +635,15 @@ export function setupAuth(app: Express) {
   // Reset password with token endpoint
   app.post("/api/reset-password", async (req, res, next) => {
     try {
+      // Log request cookies and body for debugging
+      console.log("Reset password request cookies:", req.cookies);
+      console.log("Reset password request body:", req.body);
+      
       // Get token from secure cookie first, then fallback to body for backward compatibility
-      const token = req.cookies.password_reset_token || req.body.token;
+      const token = (req.cookies && req.cookies.password_reset_token) || req.body.token;
       const { newPassword } = req.body;
+      
+      console.log("Using token for reset:", token ? "Token found" : "No token");
       
       if (!token || !newPassword) {
         return res.status(400).json({
@@ -715,8 +730,8 @@ export function setupAuth(app: Express) {
       }
       
       // Clear the secure cookies as the token is now invalidated
-      res.clearCookie('password_reset_token');
-      res.clearCookie('password_reset_user_id');
+      res.clearCookie('password_reset_token', { path: '/' });
+      res.clearCookie('password_reset_user_id', { path: '/' });
       
       // Return success response
       return res.status(200).json({
