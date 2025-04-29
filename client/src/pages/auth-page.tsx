@@ -415,7 +415,6 @@ export default function AuthPage() {
                   </svg>
                   Back to login
                 </Button>
-                <span className="text-lg font-medium ml-auto">Forgot Password</span>
               </div>
             )}
             

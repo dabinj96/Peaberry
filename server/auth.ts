@@ -503,7 +503,7 @@ export function setupAuth(app: Express) {
       });
       
       // Build the reset link for the email
-      const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+      const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${token}`;
       
       // Send the reset email
       console.log(`Sending password reset email to ${email} with token: ${token}`);
