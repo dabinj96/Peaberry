@@ -440,7 +440,15 @@ export function setupAuth(app: Express) {
   });
   
   // Self-contained local password reset flow (no Firebase)
-  // Password reset request (forgot password) endpoint - main endpoint
+  
+  // Create alias for backwards compatibility with any existing client code
+  app.post("/api/request-password-reset", (req, res, next) => {
+    console.log("Legacy endpoint /api/request-password-reset called, forwarding to /api/forgot-password");
+    req.url = "/api/forgot-password";
+    next();
+  });
+  
+  // Main password reset request (forgot password) endpoint implementation
   app.post("/api/forgot-password", async (req, res, next) => {
     try {
       const { email } = req.body;

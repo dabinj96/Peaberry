@@ -128,9 +128,9 @@ export async function sendPasswordResetEmail(email: string, resetLink: string, u
     await sgMail.send(msg);
     console.log(`Password reset email sent successfully to ${email}`);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending password reset email:', error);
-    if ('response' in error) {
+    if (error && typeof error === 'object' && 'response' in error) {
       console.error('SendGrid error details:', error.response?.body);
     }
     return false;
@@ -174,9 +174,9 @@ export async function sendPasswordChangedEmail(email: string, username?: string)
     await sgMail.send(msg);
     console.log(`Password changed notification email sent successfully to ${email}`);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending password changed email:', error);
-    if ('response' in error) {
+    if (error && typeof error === 'object' && 'response' in error) {
       console.error('SendGrid error details:', error.response?.body);
     }
     return false;
