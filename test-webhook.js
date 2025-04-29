@@ -107,7 +107,7 @@ async function testUserDeleteWebhook() {
     const payload = {
       event: 'user.delete',
       data: {
-        uid: 'test-firebase-uid-456',  // Use the UID of the test user we created
+        uid: 'test-firebase-uid-456',  // Use the UID we just created
         email: 'newuser@example.com',
         timestamp: new Date().toISOString()
       }
