@@ -62,8 +62,9 @@ export default function ResetPasswordPage() {
             description: "Please enter your new password to complete the reset process.",
           });
           
-          // Redirect to auth page with resetPassword tab active
-          setLocation('/auth?tab=resetPassword');
+          // Redirect to auth page with resetPassword tab active and add a token parameter 
+          // This is a workaround to save the state that a password reset was initiated
+          setLocation('/auth?tab=resetPassword&reset=true');
         } else {
           // Unexpected state - redirect to auth page
           console.log("No reset parameters found, redirecting to auth page");

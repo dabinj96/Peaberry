@@ -193,8 +193,18 @@ export default function AuthPage() {
     const tabParam = searchParams.has('tab') ? searchParams.get('tab') as string : 'login';
     setActiveTab(tabParam);
     
+    // Check if we have the reset=true parameter which indicates we came from 
+    // the intermediate page that set the secure HTTP-only cookie
+    const hasResetFlag = searchParams.has('reset') && searchParams.get('reset') === 'true';
+    if (hasResetFlag && tabParam === 'resetPassword') {
+      console.log("Secure cookie-based reset flow detected. Reset flag is present.");
+      // Set a temporary token just to bypass the verification step
+      // The actual token will be read from the HTTP-only cookie by the server
+      setResetCode('SECURE_FLOW');
+    }
+    
     // If it's in reset password mode with the secure cookie flow,
-    // we don't set the resetCode as it's in the HTTP-only cookie
+    // we don't need a real reset code as it's in the HTTP-only cookie
   }, [window.location.search]);
   
   // Listen for tab change events from the header component
