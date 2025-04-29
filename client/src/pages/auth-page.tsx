@@ -169,7 +169,7 @@ export default function AuthPage() {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     
-    // Check for token in the URL (for our new server-side password reset)
+    // Check for token in the URL (for backward compatibility with URL token)
     const token = searchParams.get('token');
     if (token) {
       setActiveTab('resetPassword');
@@ -188,8 +188,13 @@ export default function AuthPage() {
       }
     }
     
+    // Support for the new secure cookie-based reset flow
+    // where there's no token in the URL, just a tab=resetPassword param
     const tabParam = searchParams.has('tab') ? searchParams.get('tab') as string : 'login';
     setActiveTab(tabParam);
+    
+    // If it's in reset password mode with the secure cookie flow,
+    // we don't set the resetCode as it's in the HTTP-only cookie
   }, [window.location.search]);
   
   // Listen for tab change events from the header component
@@ -216,15 +221,21 @@ export default function AuthPage() {
       window.history.replaceState(null, '', '?tab=register');
     } else if (value === 'forgotPassword') {
       window.history.replaceState(null, '', '?tab=forgotPassword');
-    } else if (value === 'resetPassword' && resetCode) {
-      // Keep the reset code in the URL (support both new token format and legacy Firebase oobCode)
-      if (window.location.search.includes('token=')) {
-        window.history.replaceState(null, '', `?token=${resetCode}`);
-      } else if (window.location.search.includes('oobCode=')) {
-        window.history.replaceState(null, '', `?mode=resetPassword&oobCode=${resetCode}`);
+    } else if (value === 'resetPassword') {
+      if (resetCode) {
+        // For the legacy flow with token in URL
+        // Keep the reset code in the URL (support both new token format and legacy Firebase oobCode)
+        if (window.location.search.includes('token=')) {
+          window.history.replaceState(null, '', `?token=${resetCode}`);
+        } else if (window.location.search.includes('oobCode=')) {
+          window.history.replaceState(null, '', `?mode=resetPassword&oobCode=${resetCode}`);
+        } else {
+          // Default to new token format
+          window.history.replaceState(null, '', `?token=${resetCode}`);
+        }
       } else {
-        // Default to new token format
-        window.history.replaceState(null, '', `?token=${resetCode}`);
+        // For the secure cookie-based flow, we don't need token in URL
+        window.history.replaceState(null, '', '?tab=resetPassword');
       }
     } else {
       window.history.replaceState(null, '', '/auth');
@@ -620,11 +631,7 @@ export default function AuthPage() {
                   <CardDescription>Enter your new password to complete the reset process.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {!resetCode ? (
-                    <div className="bg-red-50 p-3 rounded border border-red-200 text-red-800 text-sm">
-                      Invalid or expired reset link. Please request a new password reset link.
-                    </div>
-                  ) : resetSuccess ? (
+                  {resetSuccess ? (
                     <div className="bg-green-50 p-3 rounded border border-green-200 text-green-800 text-sm">
                       Your password has been reset successfully. You will be redirected to the login page shortly.
                     </div>

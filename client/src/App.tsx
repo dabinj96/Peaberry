@@ -26,6 +26,7 @@ function Router() {
           <Route path="/" component={HomePage} />
           <Route path="/auth" component={AuthPage} />
           <Route path="/reset-password" component={ResetPasswordPage} />
+          <Route path="/password-reset/:userId" component={ResetPasswordPage} />
           <Route path="/cafe/:id" component={CafeDetailPage} />
           <ProtectedRoute path="/profile" component={ProfilePage} />
           <AdminProtectedRoute path="/admin" component={AdminPage} />
