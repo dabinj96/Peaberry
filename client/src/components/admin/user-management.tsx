@@ -35,7 +35,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Type for the user data with Firebase status
+// Type for the user data with OAuth status
 interface UserWithStatus {
   id: number;
   username: string;
@@ -44,7 +44,7 @@ interface UserWithStatus {
   role: 'user' | 'admin' | 'cafe_owner';
   providerId: string | null;
   providerUid: string | null;
-  firebaseStatus: 'active' | 'deleted' | 'local-only' | 'unknown';
+  firebaseStatus: 'active' | 'deleted' | 'local-only' | 'unknown'; // Renamed in UI but kept in type for API compatibility
   createdAt: string;
 }
 
@@ -292,7 +292,7 @@ export default function UserManagement() {
         <CardHeader>
           <CardTitle>Users</CardTitle>
           <CardDescription>
-            All registered users in the system. Users with "deleted" status exist in the database but not in Firebase Auth.
+            All registered users in the system. For Google OAuth users, "active" indicates they exist in Firebase, "deleted" means they were removed from Firebase.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -316,7 +316,7 @@ export default function UserManagement() {
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Auth Provider</TableHead>
-                    <TableHead>Firebase Status</TableHead>
+                    <TableHead>OAuth Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
