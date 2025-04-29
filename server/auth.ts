@@ -502,13 +502,13 @@ export function setupAuth(app: Express) {
         passwordResetTokenExpiresAt: expiresAt
       });
       
-      // Build the reset link for the email
-      const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${token}`;
+      // Build clean reset link without exposing token in URL
+      const resetLink = `${req.protocol}://${req.get('host')}/password-reset/${user.id}`;
       
       // Send the reset email
       console.log(`Sending password reset email to ${email} with token: ${token}`);
       
-      // Attempt to send the email
+      // Attempt to send the email with a clean URL
       const emailSent = await sendPasswordResetEmail(email, resetLink, user.name || user.username);
       
       // Log but don't reveal to user whether the email was actually sent
@@ -527,10 +527,63 @@ export function setupAuth(app: Express) {
     }
   });
   
-  // Verify reset token endpoint
+  // Password reset token retrieval endpoint
+  app.get("/api/password-reset/:userId", async (req, res, next) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid user ID"
+        });
+      }
+      
+      // Get the user
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.passwordResetToken || !user.passwordResetTokenExpiresAt) {
+        // Return 302 redirect to /auth with an error
+        return res.redirect('/auth?error=invalid_reset');
+      }
+      
+      // Verify the token's validity
+      const isValid = isPasswordResetTokenValid(user.passwordResetToken, user.passwordResetTokenExpiresAt);
+      
+      if (!isValid) {
+        // Token is expired, redirect to auth page with expired token error
+        return res.redirect('/auth?error=expired_token');
+      }
+      
+      // Token is valid - set it in an HTTP-only cookie and redirect to the reset form
+      res.cookie('password_reset_token', user.passwordResetToken, {
+        httpOnly: true, // Only accessible by the server
+        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+        maxAge: 60 * 60 * 1000, // 1 hour expiry (matching token expiry)
+        sameSite: 'strict' // Protect against CSRF
+      });
+      
+      // Set user ID in a cookie for reference
+      res.cookie('password_reset_user_id', userId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 1000,
+        sameSite: 'strict'
+      });
+      
+      // Redirect to reset password form
+      return res.redirect('/auth?mode=resetPassword');
+    } catch (error) {
+      console.error("Password reset token retrieval error:", error);
+      return res.redirect('/auth?error=server_error');
+    }
+  });
+
+  // Verify reset token endpoint (keep for backward compatibility)
   app.post("/api/verify-reset-token", async (req, res, next) => {
     try {
-      const { token } = req.body;
+      // Get token from cookie first, then body as fallback
+      const token = req.cookies.password_reset_token || req.body.token;
       
       if (!token) {
         return res.status(400).json({
@@ -575,7 +628,9 @@ export function setupAuth(app: Express) {
   // Reset password with token endpoint
   app.post("/api/reset-password", async (req, res, next) => {
     try {
-      const { token, newPassword } = req.body;
+      // Get token from secure cookie first, then fallback to body for backward compatibility
+      const token = req.cookies.password_reset_token || req.body.token;
+      const { newPassword } = req.body;
       
       if (!token || !newPassword) {
         return res.status(400).json({
@@ -660,6 +715,10 @@ export function setupAuth(app: Express) {
         // Log but don't fail the request if email fails
         console.error("Error sending password changed confirmation email:", emailError);
       }
+      
+      // Clear the secure cookies as the token is now invalidated
+      res.clearCookie('password_reset_token');
+      res.clearCookie('password_reset_user_id');
       
       // Return success response
       return res.status(200).json({

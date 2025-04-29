@@ -54,22 +54,31 @@ export const requestPasswordReset = async (email: string): Promise<{
 
 /**
  * Verify a password reset token
- * @param token The reset token
+ * This function now handles both legacy token in URL and secure cookie-based tokens
+ * 
+ * @param token Optional token parameter (for backward compatibility)
  * @returns Object containing success status, user info, and any error message
  */
-export const verifyResetToken = async (token: string): Promise<{
+export const verifyResetToken = async (token?: string): Promise<{
   success: boolean;
   username?: string;
   email?: string;
   error?: string;
 }> => {
   try {
+    // For the new secure flow, we don't pass the token in the request body
+    // Instead, the server will read it from the secure HTTP-only cookie
+    // We only include the token in the body for backward compatibility
+    const requestBody = token ? { token } : {};
+    
     const response = await fetch('/api/verify-reset-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ token }),
+      // Include credentials to send cookies with the request
+      credentials: 'include',
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
@@ -97,22 +106,34 @@ export const verifyResetToken = async (token: string): Promise<{
 
 /**
  * Reset a password using a token
- * @param token Reset token
- * @param newPassword New password
+ * This function now handles both legacy token approach and secure cookie-based tokens
+ * 
+ * @param newPassword New password to set
+ * @param token Optional token parameter (for backward compatibility)
  * @returns Object containing success status and any error message
  */
-export const resetPassword = async (token: string, newPassword: string): Promise<{
+export const resetPassword = async (
+  newPassword: string, 
+  token?: string
+): Promise<{
   success: boolean;
   message?: string;
   error?: string;
 }> => {
   try {
+    // For the new secure flow, we don't pass the token in the request body
+    // Instead, the server will read it from the secure HTTP-only cookie
+    // We only include the token in the body for backward compatibility
+    const requestBody = token ? { token, newPassword } : { newPassword };
+    
     const response = await fetch('/api/reset-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ token, newPassword }),
+      // Include credentials to send cookies with the request
+      credentials: 'include',
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
