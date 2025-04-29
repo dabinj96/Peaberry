@@ -248,9 +248,9 @@ function setupPeriodicFirebaseSync(intervalHours = 24) {
   console.log(`Scheduled periodic Firebase user synchronization every ${intervalHours} hours`);
 }
 
-// Synchronize users between Firebase Auth and our database
+// Synchronize Google OAuth users between Firebase Auth and our database
 async function syncFirebaseUsers(): Promise<{ added: number; updated: number; deleted: number; errors: string[] }> {
-  console.log('Starting Firebase user synchronization');
+  console.log('Starting Google OAuth user synchronization');
   
   // Track results
   const results = {
@@ -263,34 +263,39 @@ async function syncFirebaseUsers(): Promise<{ added: number; updated: number; de
   try {
     // 1. Get all users from Firebase
     const firebaseUsers = await listFirebaseUsers();
-    console.log(`Retrieved ${firebaseUsers.length} users from Firebase`);
+    
+    // Filter to only include Google OAuth users
+    const googleOAuthUsers = firebaseUsers.filter(user => 
+      user.providerData.some(provider => provider.providerId === 'google.com')
+    );
+    
+    console.log(`Retrieved ${firebaseUsers.length} users from Firebase (${googleOAuthUsers.length} with Google OAuth)`);
     
     // 2. Get all users from our database
     const dbUsers = await storage.listUsers();
     console.log(`Retrieved ${dbUsers.length} users from database`);
     
     // 3. Create maps for fast lookups
-    const firebaseUserMap = new Map(); // providerId:providerUid -> Firebase user
-    const dbUserMap = new Map(); // providerId:providerUid -> DB user
+    const firebaseUserMap = new Map(); // google.com:providerUid -> Firebase user
+    const dbUserMap = new Map(); // google:providerUid -> DB user
     const dbUserByEmailMap = new Map(); // email -> DB user
     
-    // Populate Firebase user map
-    firebaseUsers.forEach(fbUser => {
-      // Add by provider data
+    // Populate Firebase user map - only for Google OAuth users
+    googleOAuthUsers.forEach(fbUser => {
+      // Find and add Google provider data
       fbUser.providerData.forEach(provider => {
-        const key = `${provider.providerId}:${provider.uid}`;
-        firebaseUserMap.set(key, fbUser);
+        if (provider.providerId === 'google.com') {
+          const key = `google:${provider.uid}`;
+          firebaseUserMap.set(key, fbUser);
+        }
       });
-      
-      // Also add by Firebase UID for users without provider data
-      firebaseUserMap.set(`firebase:${fbUser.uid}`, fbUser);
     });
     
     // Populate DB user maps
     dbUsers.forEach(dbUser => {
-      // Add by provider auth if available
-      if (dbUser.providerId && dbUser.providerUid) {
-        const key = `${dbUser.providerId}:${dbUser.providerUid}`;
+      // Add by Google provider auth if available
+      if (dbUser.providerId === 'google' && dbUser.providerUid) {
+        const key = `google:${dbUser.providerUid}`;
         dbUserMap.set(key, dbUser);
       }
       
@@ -300,77 +305,75 @@ async function syncFirebaseUsers(): Promise<{ added: number; updated: number; de
       }
     });
     
-    // 4. Process each Firebase user to ensure they exist in our DB with correct info
-    for (const fbUser of firebaseUsers) {
+    // 4. Process each Google OAuth user to ensure they exist in our DB with correct info
+    for (const fbUser of googleOAuthUsers) {
       try {
-        // Check for each provider
-        for (const provider of fbUser.providerData) {
-          const providerKey = `${provider.providerId}:${provider.uid}`;
-          const dbUser = dbUserMap.get(providerKey);
+        // Find the Google provider
+        const googleProvider = fbUser.providerData.find(p => p.providerId === 'google.com');
+        if (!googleProvider) continue;
+        
+        const providerKey = `google:${googleProvider.uid}`;
+        const dbUser = dbUserMap.get(providerKey);
+        
+        if (dbUser) {
+          // User exists with Google provider, update info if needed
+          const updates: Partial<User> = {};
+          let needsUpdate = false;
           
-          if (dbUser) {
-            // User exists with this provider, update info if needed
-            const updates: Partial<User> = {};
-            let needsUpdate = false;
-            
-            // Check if name needs updating
-            if (fbUser.displayName && dbUser.name !== fbUser.displayName) {
-              updates.name = fbUser.displayName;
-              needsUpdate = true;
-            }
-            
-            // Check if email needs updating
-            if (fbUser.email && dbUser.email !== fbUser.email) {
-              updates.email = fbUser.email;
-              needsUpdate = true;
-            }
-            
-            // Check if photo URL needs updating
-            if (fbUser.photoURL && dbUser.photoUrl !== fbUser.photoURL) {
-              updates.photoUrl = fbUser.photoURL;
-              needsUpdate = true;
-            }
-            
-            if (needsUpdate) {
-              console.log(`Updating user ${dbUser.id} with latest Firebase data`);
-              await storage.updateUser(dbUser.id, updates);
-              results.updated++;
-            }
-          } else {
-            // Check if user exists by email
-            const dbUserByEmail = fbUser.email ? dbUserByEmailMap.get(fbUser.email.toLowerCase()) : null;
-            
-            if (dbUserByEmail) {
-              // User exists by email but doesn't have this provider linked - update provider info
-              console.log(`Linking Firebase provider ${provider.providerId} to existing user ${dbUserByEmail.id}`);
-              
-              await storage.updateUser(dbUserByEmail.id, {
-                providerId: provider.providerId,
-                providerUid: provider.uid,
-                photoUrl: fbUser.photoURL || dbUserByEmail.photoUrl
-              });
-              
-              results.updated++;
-            }
-            // We don't create new users - they should be created through normal auth flow
+          // Check if name needs updating
+          if (fbUser.displayName && dbUser.name !== fbUser.displayName) {
+            updates.name = fbUser.displayName;
+            needsUpdate = true;
           }
+          
+          // Check if email needs updating
+          if (fbUser.email && dbUser.email !== fbUser.email) {
+            updates.email = fbUser.email;
+            needsUpdate = true;
+          }
+          
+          // Check if photo URL needs updating
+          if (fbUser.photoURL && dbUser.photoUrl !== fbUser.photoURL) {
+            updates.photoUrl = fbUser.photoURL;
+            needsUpdate = true;
+          }
+          
+          if (needsUpdate) {
+            console.log(`Updating Google OAuth user ${dbUser.id} with latest Firebase data`);
+            await storage.updateUser(dbUser.id, updates);
+            results.updated++;
+          }
+        } else {
+          // Check if user exists by email
+          const dbUserByEmail = fbUser.email ? dbUserByEmailMap.get(fbUser.email.toLowerCase()) : null;
+          
+          if (dbUserByEmail) {
+            // User exists by email but doesn't have Google OAuth linked - update provider info
+            console.log(`Linking Google OAuth provider to existing user ${dbUserByEmail.id}`);
+            
+            await storage.updateUser(dbUserByEmail.id, {
+              providerId: 'google',
+              providerUid: googleProvider.uid,
+              photoUrl: fbUser.photoURL || dbUserByEmail.photoUrl
+            });
+            
+            results.updated++;
+          }
+          // We don't create new users - they should be created through normal auth flow
         }
       } catch (error) {
-        console.error(`Error processing Firebase user ${fbUser.uid}:`, error);
-        results.errors.push(`Failed to process Firebase user ${fbUser.uid}: ${error}`);
+        console.error(`Error processing Google OAuth user ${fbUser.uid}:`, error);
+        results.errors.push(`Failed to process Google OAuth user ${fbUser.uid}: ${error}`);
       }
     }
     
-    // 5. Check for users in our DB that have provider info but don't exist in Firebase
-    // These are likely deleted Firebase users that weren't properly cleaned up
+    // 5. Check for users in our DB that have Google provider info but don't exist in Firebase
+    // These are likely deleted Google OAuth users that weren't properly cleaned up
     for (const [providerKey, dbUser] of dbUserMap.entries()) {
       try {
-        if (!firebaseUserMap.has(providerKey) && dbUser.providerId && dbUser.providerUid) {
+        if (!firebaseUserMap.has(providerKey) && dbUser.providerId === 'google' && dbUser.providerUid) {
           // User exists in DB but not in Firebase - they've been deleted from Firebase
-          console.log(`Detected deleted Firebase user: ${providerKey}, cleaning up DB user ${dbUser.id}`);
-          
-          // If using hard delete:
-          // const deleted = await storage.deleteUser(dbUser.id);
+          console.log(`Detected deleted Google OAuth user: ${providerKey}, cleaning up DB user ${dbUser.id}`);
           
           // If using soft update (removing provider link):
           const updated = await storage.updateUser(dbUser.id, {
@@ -379,20 +382,20 @@ async function syncFirebaseUsers(): Promise<{ added: number; updated: number; de
           });
           
           if (updated) {
-            console.log(`Removed Firebase provider link from user ${dbUser.id}`);
+            console.log(`Removed Google OAuth provider link from user ${dbUser.id}`);
             results.deleted++;
           }
         }
       } catch (error) {
-        console.error(`Error checking deleted user ${providerKey}:`, error);
-        results.errors.push(`Failed to check deleted user ${providerKey}: ${error}`);
+        console.error(`Error checking deleted Google OAuth user ${providerKey}:`, error);
+        results.errors.push(`Failed to check deleted Google OAuth user ${providerKey}: ${error}`);
       }
     }
     
-    console.log('Firebase user synchronization completed:', results);
+    console.log('Google OAuth user synchronization completed:', results);
     return results;
   } catch (error) {
-    console.error('Error during Firebase user synchronization:', error);
+    console.error('Error during Google OAuth user synchronization:', error);
     results.errors.push(`Synchronization error: ${error}`);
     return results;
   }
@@ -405,7 +408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup periodic Firebase sync job (every 24 hours)
   setupPeriodicFirebaseSync();
   
-  // Webhook endpoint for Firebase Auth events
+  // Webhook endpoint for Firebase Auth events (Google OAuth only)
   app.post("/api/webhooks/firebase-auth", async (req, res) => {
     try {
       const signature = req.headers['x-firebase-auth-signature'] as string;
@@ -420,66 +423,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { event, data } = req.body;
       console.log(`Firebase Auth webhook received: ${event}`);
       
-      // Handle password change event
-      if (event === 'password.update' && data && data.uid) {
-        const firebaseUid = data.uid;
-        let userEmail = data.email;
-        
-        // In production, we'd verify with Firebase Auth directly
-        if (!userEmail) {
-          const userRecord = await getFirebaseUserByUid(firebaseUid);
-          if (!userRecord || !userRecord.email) {
-            return res.status(404).json({ error: 'User not found in Firebase' });
-          }
-          userEmail = userRecord.email;
-        }
-        
-        // Find matching user in our database
-        const user = await storage.getUserByEmail(userEmail);
-        
-        if (!user) {
-          return res.status(404).json({ error: 'Local user not found' });
-        }
-        
-        // Update the user's password hash
-        // Note: Since we can't retrieve the actual password from Firebase, we set a random secure password
-        // that matches between systems. The user will authenticate via Firebase, not our direct password check.
-        const randomPassword = randomBytes(24).toString('hex');
-        const hashedPassword = await scrypt.hashPassword(randomPassword);
-        
-        await storage.updateUser(user.id, { 
-          password: hashedPassword,
-          // Also update other fields if needed
-          providerId: 'firebase',
-          providerUid: firebaseUid
-        });
-        
-        console.log(`Updated password hash for user ${user.id} after Firebase password change`);
-        return res.status(200).json({ success: true });
+      // We only care about Google OAuth users with providerId 'google.com'
+      const isGoogleAuthUser = data && data.providerData && 
+        data.providerData.some((provider: any) => provider.providerId === 'google.com');
+      
+      if (!isGoogleAuthUser) {
+        console.log('Ignoring non-Google OAuth user event');
+        return res.status(200).json({ success: true, message: 'Event ignored - not a Google OAuth user' });
       }
       
-      // Handle user creation event
+      // Handle user creation event for Google OAuth users
       if (event === 'user.create' && data && data.uid && data.email) {
-        console.log(`Received user creation webhook for ${data.email}`);
+        console.log(`Received Google OAuth user creation webhook for ${data.email}`);
         
         // Check if user already exists in our database
         const existingUser = await storage.getUserByEmail(data.email);
         
         if (existingUser) {
-          console.log(`User ${data.email} already exists, updating Firebase provider info`);
+          console.log(`User ${data.email} already exists, updating Google OAuth provider info`);
           
-          // Update the user's Firebase provider info
+          // Update the user's Google OAuth provider info
           await storage.updateUser(existingUser.id, {
-            providerId: 'firebase',
+            providerId: 'google',
             providerUid: data.uid,
             photoUrl: data.photoURL || existingUser.photoUrl
           });
           
-          return res.status(200).json({ success: true, message: 'User updated' });
+          return res.status(200).json({ success: true, message: 'User updated with Google OAuth info' });
         } else {
-          console.log(`Creating new user for ${data.email} from Firebase`);
+          console.log(`Creating new user for ${data.email} from Google OAuth`);
           
-          // Create a new user based on Firebase user info
+          // Create a new user based on Google OAuth user info
+          // Generate a random password since they'll only use Google OAuth to sign in
           const randomPassword = randomBytes(24).toString('hex');
           const hashedPassword = await scrypt.hashPassword(randomPassword);
           
@@ -489,35 +464,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
             password: hashedPassword,
             name: data.displayName || data.email.split('@')[0],
             role: 'user',
-            providerId: 'firebase',
+            providerId: 'google',
             providerUid: data.uid,
             photoUrl: data.photoURL || null
           });
           
-          return res.status(201).json({ success: true, message: 'User created' });
+          return res.status(201).json({ success: true, message: 'Google OAuth user created' });
         }
       }
       
-      // Handle user deletion event
+      // Handle user deletion event for Google OAuth users
       if (event === 'user.delete' && data && data.uid) {
-        console.log(`Received user deletion webhook for Firebase UID: ${data.uid}`);
+        console.log(`Received user deletion webhook for Google OAuth UID: ${data.uid}`);
         
-        // Find the user in our database by Firebase UID
-        const user = await storage.getUserByProviderAuth('firebase', data.uid);
+        // Find the user in our database by Google OAuth UID
+        const user = await storage.getUserByProviderAuth('google', data.uid);
         
         if (user) {
-          console.log(`Deleting user ${user.id} (${user.email}) from our database`);
+          console.log(`Deleting Google OAuth user ${user.id} (${user.email}) from our database`);
           
           const success = await storage.deleteUser(user.id);
           
           if (success) {
-            return res.status(200).json({ success: true, message: 'User deleted' });
+            return res.status(200).json({ success: true, message: 'Google OAuth user deleted' });
           } else {
-            return res.status(500).json({ error: 'Failed to delete user' });
+            return res.status(500).json({ error: 'Failed to delete Google OAuth user' });
           }
         } else {
-          console.log(`No matching user found for Firebase UID: ${data.uid}`);
-          return res.status(404).json({ error: 'User not found' });
+          console.log(`No matching Google OAuth user found for Firebase UID: ${data.uid}`);
+          return res.status(404).json({ error: 'Google OAuth user not found' });
         }
       }
       
