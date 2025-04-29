@@ -101,7 +101,7 @@ export async function sendPasswordResetEmail(email: string, resetLink: string, u
   
   try {
     const fromEmail = process.env.EMAIL_FROM || 'noreply@peaberry.com';
-    const appName = 'Peaberry Coffee';
+    const appName = 'Peaberry';
     
     const msg: MailDataRequired = {
       to: email,
@@ -151,7 +151,7 @@ export async function sendPasswordChangedEmail(email: string, username?: string)
   
   try {
     const fromEmail = process.env.EMAIL_FROM || 'noreply@peaberry.com';
-    const appName = 'Peaberry Coffee';
+    const appName = 'Peaberry';
     
     const msg: MailDataRequired = {
       to: email,
