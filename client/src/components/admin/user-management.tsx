@@ -157,7 +157,7 @@ export default function UserManagement() {
     },
   });
   
-  // Mutation to manually sync Firebase users
+  // Mutation to manually sync Google OAuth users
   const syncFirebaseUsersMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/admin/sync-firebase-users");
@@ -165,7 +165,7 @@ export default function UserManagement() {
     },
     onSuccess: (data) => {
       toast({
-        title: "Firebase sync completed",
+        title: "Google OAuth sync completed",
         description: `Updated: ${data.results.updated}, Deleted: ${data.results.deleted}, Errors: ${data.results.errors.length}`,
       });
       refetchUsers();
@@ -173,7 +173,7 @@ export default function UserManagement() {
     },
     onError: (error: any) => {
       toast({
-        title: "Firebase sync failed",
+        title: "Google OAuth sync failed",
         description: error.message || "An error occurred during synchronization",
         variant: "destructive",
       });
@@ -226,25 +226,25 @@ export default function UserManagement() {
         </Button>
       </div>
 
-      {/* Firebase Sync Card */}
+      {/* Google OAuth Sync Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
-            Firebase Synchronization
+            Google OAuth Synchronization
           </CardTitle>
           <CardDescription>
-            Synchronize user data between Firebase Auth and the local database.
+            Synchronize Google OAuth user data between Firebase Auth and the local database.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground mb-4">
-            <p>User synchronization runs automatically every 24 hours. You can also trigger a manual sync if needed.</p>
+            <p>Google OAuth user synchronization runs automatically every 24 hours. You can also trigger a manual sync if needed.</p>
             <p className="mt-1">This will:</p>
             <ul className="list-disc pl-5 mt-1 space-y-1">
-              <li>Update local user profiles with the latest Firebase data</li>
-              <li>Link existing email-matching accounts to their Firebase providers</li>
-              <li>Identify users deleted from Firebase and remove their provider links</li>
+              <li>Update local user profiles with the latest Google OAuth data</li>
+              <li>Link existing email-matching accounts to their Google provider</li>
+              <li>Identify users deleted from Google OAuth and remove their provider links</li>
             </ul>
           </div>
           
@@ -256,12 +256,12 @@ export default function UserManagement() {
             {syncFirebaseUsersMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Syncing Users...
+                Syncing Google Users...
               </>
             ) : (
               <>
                 <Repeat className="mr-2 h-4 w-4" />
-                Sync Firebase Users
+                Sync Google OAuth Users
               </>
             )}
           </Button>
@@ -272,9 +272,9 @@ export default function UserManagement() {
       {orphanedUsers && orphanedUsers.count > 0 && (
         <Alert className="mb-4">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Orphaned Users Detected</AlertTitle>
+          <AlertTitle>Orphaned Google OAuth Users Detected</AlertTitle>
           <AlertDescription>
-            Found {orphanedUsers.count} users in the database that no longer exist in Firebase.
+            Found {orphanedUsers.count} Google OAuth users in the database that no longer exist in Firebase.
             <Button 
               variant="outline" 
               size="sm" 
@@ -380,9 +380,9 @@ export default function UserManagement() {
       <Dialog open={isCleanupDialogOpen} onOpenChange={setIsCleanupDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm User Cleanup</DialogTitle>
+            <DialogTitle>Confirm Google OAuth User Cleanup</DialogTitle>
             <DialogDescription>
-              The following {selectedUsers.length} users exist in the database but not in Firebase. 
+              The following {selectedUsers.length} Google OAuth users exist in the database but not in Firebase. 
               Would you like to remove them from the database?
             </DialogDescription>
           </DialogHeader>
