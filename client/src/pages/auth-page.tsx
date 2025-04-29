@@ -22,7 +22,7 @@ import {
 import {
   requestPasswordReset,
   verifyResetToken,
-  resetPassword as resetPasswordWithToken
+  resetPassword
 } from "@/lib/password-reset";
 import { FcGoogle } from "react-icons/fc"; // FC = Flat Color Google icon
 
@@ -334,10 +334,8 @@ export default function AuthPage() {
   };
   
   const onResetPasswordSubmit = async (data: ResetPasswordFormValues) => {
-    if (!resetCode) {
-      setResetError("Invalid reset link. Please request a new one.");
-      return;
-    }
+    // For the secure flow, we don't necessarily need the resetCode (in URL)
+    // as we use HTTP-only cookies, but we keep it for backward compatibility
     
     setResetError(null);
     setIsResettingPassword(true);
@@ -345,20 +343,26 @@ export default function AuthPage() {
     
     try {
       // First verify the token is valid with our server
-      const verifyResult = await verifyResetToken(resetCode);
+      // In the secure flow, this will check the HTTP-only cookie
+      // In the legacy flow, we pass the token from the URL
+      const verifyResult = await verifyResetToken(resetCode || undefined);
       
       if (!verifyResult.success) {
         setResetError(verifyResult.error || "Invalid or expired reset link. Please request a new one.");
+        setIsResettingPassword(false);
         return;
       }
       
       console.log(`Verified reset token for user: ${verifyResult.username || verifyResult.email}`);
       
       // If valid, use our reset password API to update the password
-      const resetResult = await resetPasswordWithToken(resetCode, data.newPassword);
+      // In the secure flow, we don't pass the token as it's in the HTTP-only cookie
+      // In the legacy flow, we pass the token from the URL
+      const resetResult = await resetPassword(data.newPassword, resetCode || undefined);
       
       if (!resetResult.success) {
         setResetError(resetResult.error || "Failed to reset password. Please try again.");
+        setIsResettingPassword(false);
         return;
       }
       
