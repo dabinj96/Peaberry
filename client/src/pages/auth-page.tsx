@@ -17,11 +17,13 @@ import { Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { 
   signInWithGoogle, 
   handleGoogleRedirectResult, 
-  authenticateWithServer,
-  resetPassword,
-  verifyPasswordResetCode,
-  confirmPasswordReset
+  authenticateWithServer
 } from "@/lib/firebase";
+import {
+  requestPasswordReset,
+  verifyResetToken,
+  resetPassword as resetPasswordWithToken
+} from "@/lib/password-reset";
 import { FcGoogle } from "react-icons/fc"; // FC = Flat Color Google icon
 
 // Login form schema
@@ -167,7 +169,15 @@ export default function AuthPage() {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     
-    // Check for reset password mode
+    // Check for token in the URL (for our new server-side password reset)
+    const token = searchParams.get('token');
+    if (token) {
+      setActiveTab('resetPassword');
+      setResetCode(token);
+      return;
+    }
+    
+    // Support for legacy Firebase reset password mode 
     const mode = searchParams.get('mode');
     if (mode === 'resetPassword') {
       const oobCode = searchParams.get('oobCode');
@@ -207,8 +217,15 @@ export default function AuthPage() {
     } else if (value === 'forgotPassword') {
       window.history.replaceState(null, '', '?tab=forgotPassword');
     } else if (value === 'resetPassword' && resetCode) {
-      // Keep the reset code in the URL
-      window.history.replaceState(null, '', `?mode=resetPassword&oobCode=${resetCode}`);
+      // Keep the reset code in the URL (support both new token format and legacy Firebase oobCode)
+      if (window.location.search.includes('token=')) {
+        window.history.replaceState(null, '', `?token=${resetCode}`);
+      } else if (window.location.search.includes('oobCode=')) {
+        window.history.replaceState(null, '', `?mode=resetPassword&oobCode=${resetCode}`);
+      } else {
+        // Default to new token format
+        window.history.replaceState(null, '', `?token=${resetCode}`);
+      }
     } else {
       window.history.replaceState(null, '', '/auth');
     }
@@ -281,41 +298,36 @@ export default function AuthPage() {
     setResetRequestSuccess(false);
     
     try {
-      // Use the client-side Firebase function to send password reset email
-      await resetPassword(data.email);
+      // Use our new server-side password reset flow
+      const result = await requestPasswordReset(data.email);
       
-      // If it doesn't throw an error, it succeeded
-      setResetRequestSuccess(true);
-      toast({
-        title: "Reset email sent",
-        description: "If an account with that email exists, you'll receive a password reset link.",
-        variant: "default",
-      });
-    } catch (error: any) {
-      console.error("Error requesting password reset:", error);
-      
-      // Handle specific error codes
-      if (error.message?.includes("user-not-found")) {
-        // We still show success to avoid revealing which emails exist
+      if (result.success) {
+        // Request was successful
         setResetRequestSuccess(true);
         toast({
           title: "Reset email sent",
-          description: "If an account with that email exists, you'll receive a password reset link.",
+          description: result.message || "If an account with that email exists, you'll receive a password reset link.",
           variant: "default",
         });
-      } else if (error.message?.includes("auth/invalid-email")) {
-        setResetError("Invalid email address. Please check and try again.");
-      } else if (error.message?.includes("auth/operation-not-allowed")) {
-        setResetError("Password reset is not enabled for this project.");
-      } else if (error.message?.includes("auth/unauthorized-domain") || error.message?.includes("unauthorized-continue-uri")) {
-        // This is the most common issue
-        setResetError(
-          `Your domain (${window.location.hostname}) needs to be added to Firebase authorized domains list. ` +
-          `Go to Firebase Console → Authentication → Settings → Authorized domains and add this domain.`
-        );
+        
+        // Log for development/testing
+        console.log("Password reset email sent to", data.email);
       } else {
-        setResetError("An error occurred. Please try again later.");
+        // Handle specific error cases
+        if (result.error?.includes("Google Sign-In")) {
+          // This is for OAuth-only users
+          setResetError("This account uses Google Sign-In. Please use Google to sign in.");
+        } else if (result.error?.includes("Too many")) {
+          // Rate limiting error
+          setResetError("Too many reset attempts. Please try again later.");
+        } else {
+          // Other errors
+          setResetError(result.error || "An error occurred. Please try again later.");
+        }
       }
+    } catch (error: any) {
+      console.error("Error requesting password reset:", error);
+      setResetError("Network error. Please check your connection and try again.");
     } finally {
       setIsRequestingPasswordReset(false);
     }
@@ -332,37 +344,29 @@ export default function AuthPage() {
     setResetSuccess(false);
     
     try {
-      // First verify the code is valid and get the associated email
-      const email = await verifyPasswordResetCode(resetCode);
-      console.log(`Verified reset code for email: ${email}`);
+      // First verify the token is valid with our server
+      const verifyResult = await verifyResetToken(resetCode);
       
-      // If valid, confirm the password reset with the new password
-      await confirmPasswordReset(resetCode, data.newPassword);
-      
-      // Now also update the password in our database
-      try {
-        const response = await fetch('/api/verify-reset-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            newPassword: data.newPassword
-          })
-        });
-        
-        if (!response.ok) {
-          console.warn('Database password update failed, but Firebase password was updated');
-        }
-      } catch (dbError) {
-        console.error('Error updating password in database:', dbError);
-        // Still continue with success since Firebase password is updated
+      if (!verifyResult.success) {
+        setResetError(verifyResult.error || "Invalid or expired reset link. Please request a new one.");
+        return;
       }
       
-      // Show success message
+      console.log(`Verified reset token for user: ${verifyResult.username || verifyResult.email}`);
+      
+      // If valid, use our reset password API to update the password
+      const resetResult = await resetPasswordWithToken(resetCode, data.newPassword);
+      
+      if (!resetResult.success) {
+        setResetError(resetResult.error || "Failed to reset password. Please try again.");
+        return;
+      }
+      
+      // Password reset successful
       setResetSuccess(true);
       toast({
         title: "Password reset successful",
-        description: "Your password has been reset. You can now login with your new password.",
+        description: resetResult.message || "Your password has been reset. You can now login with your new password.",
         variant: "default",
       });
       
@@ -373,21 +377,7 @@ export default function AuthPage() {
       }, 3000);
     } catch (error: any) {
       console.error("Error resetting password:", error);
-      
-      // Handle specific error codes
-      if (error.message?.includes("auth/expired-action-code")) {
-        setResetError("The password reset link has expired. Please request a new one.");
-      } else if (error.message?.includes("auth/invalid-action-code")) {
-        setResetError("The password reset link is invalid. Please request a new one.");
-      } else if (error.message?.includes("auth/weak-password")) {
-        setResetError("The password is too weak. Please choose a stronger password.");
-      } else if (error.message?.includes("auth/user-disabled")) {
-        setResetError("This account has been disabled.");
-      } else if (error.message?.includes("auth/user-not-found")) {
-        setResetError("No account found with this email address.");
-      } else {
-        setResetError("An error occurred. Please try again later.");
-      }
+      setResetError("An error occurred. Please try again later.");
     } finally {
       setIsResettingPassword(false);
     }
