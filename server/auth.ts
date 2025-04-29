@@ -171,31 +171,13 @@ export function setupAuth(app: Express) {
       // Hash the password for our database
       const hashedPassword = await hashPassword(req.body.password);
       
-      // First, create the user in Firebase
-      let firebaseUser = null;
-      try {
-        console.log(`Creating Firebase user for email: ${req.body.email}`);
-        firebaseUser = await createFirebaseUser(
-          req.body.email, 
-          req.body.password, 
-          req.body.name || req.body.username
-        );
-        console.log(`Firebase user created successfully: ${firebaseUser?.uid}`);
-      } catch (firebaseError: any) {
-        console.error("Error creating Firebase user:", firebaseError);
-        // Don't block registration if Firebase creation fails, but log it
-        // This ensures users can still register with our system
-      }
-
-      // Now create the user in our database, including Firebase UID if available
+      // Create the user in our database only
       const user = await storage.createUser({
         ...req.body,
         password: hashedPassword,
-        // If Firebase user was created, store the provider info
-        ...(firebaseUser ? {
-          providerId: 'password',  // Using 'password' as the provider ID for email/password
-          providerUid: firebaseUser.uid
-        } : {})
+        // Don't set Firebase fields for regular email/password users
+        providerId: null,
+        providerUid: null
       });
 
       // Log in the user
@@ -203,10 +185,7 @@ export function setupAuth(app: Express) {
         if (err) return next(err);
         // Don't send password back to client
         const { password, ...userWithoutPassword } = user;
-        res.status(201).json({
-          ...userWithoutPassword,
-          firebaseLinked: !!firebaseUser
-        });
+        res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
       next(error);
@@ -312,9 +291,9 @@ export function setupAuth(app: Express) {
         console.log("No password verification needed for OAuth user");
       }
       
-      // For any users with a Firebase account (OAuth or password-based), attempt to delete it
+      // For Google OAuth users, attempt to delete it from Firebase
       let firebaseDeleteResult = false;
-      if (req.user.providerUid) {
+      if (req.user.providerUid && req.user.providerId === 'google') {
         try {
           // Use the imported function directly
           console.log(`Attempting to delete Firebase user with UID: ${req.user.providerUid}`);
@@ -325,7 +304,7 @@ export function setupAuth(app: Express) {
           // Continue with local account deletion even if Firebase deletion fails
         }
       } else {
-        console.log("No Firebase UID found, skipping Firebase deletion");
+        console.log("Not a Google OAuth user, skipping Firebase deletion");
       }
       
       // Delete user data from database
@@ -442,29 +421,15 @@ export function setupAuth(app: Express) {
       // Hash the new password for our database
       const hashedPassword = await hashPassword(newPassword);
       
-      // If user has a Firebase account, update Firebase password first
-      let firebasePasswordUpdated = false;
-      if (user.providerId === 'password' && user.providerUid) {
-        try {
-          console.log(`Updating Firebase password for user with UID: ${user.providerUid}`);
-          firebasePasswordUpdated = await updateFirebaseUserPassword(user.providerUid, newPassword);
-          console.log(`Firebase password update result: ${firebasePasswordUpdated}`);
-        } catch (firebaseError) {
-          console.error("Error updating Firebase password:", firebaseError);
-          // Continue with local password update even if Firebase update fails
-        }
-      }
-      
-      // Update the user's password in our database
+      // Update the user's password in our database only
       const updatedUser = await storage.updateUser(req.user.id, { password: hashedPassword });
       if (!updatedUser) {
         return res.status(500).send("Failed to update password");
       }
       
-      // Send back success response with info about Firebase status
+      // Send back success response
       res.status(200).json({
         success: true,
-        firebaseUpdated: firebasePasswordUpdated,
         message: "Password changed successfully"
       });
     } catch (error) {
@@ -640,19 +605,6 @@ export function setupAuth(app: Express) {
       // Hash the new password
       const hashedPassword = await hashPassword(newPassword);
       
-      // Update Firebase password if applicable
-      let firebasePasswordUpdated = false;
-      if (user.providerId === 'password' && user.providerUid) {
-        try {
-          console.log(`Updating Firebase password for user with UID: ${user.providerUid}`);
-          firebasePasswordUpdated = await updateFirebaseUserPassword(user.providerUid, newPassword);
-          console.log(`Firebase password update result: ${firebasePasswordUpdated}`);
-        } catch (firebaseError) {
-          console.error("Error updating Firebase password:", firebaseError);
-          // Continue with local password update even if Firebase update fails
-        }
-      }
-      
       // Update the user's password and clear the reset token
       const updatedUser = await storage.updateUser(user.id, {
         password: hashedPassword,
@@ -670,7 +622,6 @@ export function setupAuth(app: Express) {
       // Return success response
       return res.status(200).json({
         success: true,
-        firebaseUpdated: firebasePasswordUpdated,
         message: "Password has been reset successfully. You can now log in with your new password."
       });
     } catch (error) {
