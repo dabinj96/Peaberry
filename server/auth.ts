@@ -8,6 +8,7 @@ import { User as SelectUser, oauthUserSchema } from "@shared/schema";
 import bcrypt from 'bcrypt';
 import { verifyFirebaseToken, createFirebaseUser, updateFirebaseUserPassword, deleteFirebaseUser } from "./firebase-admin";
 import crypto from 'crypto';
+import { sendPasswordResetEmail, sendPasswordChangedEmail, isRateLimited, trackEmailAttempt } from './email-service';
 
 declare global {
   namespace Express {
@@ -438,9 +439,9 @@ export function setupAuth(app: Express) {
     }
   });
   
-  // OAuth with Firebase authentication
-  // Password reset request endpoint
-  app.post("/api/request-password-reset", async (req, res, next) => {
+  // Self-contained local password reset flow (no Firebase)
+  // Password reset request (forgot password) endpoint - main endpoint
+  app.post("/api/forgot-password", async (req, res, next) => {
     try {
       const { email } = req.body;
       
@@ -451,41 +452,66 @@ export function setupAuth(app: Express) {
         });
       }
       
+      // Check for rate limiting
+      if (isRateLimited(email)) {
+        console.log(`Password reset rate limit exceeded for email: ${email}`);
+        return res.status(429).json({
+          success: false,
+          message: "Too many reset attempts. Please try again later."
+        });
+      }
+      
+      // Track this attempt for rate limiting
+      trackEmailAttempt(email);
+      
       // Find user by email
       const user = await storage.getUserByEmail(email);
       
-      // Don't reveal if the email exists or not for security
+      // Don't reveal if the email exists or not for security (prevent enumeration)
       if (!user) {
         console.log(`Password reset requested for non-existent email: ${email}`);
         return res.status(200).json({
           success: true,
-          message: "If the email exists, a password reset link has been sent"
+          message: "If an account with that email exists, a password reset link has been sent."
         });
       }
       
-      // Generate a password reset token
+      // Check if user is an OAuth-only user
+      if (user.providerId && user.providerUid && !user.password) {
+        console.log(`Password reset requested for OAuth-only user: ${email}`);
+        return res.status(400).json({
+          success: false,
+          message: "This account uses Google Sign-In. Please use Google to sign in."
+        });
+      }
+      
+      // Generate a secure random token with 1-hour expiry
       const { token, expiresAt } = generatePasswordResetToken();
       
-      // Update the user with the token
+      // Update the user with the token and expiry in the database
       await storage.updateUser(user.id, {
         passwordResetToken: token,
         passwordResetTokenExpiresAt: expiresAt
       });
       
-      // In a real application, you would send the token via email here
-      // For development purposes, we'll return it in the response
-      console.log(`Generated password reset token for ${email}: ${token}`);
+      // Build the reset link for the email
+      const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
       
-      // Send the token back for testing (in production, send via email)
+      // Send the reset email
+      console.log(`Sending password reset email to ${email} with token: ${token}`);
+      
+      // Attempt to send the email
+      const emailSent = await sendPasswordResetEmail(email, resetLink, user.name || user.username);
+      
+      // Log but don't reveal to user whether the email was actually sent
+      if (!emailSent) {
+        console.error(`Failed to send password reset email to ${email}`);
+      }
+      
+      // Always return the same message to prevent user enumeration
       return res.status(200).json({
         success: true,
-        message: "If the email exists, a password reset link has been sent",
-        // Include debug info for development only
-        debug: {
-          token,
-          expiresAt,
-          resetUrl: `${req.protocol}://${req.get('host')}/reset-password?token=${token}`
-        }
+        message: "If an account with that email exists, a password reset link has been sent."
       });
     } catch (error) {
       console.error("Password reset request error:", error);
@@ -617,6 +643,14 @@ export function setupAuth(app: Express) {
           success: false,
           message: "Failed to update password"
         });
+      }
+      
+      // Send confirmation email
+      try {
+        await sendPasswordChangedEmail(user.email, user.name || user.username);
+      } catch (emailError) {
+        // Log but don't fail the request if email fails
+        console.error("Error sending password changed confirmation email:", emailError);
       }
       
       // Return success response
