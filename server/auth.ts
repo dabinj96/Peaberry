@@ -528,15 +528,13 @@ export function setupAuth(app: Express) {
   });
   
   // Password reset token retrieval endpoint
-  app.get("/api/password-reset/:userId", async (req, res, next) => {
+  // This endpoint is hit by the direct URL from the email (/password-reset/:userId)
+  app.get("/password-reset/:userId", async (req, res, next) => {
     try {
       const userId = parseInt(req.params.userId);
       
       if (isNaN(userId)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid user ID"
-        });
+        return res.redirect('/auth?error=invalid_reset');
       }
       
       // Get the user
@@ -560,7 +558,7 @@ export function setupAuth(app: Express) {
         httpOnly: true, // Only accessible by the server
         secure: process.env.NODE_ENV === 'production', // HTTPS only in production
         maxAge: 60 * 60 * 1000, // 1 hour expiry (matching token expiry)
-        sameSite: 'strict' // Protect against CSRF
+        sameSite: 'lax' // Changed to lax to work with redirects from email links
       });
       
       // Set user ID in a cookie for reference
@@ -568,11 +566,11 @@ export function setupAuth(app: Express) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 1000,
-        sameSite: 'strict'
+        sameSite: 'lax' // Changed to lax to work with redirects from email links
       });
       
-      // Redirect to reset password form
-      return res.redirect('/auth?mode=resetPassword');
+      // Redirect to reset password form with tab parameter to set the active tab
+      return res.redirect('/auth?tab=resetPassword');
     } catch (error) {
       console.error("Password reset token retrieval error:", error);
       return res.redirect('/auth?error=server_error');
