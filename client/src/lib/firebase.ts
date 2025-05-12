@@ -149,7 +149,7 @@ export const resetPassword = async (email: string): Promise<void> => {
     // Simplest approach - let Firebase handle all the URL aspects
     // This is the most reliable approach but requires the domain to be in Firebase's authorized domains
     await sendPasswordResetEmail(auth, email);
-    console.log(`Password reset email sent to ${email}`);
+
   } catch (error: any) {
     // Log detailed error information for debugging
     console.error("Error sending password reset email:", error);
@@ -191,7 +191,7 @@ export const confirmPasswordReset = async (code: string, newPassword: string): P
   
   try {
     await firebaseConfirmPasswordReset(auth, code, newPassword);
-    console.log("Password reset successful");
+
   } catch (error: any) {
     console.error("Error confirming password reset:", error);
     throw new Error(error.message || "Failed to reset password");

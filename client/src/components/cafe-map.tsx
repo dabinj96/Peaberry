@@ -167,7 +167,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
       // Define the callback
       window.initMap = () => {
         setMapLoaded(true);
-        console.log("Google Maps API loaded successfully");
+
       };
       
       // Handle errors
