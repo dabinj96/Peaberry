@@ -94,8 +94,7 @@ export function trackEmailAttempt(email: string): void {
 export async function sendPasswordResetEmail(email: string, resetLink: string, username?: string): Promise<boolean> {
   if (!process.env.SENDGRID_API_KEY) {
     console.warn('Cannot send password reset email: SENDGRID_API_KEY not configured');
-    // For development, we'll log the reset link
-    console.log(`[DEV ONLY] Password reset link for ${email}: ${resetLink}`);
+
     return false;
   }
   

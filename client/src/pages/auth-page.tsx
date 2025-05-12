@@ -329,9 +329,7 @@ export default function AuthPage() {
           description: result.message || "If an account with that email exists, you'll receive a password reset link.",
           variant: "default",
         });
-        
-        // Log for development/testing
-        console.log("Password reset email sent to", data.email);
+
       } else {
         // Handle specific error cases
         if (result.error?.includes("Google Sign-In")) {
@@ -372,8 +370,6 @@ export default function AuthPage() {
         setIsResettingPassword(false);
         return;
       }
-      
-      console.log(`Verified reset token for user: ${verifyResult.username || verifyResult.email}`);
       
       // If valid, use our reset password API to update the password
       // In the secure flow, we don't pass the token as it's in the HTTP-only cookie
