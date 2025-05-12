@@ -26,7 +26,6 @@ export default function ResetPasswordPage() {
         
         if (token) {
           // For backward compatibility - redirect to auth page with token
-          console.log("Using legacy password reset flow with URL token");
           setLocation(`/auth?token=${token}`);
           return;
         }
@@ -38,7 +37,6 @@ export default function ResetPasswordPage() {
         if (isPasswordReset) {
           // This is the new secure flow with cookie-based tokens
           // Verify that the token cookie is valid before redirecting
-          console.log("Using secure password reset flow with HTTP-only cookie");
           
           const userId = pathParts[2]; // Extract user ID from URL
           if (!userId) {

@@ -505,9 +505,6 @@ export function setupAuth(app: Express) {
       // Build clean reset link without exposing token in URL
       const resetLink = `${req.protocol}://${req.get('host')}/password-reset/${user.id}`;
       
-      // Send the reset email
-      console.log(`Sending password reset email to ${email} with token: ${token}`);
-      
       // Attempt to send the email with a clean URL
       const emailSent = await sendPasswordResetEmail(email, resetLink, user.name || user.username);
       
@@ -583,14 +580,8 @@ export function setupAuth(app: Express) {
   // Verify reset token endpoint (keep for backward compatibility)
   app.post("/api/verify-reset-token", async (req, res, next) => {
     try {
-      // Log request cookies and body for debugging
-      console.log("Verify token request cookies:", req.cookies);
-      console.log("Verify token request body:", req.body);
-      
       // Get token from cookie first, then body as fallback
       const token = (req.cookies && req.cookies.password_reset_token) || req.body.token;
-      
-      console.log("Using token for verification:", token ? "Token found" : "No token");
       
       if (!token) {
         return res.status(400).json({
@@ -635,15 +626,9 @@ export function setupAuth(app: Express) {
   // Reset password with token endpoint
   app.post("/api/reset-password", async (req, res, next) => {
     try {
-      // Log request cookies and body for debugging
-      console.log("Reset password request cookies:", req.cookies);
-      console.log("Reset password request body:", req.body);
-      
       // Get token from secure cookie first, then fallback to body for backward compatibility
       const token = (req.cookies && req.cookies.password_reset_token) || req.body.token;
       const { newPassword } = req.body;
-      
-      console.log("Using token for reset:", token ? "Token found" : "No token");
       
       if (!token || !newPassword) {
         return res.status(400).json({
