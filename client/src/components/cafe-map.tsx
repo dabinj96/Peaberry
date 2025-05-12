@@ -197,7 +197,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
   // Initialize map when Google Maps is loaded
   useEffect(() => {
     if (mapLoaded && mapRef.current) {
-      console.log("Initializing map with Google Maps API");
+
       
       // Create map
       const newMap = new window.google.maps.Map(mapRef.current, {
@@ -222,9 +222,6 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
     }
   }, [mapLoaded]);
   
-  // Debug: Verify cafes array on every render
-  console.log(`CafeMap rendering with ${cafes.length} cafes, map loaded: ${mapLoaded}, map instance exists: ${!!map}`);
-
   // Reference for the marker clusterer
   const markerClustererRef = useRef<MarkerClusterer | null>(null);
 
@@ -237,8 +234,6 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
       }
       markersRef.current.forEach(marker => marker.setMap(null));
       markersRef.current = [];
-      
-      console.log(`Displaying ${cafes.length} cafes on map`);
       
       // Skip showing toast notification - we'll handle empty state in the render method
       
