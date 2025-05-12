@@ -97,7 +97,7 @@ export default function AuthPage() {
         const result = await handleGoogleRedirectResult();
         
         if (result && result.user) {
-          console.log("Successfully authenticated with Google, sending to server...");
+
           try {
             // Send token to server to create session and update query client
             const userData = await authenticateWithServer(result);
@@ -135,7 +135,7 @@ export default function AuthPage() {
       const result = await signInWithGoogle();
       
       if (result && result.user) {
-        console.log("Signed in with Google, sending to server...");
+
         try {
           // Send token to server to create session and update query client
           const userData = await authenticateWithServer(result);

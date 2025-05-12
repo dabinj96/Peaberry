@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
           setLocation('/auth?tab=resetPassword&reset=true');
         } else {
           // Unexpected state - redirect to auth page
-          console.log("No reset parameters found, redirecting to auth page");
+          // No reset parameters found, redirect to auth page
           setLocation('/auth');
         }
       } catch (err) {
