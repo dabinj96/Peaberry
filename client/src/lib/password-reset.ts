@@ -119,9 +119,7 @@ export const resetPassword = async (
   error?: string;
 }> => {
   try {
-    // For the new secure flow, we don't pass the token in the request body
-    // Instead, the server will read it from the secure HTTP-only cookie
-    // We only include the token in the body for backward compatibility
+    // Use HTTP-only cookie when available, with token in body for backward compatibility
     const requestBody = token ? { token, newPassword } : { newPassword };
     
     const response = await fetch('/api/reset-password', {

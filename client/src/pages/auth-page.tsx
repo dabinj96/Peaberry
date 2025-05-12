@@ -197,9 +197,8 @@ export default function AuthPage() {
     // the intermediate page that set the secure HTTP-only cookie
     const hasResetFlag = searchParams.has('reset') && searchParams.get('reset') === 'true';
     if (hasResetFlag && tabParam === 'resetPassword') {
-      console.log("Secure cookie-based reset flow detected. Reset flag is present.");
-      // Set a temporary token just to bypass the verification step
-      // The actual token will be read from the HTTP-only cookie by the server
+      // Set a temporary token to bypass the client-side verification
+      // The actual token is stored in the HTTP-only cookie
       setResetCode('SECURE_FLOW');
     }
     

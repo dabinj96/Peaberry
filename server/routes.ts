@@ -947,7 +947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: cafeId // Ensure ID is included
       };
       
-      console.log("Updating cafe status:", cafeId, updateData);
+
       
       // Update cafe in the database
       const updatedCafe = await storage.updateCafe(cafeId, updateData);
