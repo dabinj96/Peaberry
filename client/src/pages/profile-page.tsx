@@ -437,9 +437,8 @@ function DeleteAccountForm({
   const [error, setError] = useState<string | null>(null);
   
   // Check if this is an OAuth user by looking for providerId
-  console.log("User data for OAuth check:", user);
+
   const isOAuthUser = !!(user.providerId || user.providerUid);
-  console.log("Is OAuth user?", isOAuthUser);
   
   // Use the appropriate schema based on user type
   const formSchema = isOAuthUser ? oauthUserDeleteSchema : regularUserDeleteSchema;
@@ -456,17 +455,10 @@ function DeleteAccountForm({
   // Handle delete account form submission
   const onSubmitDelete = async (data: DeleteAccountFormValues) => {
     try {
-      console.log("onSubmitDelete called!!!");
       setIsDeleting(true);
       setError(null);
       
-      console.log("Submitting delete account form", { 
-        password: data.password ? "provided" : "not provided",
-        isOAuthUser 
-      });
-      
-      // Use fetch instead of XMLHttpRequest for better debugging
-      console.log("Sending fetch request to /api/delete-account");
+
       
       // Show deletion in progress toast
       toast({
