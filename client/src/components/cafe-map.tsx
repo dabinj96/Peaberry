@@ -249,8 +249,6 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
             return;
           }
           
-          console.log(`Added marker for ${cafe.name} at (${lat}, ${lng})`);
-          
           const position = { lat, lng };
           
           // Create custom marker

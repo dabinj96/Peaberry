@@ -42,7 +42,7 @@ export default function PlacesAutocomplete({
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        console.log("Google Maps Places API loaded successfully");
+
         setScriptLoaded(true);
       };
       script.onerror = () => {
