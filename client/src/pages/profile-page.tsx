@@ -480,7 +480,7 @@ function DeleteAccountForm({
       
       // Get response as text first for better debugging
       const responseText = await response.text();
-      console.log("Raw server response:", response.status, responseText);
+
       
       // Try to parse as JSON if possible
       let responseData;
@@ -489,7 +489,7 @@ function DeleteAccountForm({
           responseData = JSON.parse(responseText);
         }
       } catch (e) {
-        console.log("Response is not JSON:", e);
+
         // Not JSON, just use text
         responseData = { message: responseText };
       }
@@ -498,7 +498,7 @@ function DeleteAccountForm({
         throw new Error(responseData?.message || responseText || "Failed to delete account");
       }
       
-      console.log("Account deletion successful");
+
       toast({
         title: "Success",
         description: "Your account has been successfully deleted.",
