@@ -46,17 +46,28 @@ export default function Header() {
     <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
-          {/* Logo */}
-          <div className="flex items-center">
+          {/* Logo and Navigation Links */}
+          <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2">
               <div className="w-10 h-10 bg-[#A0522D] rounded-full flex items-center justify-center">
                 <Coffee className="text-white" />
               </div>
               <span className="font-serif font-bold text-2xl text-[#8B4513]">Peaberry</span>
             </Link>
+            
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-6">
+              <Link href="/" className="text-gray-700 hover:text-[#A0522D] transition font-medium">
+                Home
+              </Link>
+              <Link href="/about" className="text-gray-700 hover:text-[#A0522D] transition font-medium">
+                About
+              </Link>
+              <Link href="/contact" className="text-gray-700 hover:text-[#A0522D] transition font-medium">
+                Contact
+              </Link>
+            </div>
           </div>
-          
-          {/* Removed Desktop Navigation links */}
           
           {/* User Profile/Actions */}
           <div className="flex items-center space-x-4">
@@ -187,6 +198,15 @@ export default function Header() {
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t shadow-inner">
           <div className="px-4 py-3 space-y-2">
+            <Link href="/" className="block py-2 text-gray-700 hover:text-[#A0522D]">
+              Home
+            </Link>
+            <Link href="/about" className="block py-2 text-gray-700 hover:text-[#A0522D]">
+              About
+            </Link>
+            <Link href="/contact" className="block py-2 text-gray-700 hover:text-[#A0522D]">
+              Contact
+            </Link>
             
             {user ? (
               <div className="py-2 border-t mt-2 pt-2">
