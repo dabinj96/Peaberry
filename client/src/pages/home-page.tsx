@@ -265,7 +265,7 @@ export default function HomePage() {
       <main className="w-full mx-auto px-1 py-2">
         <div className="flex flex-col lg:flex-row gap-1">
           {/* Left Sidebar - Filters */}
-          <aside className="lg:w-48 shrink-0">
+          <aside className="lg:w-64 shrink-0">
             <div className="sticky top-24 h-[calc(100vh-96px)] overflow-auto bg-white rounded-lg shadow-md p-4">
               <h2 className="font-serif text-lg font-semibold text-[#8B4513] mb-4">Filters</h2>
               
@@ -433,7 +433,7 @@ export default function HomePage() {
           </aside>
           
           {/* Main Content - Cafe List */}
-          <div className="w-[calc(50%-50px)]">
+          <div className="w-[calc(50%-66px)]">
             {/* Results count and view toggle */}
             <div className="flex items-center justify-between mb-4">
               <p className="text-gray-700">
@@ -457,7 +457,7 @@ export default function HomePage() {
                 key={`cafe-map-${cafes.length}`} 
                 cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
                 isLoading={isLoading}
-                singleLocation={true}
+                singleLocation={false}
               />
             </div>
           </aside>

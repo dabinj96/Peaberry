@@ -448,14 +448,17 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
         markersRef.current.forEach(marker => marker.setMap(map));
       }
       
-      // Fit map to bounds
-      if (!singleLocation && !bounds.isEmpty()) {
+      // Fit map to bounds - always fit bounds regardless of singleLocation setting
+      if (!bounds.isEmpty()) {
         map.fitBounds(bounds);
         
-        // Adjust zoom if too zoomed in
+        // Adjust zoom if too zoomed in or too zoomed out
         const listener = window.google.maps.event.addListener(map, "idle", () => {
-          if (map.getZoom() > 16) {
+          const zoom = map.getZoom();
+          if (zoom > 16) {
             map.setZoom(16);
+          } else if (zoom < 12) {
+            map.setZoom(12);
           }
           window.google.maps.event.removeListener(listener);
         });
