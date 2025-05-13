@@ -271,18 +271,7 @@ export default function HomePage() {
           </div>
         </div>
         
-        {/* Navigation menu */}
-        <div className="w-full bg-white border-t border-gray-200">
-          <div className="w-full mx-auto px-4">
-            <div className="flex items-center py-2 overflow-x-auto pb-2 scrollbar-hide">
-              <a href="/" className="mr-5 text-sm font-medium text-gray-700 hover:text-[#A0522D] whitespace-nowrap">Home</a>
-              <a href="/about" className="mr-5 text-sm font-medium text-gray-700 hover:text-[#A0522D] whitespace-nowrap">About</a>
-              <a href="/cafes" className="mr-5 text-sm font-medium text-gray-700 hover:text-[#A0522D] whitespace-nowrap">All Cafés</a>
-              <a href="/neighborhoods" className="mr-5 text-sm font-medium text-gray-700 hover:text-[#A0522D] whitespace-nowrap">Neighborhoods</a>
-              <a href="/roasters" className="mr-5 text-sm font-medium text-gray-700 hover:text-[#A0522D] whitespace-nowrap">Roasters</a>
-            </div>
-          </div>
-        </div>
+
       </header>
       
       {/* Main Content */}
