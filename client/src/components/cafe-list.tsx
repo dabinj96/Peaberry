@@ -12,7 +12,7 @@ interface CafeListProps {
 
 export default function CafeList({ cafes, isLoading, cafeDistances }: CafeListProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [cafesPerPage] = useState(9); // Display 9 cafés per page (3x3 grid)
+  const [cafesPerPage] = useState(10); // Display 10 cafés per page (vertical list)
   
   // Reset pagination when cafes array changes
   useEffect(() => {
@@ -58,17 +58,80 @@ export default function CafeList({ cafes, isLoading, cafeDistances }: CafeListPr
   }
 
   return (
-    <div className="cafe-list-container space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {currentCafes.map((cafe) => (
-          <CafeCard 
-            key={cafe.id} 
-            cafe={cafe} 
-            distance={cafeDistances ? cafeDistances.get(cafe.id) : undefined}
-          />
-        ))}
+    <div className="cafe-list-container space-y-4">
+      {/* Stacked café cards with numbers */}
+      <div className="space-y-4">
+        {currentCafes.map((cafe, index) => {
+          const actualIndex = indexOfFirstCafe + index + 1;
+          return (
+            <div key={cafe.id} className="flex bg-white rounded-lg shadow-md overflow-hidden transition-shadow hover:shadow-lg">
+              {/* Numbered marker */}
+              <div className="relative shrink-0">
+                <img 
+                  src={cafe.imageUrl || "https://images.unsplash.com/photo-1509042239860-f550ce710b93?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&h=200&q=80"} 
+                  alt={cafe.name} 
+                  className="h-full w-32 object-cover"
+                />
+                <div className="absolute top-3 left-3 w-8 h-8 rounded-full bg-[#A0522D] text-white flex items-center justify-center font-medium text-sm shadow-md">
+                  {actualIndex}
+                </div>
+              </div>
+              
+              {/* Café details */}
+              <div className="p-4 flex-1">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-serif text-lg font-semibold text-[#8B4513] mb-1">
+                      <a href={`/cafe/${cafe.id}`} className="hover:underline">{cafe.name}</a>
+                    </h3>
+                    <div className="text-sm text-gray-600 mb-2">
+                      {cafe.neighborhood && <span>{cafe.neighborhood}</span>}
+                      {cafe.priceLevel && <span className="ml-1">· {"$".repeat(cafe.priceLevel)}</span>}
+                    </div>
+                  </div>
+                  
+                  {cafe.averageRating && (
+                    <div className="flex items-center bg-[#FAEBD7] px-2 py-1 rounded">
+                      <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                      <span className="font-medium text-sm">{cafe.averageRating.toFixed(1)}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Features and distance */}
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex flex-wrap gap-1">
+                    {cafe.roastLevels && cafe.roastLevels.map(roast => (
+                      <span key={roast} className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">
+                        {roast}
+                      </span>
+                    ))}
+                    {cafe.brewingMethods && cafe.brewingMethods.slice(0, 2).map(method => (
+                      <span key={method} className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">
+                        {method.replace('_', ' ')}
+                      </span>
+                    ))}
+                    {cafe.brewingMethods && cafe.brewingMethods.length > 2 && (
+                      <span className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">
+                        +{cafe.brewingMethods.length - 2} more
+                      </span>
+                    )}
+                  </div>
+                  
+                  {cafeDistances && cafeDistances.has(cafe.id) && (
+                    <div className="text-xs text-gray-500 flex items-center">
+                      <Navigation className="h-3 w-3 mr-1" />
+                      {cafeDistances.get(cafe.id)?.toFixed(1)} km
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
       
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center pt-4">
           <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow">
