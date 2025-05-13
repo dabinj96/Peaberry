@@ -1,13 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CafeWithDetails, CafeFilter } from "@shared/schema";
+import { CafeWithDetails as BaseCafeWithDetails, CafeFilter } from "@shared/schema";
 import SearchFilters from "@/components/search-filters";
 import CafeList from "@/components/cafe-list";
 import CafeMap from "@/components/cafe-map";
 import FeaturedCafes from "@/components/featured-cafes";
-import { SortOption } from "@/components/sort-options";
-import { useAuth } from "@/hooks/use-auth";
 import { User, Search, MapPin, Filter, Loader2, Star } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+
+// Extended type for CafeWithDetails to include rating info
+interface CafeWithDetails extends BaseCafeWithDetails {
+  avgRating?: number;
+  ratingCount?: number;
+}
+
+// Simple string enum for sort options to match the UI
+type SortOption = "relevance" | "distance" | "rating" | "reviews";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
@@ -21,6 +29,7 @@ export default function HomePage() {
   const [filters, setFilters] = useState<CafeFilter>({});
   const [defaultLocation, setDefaultLocation] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState<string>("relevance");
   const [sortedCafes, setSortedCafes] = useState<CafeWithDetails[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [cafeDistances, setCafeDistances] = useState<Map<number, number>>(new Map());
@@ -91,8 +100,8 @@ export default function HomePage() {
           const distance = calculateDistance(
             userLocation.lat,
             userLocation.lng,
-            cafe.latitude,
-            cafe.longitude
+            parseFloat(cafe.latitude),
+            parseFloat(cafe.longitude)
           );
           distances.set(cafe.id, distance);
         }
@@ -128,12 +137,15 @@ export default function HomePage() {
   };
   
   // Handle sort selection
-  const handleSort = (sortOption: SortOption) => {
+  const handleSort = (option: string) => {
     if (!cafes.length) return;
+    
+    // Update sort option state
+    setSortOption(option);
     
     let sorted = [...cafes];
     
-    switch(sortOption) {
+    switch(option) {
       case "distance":
         sorted.sort((a, b) => {
           const distA = cafeDistances.get(a.id) || 9999;
@@ -142,10 +154,18 @@ export default function HomePage() {
         });
         break;
       case "rating":
-        sorted.sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0));
+        sorted.sort((a, b) => {
+          const ratingA = a.avgRating || 0;
+          const ratingB = b.avgRating || 0;
+          return ratingB - ratingA;
+        });
         break;
       case "reviews":
-        sorted.sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0));
+        sorted.sort((a, b) => {
+          const countA = a.ratingCount || 0;
+          const countB = b.ratingCount || 0;
+          return countB - countA;
+        });
         break;
       default: // relevance or any other case
         // Default sorting is handled by the API
@@ -301,96 +321,64 @@ export default function HomePage() {
           
           {/* Main content - Café List or Map */}
           <div className="flex-1 p-1">
-            {/* Sort & View Options */}
-            <div className="bg-white rounded-lg shadow-md p-3 mb-3 flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Sort by:</span>
-                <select 
-                  className="p-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#A0522D]"
-                  onChange={(e) => handleSort(e.target.value as SortOption)}
-                >
-                  <option value="relevance">Relevance</option>
-                  <option value="distance">Distance</option>
-                  <option value="rating">Highest Rating</option>
-                  <option value="reviews">Most Reviews</option>
-                </select>
+            {/* Sort Options */}
+            <div className="bg-white rounded-lg shadow-md mb-3">
+              <div className="flex items-center p-3">
+                <div className="flex flex-1 items-center">
+                  <span className="font-medium text-sm text-gray-700 mr-3">Sort by</span>
+                  <div className="inline-flex items-center rounded-full bg-gray-50 p-1">
+                    <button 
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${sortOption === "relevance" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
+                      onClick={() => handleSort("relevance")}
+                    >
+                      Relevance
+                    </button>
+                    <button 
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${sortOption === "distance" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
+                      onClick={() => handleSort("distance")}
+                    >
+                      Distance
+                    </button>
+                    <button 
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${sortOption === "rating" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
+                      onClick={() => handleSort("rating")}
+                    >
+                      Rating
+                    </button>
+                    <button 
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${sortOption === "reviews" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
+                      onClick={() => handleSort("reviews")}
+                    >
+                      Reviews
+                    </button>
+                  </div>
+                </div>
               </div>
+            </div>
+            
+            {/* Café list - always shown */}
+            <div>
+              {isLoading && (
+                <div className="bg-white rounded-lg shadow-md p-6 mb-3 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#A0522D] mx-auto mb-2" />
+                  <p className="text-gray-600">Loading cafés...</p>
+                </div>
+              )}
               
-              <button 
-                className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md flex items-center gap-1"
-                onClick={toggleViewMode}
-              >
-                {viewMode === "list" ? (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
-                    <span>Map View</span>
-                  </>
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
-                    <span>List View</span>
-                  </>
-                )}
-              </button>
+              {!isLoading && cafes.length === 0 && (
+                <div className="bg-white rounded-lg shadow-md p-6 mb-3 text-center">
+                  <p className="text-gray-600">No cafés found. Try adjusting your filters.</p>
+                </div>
+              )}
+              
+              {/* CafeList component will be updated */}
+              <CafeList 
+                key="cafe-list" 
+                cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
+                isLoading={isLoading} 
+                cafeDistances={cafeDistances}
+              />
             </div>
-            
-            {/* Mobile map view toggle */}
-            <div className="lg:hidden mb-3">
-              <button 
-                className="w-full py-2 bg-white rounded-lg shadow-md text-center text-gray-700 flex items-center justify-center gap-2"
-                onClick={toggleViewMode}
-              >
-                {viewMode === "list" ? (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
-                    <span>Switch to Map View</span>
-                  </>
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
-                    <span>Switch to List View</span>
-                  </>
-                )}
-              </button>
-            </div>
-            
-            {/* Switch between List and Map views on mobile */}
-            {viewMode === "map" && (
-              <div className="lg:hidden h-[calc(100vh-250px)] bg-white rounded-lg shadow-md overflow-hidden">
-                <CafeMap 
-                  key={`cafe-map-mobile-${cafes.length}`}
-                  cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
-                  isLoading={isLoading}
-                  singleLocation={false}
-                />
-              </div>
-            )}
-            
-            {/* Café list - always shown on desktop, conditionally on mobile */}
-            {(viewMode === "list" || window.innerWidth >= 1024) && (
-              <div className={viewMode === "map" ? "hidden lg:block" : ""}>
-                {isLoading && (
-                  <div className="bg-white rounded-lg shadow-md p-6 mb-3 text-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-[#A0522D] mx-auto mb-2" />
-                    <p className="text-gray-600">Loading cafés...</p>
-                  </div>
-                )}
-                
-                {!isLoading && cafes.length === 0 && (
-                  <div className="bg-white rounded-lg shadow-md p-6 mb-3 text-center">
-                    <p className="text-gray-600">No cafés found. Try adjusting your filters.</p>
-                  </div>
-                )}
-                
-                {/* CafeList component will be updated */}
-                <CafeList 
-                  key="cafe-list" 
-                  cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
-                  isLoading={isLoading} 
-                  cafeDistances={cafeDistances}
-                />
-              </div>
-            )}
           </div>
           
           {/* Map sidebar */}
