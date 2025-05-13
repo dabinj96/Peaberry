@@ -240,41 +240,6 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-        
-        {/* Search bar section */}
-        <div className="w-full bg-white px-4 py-3">
-          <div className="mx-auto flex max-w-4xl">
-            <div className="flex w-full rounded-md overflow-hidden border border-gray-300">
-              <div className="relative flex-1 flex bg-white">
-                <input 
-                  type="text" 
-                  placeholder="Search cafés, roasts, or brewing methods..." 
-                  className="w-full pl-4 py-2.5 border-none focus:outline-none focus:ring-0 text-gray-700"
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                />
-              </div>
-              
-              <div className="relative bg-white border-l border-gray-300">
-                <input 
-                  type="text" 
-                  placeholder="Boston, MA" 
-                  className="w-40 px-4 py-2.5 border-none focus:outline-none focus:ring-0 text-gray-700"
-                  value={filters.neighborhood ? filters.neighborhood : "Boston, MA"}
-                  readOnly
-                />
-              </div>
-              
-              <button 
-                className="px-5 py-2.5 bg-[#A0522D] text-white hover:bg-[#8B4513] transition flex items-center justify-center"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-        
-
       </header>
       
       {/* Main Content */}
@@ -282,7 +247,7 @@ export default function HomePage() {
         <div className="flex flex-col lg:flex-row gap-1">
           {/* Left Sidebar - Filters */}
           <aside className="lg:w-64 shrink-0">
-            <div className="sticky top-[130px] h-[calc(100vh-150px)] overflow-auto bg-white rounded-lg shadow-md p-4">
+            <div className="sticky top-[80px] h-[calc(100vh-100px)] overflow-auto bg-white rounded-lg shadow-md p-4">
               <h2 className="font-serif text-lg font-semibold text-[#8B4513] mb-4">Filters</h2>
               
               {/* Filters Section */}
@@ -468,7 +433,7 @@ export default function HomePage() {
           
           {/* Map sidebar */}
           <aside className="w-1/2 shrink-0 hidden lg:block">
-            <div className="sticky top-[130px] h-[calc(100vh-150px)] bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="sticky top-[80px] h-[calc(100vh-100px)] bg-white rounded-lg shadow-md overflow-hidden">
               <CafeMap 
                 key={`cafe-map-${cafes.length}`} 
                 cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
