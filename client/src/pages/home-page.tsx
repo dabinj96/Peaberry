@@ -19,6 +19,7 @@ export default function HomePage() {
   
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [filters, setFilters] = useState<CafeFilter>({});
+  const [defaultLocation, setDefaultLocation] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState("");
   const [sortedCafes, setSortedCafes] = useState<CafeWithDetails[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -50,6 +51,13 @@ export default function HomePage() {
   const { data: neighborhoods = [] } = useQuery<string[]>({
     queryKey: ['/api/neighborhoods'],
   });
+  
+  // Set default location when neighborhoods are loaded
+  useEffect(() => {
+    if (neighborhoods.length > 0 && !defaultLocation) {
+      setDefaultLocation(neighborhoods[0]);
+    }
+  }, [neighborhoods, defaultLocation]);
   
   // Fetch user's location
   useEffect(() => {
@@ -170,9 +178,9 @@ export default function HomePage() {
             <div className="relative bg-white border-l border-gray-300">
               <input 
                 type="text" 
-                placeholder="Boston, MA" 
+                placeholder="Select a location" 
                 className="w-40 px-4 py-2.5 border-none focus:outline-none focus:ring-0 text-gray-700"
-                value={filters.neighborhood ? filters.neighborhood : "Boston, MA"}
+                value={filters.neighborhood || defaultLocation}
                 readOnly
               />
             </div>
