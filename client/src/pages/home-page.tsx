@@ -6,8 +6,17 @@ import CafeList from "@/components/cafe-list";
 import CafeMap from "@/components/cafe-map";
 import FeaturedCafes from "@/components/featured-cafes";
 import { SortOption } from "@/components/sort-options";
+import { useAuth } from "@/hooks/use-auth";
+import { User, Search, MapPin, Filter, Loader2, Star } from "lucide-react";
 
 export default function HomePage() {
+  const { user, logoutMutation } = useAuth();
+  const isAuthenticated = !!user;
+  
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+  
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [filters, setFilters] = useState<CafeFilter>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -220,7 +229,7 @@ export default function HomePage() {
         {/* Top navigation bar */}
         <div className="w-full bg-white border-b border-gray-200">
           <div className="w-full mx-auto px-4 py-2 flex items-center justify-between">
-            <div className="flex items-center gap-6">
+            <div className="flex items-center">
               <a href="/" className="flex items-center">
                 <span className="sr-only">Peaberry</span>
                 <svg className="h-8 w-8 text-[#A0522D]" viewBox="0 0 24 24" fill="currentColor">
@@ -229,14 +238,22 @@ export default function HomePage() {
                 </svg>
                 <h1 className="font-serif text-2xl font-bold text-[#8B4513] ml-2">Peaberry</h1>
               </a>
-              <a href="/" className="text-gray-700 hover:text-[#A0522D] font-medium">Home</a>
-              <a href="/about" className="text-gray-700 hover:text-[#A0522D] font-medium">About</a>
-              <a href="/contact" className="text-gray-700 hover:text-[#A0522D] font-medium">Contact</a>
             </div>
             
-            <div className="flex items-center gap-4">
-              <a href="/auth" className="text-gray-700 hover:text-[#A0522D]">Sign In</a>
-              <a href="/auth" className="px-4 py-1.5 bg-[#A0522D] text-white rounded-md hover:bg-[#8B4513] transition font-medium text-sm">Sign Up</a>
+            <div className="flex items-center gap-2">
+              {isAuthenticated ? (
+                <button 
+                  className="inline-flex items-center justify-center rounded-full h-9 w-9 overflow-hidden bg-[#A0522D]/10 hover:bg-[#A0522D]/20"
+                  onClick={handleLogout}
+                >
+                  <User className="h-5 w-5 text-[#8B4513]" />
+                </button>
+              ) : (
+                <>
+                  <a href="/auth" className="text-gray-700 hover:text-[#A0522D]">Sign In</a>
+                  <a href="/auth" className="px-4 py-1.5 bg-[#A0522D] text-white rounded-md hover:bg-[#8B4513] transition font-medium text-sm">Sign Up</a>
+                </>
+              )}
             </div>
           </div>
         </div>
