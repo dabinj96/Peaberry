@@ -217,10 +217,10 @@ export default function HomePage() {
     <div className="bg-gray-50 min-h-screen">
       {/* Header with Search */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
-        {/* Top bar with logo and sign in */}
+        {/* Top navigation bar */}
         <div className="w-full bg-white border-b border-gray-200">
           <div className="w-full mx-auto px-4 py-2 flex items-center justify-between">
-            <div className="flex items-center">
+            <div className="flex items-center gap-6">
               <a href="/" className="flex items-center">
                 <span className="sr-only">Peaberry</span>
                 <svg className="h-8 w-8 text-[#A0522D]" viewBox="0 0 24 24" fill="currentColor">
@@ -229,6 +229,9 @@ export default function HomePage() {
                 </svg>
                 <h1 className="font-serif text-2xl font-bold text-[#8B4513] ml-2">Peaberry</h1>
               </a>
+              <a href="/" className="text-gray-700 hover:text-[#A0522D] font-medium">Home</a>
+              <a href="/about" className="text-gray-700 hover:text-[#A0522D] font-medium">About</a>
+              <a href="/contact" className="text-gray-700 hover:text-[#A0522D] font-medium">Contact</a>
             </div>
             
             <div className="flex items-center gap-4">
@@ -279,7 +282,7 @@ export default function HomePage() {
         <div className="flex flex-col lg:flex-row gap-1">
           {/* Left Sidebar - Filters */}
           <aside className="lg:w-64 shrink-0">
-            <div className="sticky top-[160px] h-[calc(100vh-180px)] overflow-auto bg-white rounded-lg shadow-md p-4">
+            <div className="sticky top-[130px] h-[calc(100vh-150px)] overflow-auto bg-white rounded-lg shadow-md p-4">
               <h2 className="font-serif text-lg font-semibold text-[#8B4513] mb-4">Filters</h2>
               
               {/* Filters Section */}
@@ -465,7 +468,7 @@ export default function HomePage() {
           
           {/* Map sidebar */}
           <aside className="w-1/2 shrink-0 hidden lg:block">
-            <div className="sticky top-[160px] h-[calc(100vh-180px)] bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="sticky top-[130px] h-[calc(100vh-150px)] bg-white rounded-lg shadow-md overflow-hidden">
               <CafeMap 
                 key={`cafe-map-${cafes.length}`} 
                 cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 

@@ -487,7 +487,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
     // Check if API key is missing
     if (!GOOGLE_MAPS_API_KEY) {
       return (
-        <div className="min-h-[calc(100vh-180px)] bg-gray-100 rounded-lg flex items-center justify-center">
+        <div className="min-h-[calc(100vh-150px)] bg-gray-100 rounded-lg flex items-center justify-center">
           <div className="text-center p-6 max-w-md">
             <div className="bg-amber-100 p-4 rounded-lg mb-4 border border-amber-200">
               <h3 className="text-amber-800 font-medium text-lg mb-2">Map Temporarily Unavailable</h3>
