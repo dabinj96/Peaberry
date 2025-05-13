@@ -223,7 +223,7 @@ export default function HomePage() {
             <div className="flex items-center">
               <a href="/" className="flex items-center">
                 <span className="sr-only">Peaberry</span>
-                <svg className="h-8 w-8 text-[#C50304]" viewBox="0 0 24 24" fill="currentColor">
+                <svg className="h-8 w-8 text-[#A0522D]" viewBox="0 0 24 24" fill="currentColor">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" fill="white" />
                 </svg>
@@ -257,13 +257,13 @@ export default function HomePage() {
                   type="text" 
                   placeholder="Boston, MA" 
                   className="w-40 px-4 py-2.5 border-none focus:outline-none focus:ring-0 text-gray-700"
-                  defaultValue="Boston, MA"
+                  value={filters.neighborhood ? filters.neighborhood : "Boston, MA"}
                   readOnly
                 />
               </div>
               
               <button 
-                className="px-5 py-2.5 bg-[#C50304] text-white hover:bg-[#A00304] transition flex items-center justify-center"
+                className="px-5 py-2.5 bg-[#A0522D] text-white hover:bg-[#8B4513] transition flex items-center justify-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
               </button>
