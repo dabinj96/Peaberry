@@ -56,18 +56,7 @@ export default function Header() {
             </Link>
           </div>
           
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/" className="text-gray-700 hover:text-[#A0522D] transition font-medium">
-              Home
-            </Link>
-            <Link href="/about" className="text-gray-700 hover:text-[#A0522D] transition font-medium">
-              About
-            </Link>
-            <Link href="/contact" className="text-gray-700 hover:text-[#A0522D] transition font-medium">
-              Contact
-            </Link>
-          </nav>
+          {/* Removed Desktop Navigation links */}
           
           {/* User Profile/Actions */}
           <div className="flex items-center space-x-4">
@@ -198,15 +187,6 @@ export default function Header() {
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t shadow-inner">
           <div className="px-4 py-3 space-y-2">
-            <Link href="/" className="block py-2 text-gray-700 hover:text-[#A0522D]">
-              Home
-            </Link>
-            <Link href="/about" className="block py-2 text-gray-700 hover:text-[#A0522D]">
-              About
-            </Link>
-            <Link href="/contact" className="block py-2 text-gray-700 hover:text-[#A0522D]">
-              Contact
-            </Link>
             
             {user ? (
               <div className="py-2 border-t mt-2 pt-2">

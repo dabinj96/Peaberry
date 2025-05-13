@@ -434,7 +434,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
                       <text x="${size/2}" y="${size/2+5}" text-anchor="middle" font-size="${Math.min(18, 13 + Math.floor(count/10))}px" font-family="Arial" font-weight="bold" fill="${textColor}">${count}</text>
                     </svg>
                   `)}`,
-                  size: new google.maps.Size(size, size),
+
                   anchor: new google.maps.Point(size/2, size/2),
                   scaledSize: new google.maps.Size(size, size)
                 },
