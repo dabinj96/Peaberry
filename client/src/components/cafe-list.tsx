@@ -1,6 +1,6 @@
 import { CafeWithDetails } from "@shared/schema";
 import CafeCard from "./cafe-card";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, MapPin } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 
@@ -92,7 +92,9 @@ export default function CafeList({ cafes, isLoading, cafeDistances }: CafeListPr
                   
                   {cafe.averageRating && (
                     <div className="flex items-center bg-[#FAEBD7] px-2 py-1 rounded">
-                      <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-500 mr-1">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                      </svg>
                       <span className="font-medium text-sm">{cafe.averageRating.toFixed(1)}</span>
                     </div>
                   )}
@@ -120,7 +122,7 @@ export default function CafeList({ cafes, isLoading, cafeDistances }: CafeListPr
                   
                   {cafeDistances && cafeDistances.has(cafe.id) && (
                     <div className="text-xs text-gray-500 flex items-center">
-                      <Navigation className="h-3 w-3 mr-1" />
+                      <MapPin className="h-3 w-3 mr-1" />
                       {cafeDistances.get(cafe.id)?.toFixed(1)} km
                     </div>
                   )}
