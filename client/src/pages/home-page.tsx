@@ -14,6 +14,31 @@ export default function HomePage() {
   const [sortedCafes, setSortedCafes] = useState<CafeWithDetails[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [cafeDistances, setCafeDistances] = useState<Map<number, number>>(new Map());
+  
+  // Define the roast levels and brewing methods for type safety
+  const roastLevels = ['light', 'medium', 'dark'] as const;
+  type RoastLevel = typeof roastLevels[number];
+  
+  const brewingMethods = [
+    {value: 'pour_over' as const, label: 'Pour Over'},
+    {value: 'espresso' as const, label: 'Espresso'},
+    {value: 'aeropress' as const, label: 'Aeropress'},
+    {value: 'french_press' as const, label: 'French Press'},
+    {value: 'siphon' as const, label: 'Siphon'}
+  ];
+  type BrewingMethod = typeof brewingMethods[number]['value'];
+  
+  // Fetch neighborhoods for filter dropdown
+  const { data: neighborhoods = [] } = useQuery<string[]>({
+    queryKey: ["/api/neighborhoods"],
+    queryFn: async () => {
+      const res = await fetch("/api/neighborhoods");
+      if (!res.ok) {
+        throw new Error("Failed to fetch neighborhoods");
+      }
+      return res.json();
+    }
+  });
 
   // Fetch user's location for distance-based sorting and for showing distances
   useEffect(() => {
@@ -189,117 +214,252 @@ export default function HomePage() {
   };
 
   return (
-    <div className="bg-gray-50">
-      <div className="container mx-auto px-4 py-6">
-        {/* Hero section with search */}
-        <section className="mb-8">
-          <div className="bg-[#FAEBD7] rounded-xl p-8 mb-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-cover bg-center opacity-10" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80')" }} />
-            <div className="relative z-10 max-w-3xl">
-              <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4 text-[#8B4513]">Discover Boston's Coffee Scene</h1>
-              <p className="text-lg mb-6 text-gray-700">Find the perfect specialty café with your preferred roast and brewing method.</p>
-              
-              {/* Search input */}
-              <div className="relative">
+    <div className="bg-gray-50 min-h-screen">
+      {/* Header with Search */}
+      <header className="bg-white shadow-sm py-3 sticky top-0 z-50">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center">
+            <div className="mr-4">
+              <h1 className="font-serif text-2xl font-bold text-[#8B4513]">Peaberry</h1>
+            </div>
+            
+            {/* Search bar */}
+            <div className="flex-1 flex items-center gap-2 max-w-3xl">
+              <div className="relative flex-1">
                 <input 
                   type="text" 
-                  placeholder="Search for cafés, neighborhoods, or keywords..." 
-                  className="w-full pl-12 pr-4 py-3 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-[#A0522D] text-gray-700"
+                  placeholder="Search cafés, roasts, or brewing methods..." 
+                  className="w-full pl-10 pr-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#A0522D] text-gray-700"
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                 />
-                <span className="absolute left-4 top-4 text-gray-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <span className="absolute left-3 top-2.5 text-gray-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 </span>
               </div>
+              <input 
+                type="text" 
+                placeholder="Location" 
+                className="w-40 px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#A0522D] text-gray-700"
+                value={filters.neighborhood || ''}
+                onChange={(e) => handleFilterChange({...filters, neighborhood: e.target.value})}
+              />
+              <button 
+                className="px-5 py-2 bg-[#A0522D] text-white rounded-md hover:bg-[#8B4513] transition"
+              >
+                Search
+              </button>
+            </div>
+            
+            <div className="ml-auto flex items-center gap-4">
+              <a href="/auth" className="text-gray-700 hover:text-[#A0522D]">Sign In</a>
             </div>
           </div>
-        </section>
-        
-        {/* Filters and cafe list/map */}
-        <section className="mb-8">
-          <SearchFilters 
-            onFilterChange={handleFilterChange} 
-            viewMode={viewMode} 
-            onViewModeChange={toggleViewMode}
-            resultCount={cafes.length}
-          />
+        </div>
+      </header>
+      
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left Sidebar - Filters */}
+          <aside className="lg:w-1/5 shrink-0">
+            <div className="sticky top-24 bg-white rounded-lg shadow-md p-4">
+              <h2 className="font-serif text-lg font-semibold text-[#8B4513] mb-4">Filters</h2>
+              
+              {/* Filters Section */}
+              <div className="space-y-5">
+                {/* Neighborhood filter */}
+                <div className="space-y-2">
+                  <h3 className="font-medium text-sm text-gray-700">Neighborhood</h3>
+                  <select 
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#A0522D]"
+                    value={filters.neighborhood || ''}
+                    onChange={(e) => handleFilterChange({...filters, neighborhood: e.target.value})}
+                  >
+                    <option value="">All Neighborhoods</option>
+                    {neighborhoods.map(neighborhood => (
+                      <option key={neighborhood} value={neighborhood}>{neighborhood}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Roast Level filter */}
+                <div className="space-y-2">
+                  <h3 className="font-medium text-sm text-gray-700">Roast Level</h3>
+                  <div className="space-y-1">
+                    {roastLevels.map(roast => {
+                      const isSelected = filters.roastLevels?.includes(roast as any) || false;
+                      return (
+                        <label key={roast} className="flex items-center space-x-2 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={isSelected}
+                            onChange={() => {
+                              const currentRoasts = filters.roastLevels || [];
+                              const newRoasts = isSelected 
+                                ? currentRoasts.filter(r => r !== roast)
+                                : [...currentRoasts, roast];
+                              handleFilterChange({...filters, roastLevels: newRoasts.length ? newRoasts : undefined});
+                            }}
+                            className="rounded text-[#A0522D] focus:ring-[#A0522D]"
+                          />
+                          <span className="text-gray-700 capitalize">{roast}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {/* Brewing Method filter */}
+                <div className="space-y-2">
+                  <h3 className="font-medium text-sm text-gray-700">Brewing Methods</h3>
+                  <div className="space-y-1">
+                    {brewingMethods.map(method => {
+                      const isSelected = filters.brewingMethods?.includes(method.value as any) || false;
+                      return (
+                        <label key={method.value} className="flex items-center space-x-2 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={isSelected}
+                            onChange={() => {
+                              const currentMethods = filters.brewingMethods || [];
+                              const newMethods = isSelected 
+                                ? currentMethods.filter(m => m !== method.value)
+                                : [...currentMethods, method.value];
+                              handleFilterChange({...filters, brewingMethods: newMethods.length ? newMethods : undefined});
+                            }}
+                            className="rounded text-[#A0522D] focus:ring-[#A0522D]"
+                          />
+                          <span className="text-gray-700">{method.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {/* Price Range */}
+                <div className="space-y-2">
+                  <h3 className="font-medium text-sm text-gray-700">Price Range</h3>
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="4" 
+                      value={filters.priceLevel || 4}
+                      onChange={(e) => handleFilterChange({...filters, priceLevel: parseInt(e.target.value)})}
+                      className="w-full"
+                    />
+                    <span className="text-sm text-gray-600">
+                      {"$".repeat(filters.priceLevel || 4)}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Ratings filter */}
+                <div className="space-y-2">
+                  <h3 className="font-medium text-sm text-gray-700">Minimum Rating</h3>
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="5" 
+                      step="0.5"
+                      value={filters.minRating || 0}
+                      onChange={(e) => handleFilterChange({...filters, minRating: parseFloat(e.target.value)})}
+                      className="w-full"
+                    />
+                    <span className="text-sm text-gray-600">
+                      {filters.minRating || 0}+
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Amenities */}
+                <div className="space-y-2">
+                  <h3 className="font-medium text-sm text-gray-700">Amenities</h3>
+                  <div className="space-y-1">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={filters.hasWifi || false}
+                        onChange={(e) => handleFilterChange({...filters, hasWifi: e.target.checked || undefined})}
+                        className="rounded text-[#A0522D] focus:ring-[#A0522D]"
+                      />
+                      <span className="text-gray-700">WiFi</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={filters.hasPower || false}
+                        onChange={(e) => handleFilterChange({...filters, hasPower: e.target.checked || undefined})}
+                        className="rounded text-[#A0522D] focus:ring-[#A0522D]"
+                      />
+                      <span className="text-gray-700">Power Outlets</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={filters.hasFood || false}
+                        onChange={(e) => handleFilterChange({...filters, hasFood: e.target.checked || undefined})}
+                        className="rounded text-[#A0522D] focus:ring-[#A0522D]"
+                      />
+                      <span className="text-gray-700">Food Options</span>
+                    </label>
+                  </div>
+                </div>
+                
+                {/* Sort */}
+                <div className="space-y-2">
+                  <h3 className="font-medium text-sm text-gray-700">Sort By</h3>
+                  <select 
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#A0522D]"
+                    value={filters.sortBy || 'default'}
+                    onChange={(e) => {
+                      const sortValue = e.target.value as "default" | "distance" | "rating_high" | "reviews_count";
+                      handleFilterChange({...filters, sortBy: sortValue});
+                    }}
+                  >
+                    <option value="default">Relevance</option>
+                    <option value="distance">Distance</option>
+                    <option value="rating_high">Highest Rated</option>
+                    <option value="reviews_count">Most Reviewed</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </aside>
           
-          {viewMode === "list" ? (
+          {/* Main Content - Cafe List */}
+          <div className="flex-1">
+            {/* Results count and view toggle */}
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-gray-700">
+                <span className="font-medium">{cafes.length}</span> cafés found
+              </p>
+            </div>
+            
+            {/* CafeList component will be updated */}
             <CafeList 
               key="cafe-list" 
               cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
               isLoading={isLoading} 
               cafeDistances={cafeDistances}
             />
-          ) : (
-            <CafeMap 
-              key={`cafe-map-${cafes.length}`} 
-              cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
-              isLoading={isLoading} 
-            />
-          )}
-        </section>
-        
-        {/* Featured cafes section */}
-        <FeaturedCafes />
-        
-        {/* Community section */}
-        <section className="mb-12 bg-white rounded-lg shadow-md p-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="md:w-1/2">
-              <h2 className="font-serif text-2xl font-bold mb-3 text-[#8B4513]">Join Our Coffee Community</h2>
-              <p className="text-gray-700 mb-4">Share your favorite cafés, discover new spots, and connect with fellow coffee enthusiasts across Boston.</p>
-              <ul className="mb-6 space-y-2">
-                <li className="flex items-center text-gray-700">
-                  <span className="text-[#A0522D] mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                  </span>
-                  Save your favorite cafés for quick reference
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <span className="text-[#A0522D] mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                  </span>
-                  Rate and review cafés you've visited
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <span className="text-[#A0522D] mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                  </span>
-                  Get personalized recommendations based on your taste
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <span className="text-[#A0522D] mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                  </span>
-                  Join coffee meetups and tasting events
-                </li>
-              </ul>
-              <div className="flex flex-wrap gap-3">
-                <a href="/auth" className="px-6 py-2.5 bg-[#A0522D] text-white rounded-full hover:bg-[#8B4513] transition font-medium">
-                  Create Account
-                </a>
-                <a href="/auth" className="px-6 py-2.5 border border-[#A0522D] text-[#A0522D] rounded-full hover:bg-[#FAEBD7] transition font-medium">
-                  Learn More
-                </a>
-              </div>
-            </div>
-            <div className="md:w-1/2 relative">
-              <img 
-                src="https://images.unsplash.com/photo-1511920170033-f8396924c348?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80" 
-                alt="Coffee Community" 
-                className="w-full rounded-lg shadow-md"
-              />
-              <div className="absolute -bottom-4 -right-4 bg-white rounded-lg shadow-md p-3 hidden md:block">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">+2.5k members</span>
-                </div>
-              </div>
-            </div>
           </div>
-        </section>
-      </div>
+          
+          {/* Map sidebar */}
+          <aside className="lg:w-2/5 shrink-0 hidden lg:block">
+            <div className="sticky top-24 h-[calc(100vh-150px)] bg-white rounded-lg shadow-md overflow-hidden">
+              <CafeMap 
+                key={`cafe-map-${cafes.length}`} 
+                cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
+                isLoading={isLoading}
+                singleLocation={true}
+              />
+            </div>
+          </aside>
+        </div>
+      </main>
     </div>
   );
 }
