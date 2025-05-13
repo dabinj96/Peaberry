@@ -70,7 +70,7 @@ export default function CafeList({ cafes, isLoading, cafeDistances }: CafeListPr
                 <img 
                   src={cafe.imageUrl || "https://images.unsplash.com/photo-1509042239860-f550ce710b93?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&h=200&q=80"} 
                   alt={cafe.name} 
-                  className="h-full w-32 object-cover"
+                  className="h-24 w-24 object-cover m-3"
                 />
                 <div className="absolute top-3 left-3 w-8 h-8 rounded-full bg-[#A0522D] text-white flex items-center justify-center font-medium text-sm shadow-md">
                   {actualIndex}

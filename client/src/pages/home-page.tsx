@@ -217,7 +217,7 @@ export default function HomePage() {
     <div className="bg-gray-50 min-h-screen">
       {/* Header with Search */}
       <header className="bg-white shadow-sm py-3 sticky top-0 z-50">
-        <div className="container mx-auto px-4">
+        <div className="w-full max-w-[1600px] mx-auto px-4">
           <div className="flex items-center">
             <div className="mr-4">
               <h1 className="font-serif text-2xl font-bold text-[#8B4513]">Peaberry</h1>
@@ -262,10 +262,10 @@ export default function HomePage() {
       </header>
       
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="w-full max-w-[1600px] mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left Sidebar - Filters */}
-          <aside className="lg:w-1/6 shrink-0">
+          <aside className="lg:w-56 shrink-0">
             <div className="sticky top-24 bg-white rounded-lg shadow-md p-4">
               <h2 className="font-serif text-lg font-semibold text-[#8B4513] mb-4">Filters</h2>
               
@@ -433,7 +433,7 @@ export default function HomePage() {
           </aside>
           
           {/* Main Content - Cafe List */}
-          <div className="lg:w-1/3 flex-1">
+          <div className="flex-1 min-w-0">
             {/* Results count and view toggle */}
             <div className="flex items-center justify-between mb-4">
               <p className="text-gray-700">
@@ -451,7 +451,7 @@ export default function HomePage() {
           </div>
           
           {/* Map sidebar */}
-          <aside className="lg:w-1/2 shrink-0 hidden lg:block">
+          <aside className="lg:w-[calc(65%-56px)] shrink-0 hidden lg:block">
             <div className="sticky top-24 h-[calc(100vh-100px)] bg-white rounded-lg shadow-md overflow-hidden">
               <CafeMap 
                 key={`cafe-map-${cafes.length}`} 
