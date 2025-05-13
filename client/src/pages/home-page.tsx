@@ -224,7 +224,7 @@ export default function HomePage() {
             </div>
             
             {/* Search bar */}
-            <div className="flex-1 flex items-center gap-2 max-w-3xl">
+            <div className="flex-1 flex items-center gap-2 max-w-xl mx-auto">
               <div className="relative flex-1">
                 <input 
                   type="text" 
@@ -262,11 +262,11 @@ export default function HomePage() {
       </header>
       
       {/* Main Content */}
-      <main className="w-full mx-auto px-2 py-4">
-        <div className="flex flex-col lg:flex-row gap-2">
+      <main className="w-full mx-auto px-1 py-2">
+        <div className="flex flex-col lg:flex-row gap-1">
           {/* Left Sidebar - Filters */}
           <aside className="lg:w-48 shrink-0">
-            <div className="sticky top-24 bg-white rounded-lg shadow-md p-4">
+            <div className="sticky top-24 h-[calc(100vh-96px)] overflow-auto bg-white rounded-lg shadow-md p-4">
               <h2 className="font-serif text-lg font-semibold text-[#8B4513] mb-4">Filters</h2>
               
               {/* Filters Section */}
@@ -452,7 +452,7 @@ export default function HomePage() {
           
           {/* Map sidebar */}
           <aside className="w-1/2 shrink-0 hidden lg:block">
-            <div className="sticky top-24 h-[calc(100vh-100px)] bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="sticky top-24 h-[calc(100vh-96px)] bg-white rounded-lg shadow-md overflow-hidden">
               <CafeMap 
                 key={`cafe-map-${cafes.length}`} 
                 cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
