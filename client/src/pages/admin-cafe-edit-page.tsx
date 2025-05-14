@@ -509,175 +509,189 @@ export default function AdminCafeEditPage() {
             </TabsContent>
             
             <TabsContent value="specialty" className="space-y-4 mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Flame className="h-5 w-5" />
-                    Roast Levels
-                  </CardTitle>
-                  <CardDescription>
-                    Select the roast levels offered at this cafe
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FormField
-                    control={form.control}
-                    name="roastLevels"
-                    render={() => (
-                      <FormItem>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {[
-                            { id: "light", label: "Light Roast" },
-                            { id: "light_medium", label: "Light-Medium Roast" },
-                            { id: "medium", label: "Medium Roast" },
-                            { id: "medium_dark", label: "Medium-Dark Roast" },
-                            { id: "dark", label: "Dark Roast" },
-                            { id: "extra_dark", label: "Extra-Dark Roast" }
-                          ].map((roast) => (
-                            <FormField
-                              key={roast.id}
-                              control={form.control}
-                              name="roastLevels"
-                              render={({ field }) => {
-                                return (
-                                  <FormItem
-                                    key={roast.id}
-                                    className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4"
-                                  >
-                                    <FormControl>
-                                      <Checkbox
-                                        checked={field.value?.includes(roast.id as any)}
-                                        onCheckedChange={(checked) => {
-                                          return checked
-                                            ? field.onChange([...field.value, roast.id])
-                                            : field.onChange(
-                                                field.value?.filter(
-                                                  (value) => value !== roast.id
-                                                )
-                                              );
-                                        }}
-                                      />
-                                    </FormControl>
-                                    <div className="space-y-1 leading-none">
-                                      <FormLabel>
-                                        {roast.label}
-                                      </FormLabel>
-                                    </div>
-                                  </FormItem>
-                                );
-                              }}
+              {/* Hide any accidental debug text */}
+              <style>{`
+                .coffee-specialties-tab .card-content > *:not(.form-field) {
+                  display: none;
+                }
+              `}</style>
+              <div className="coffee-specialties-tab">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Flame className="h-5 w-5" />
+                      Roast Levels
+                    </CardTitle>
+                    <CardDescription>
+                      Select the roast levels offered at this cafe
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="card-content">
+                    <FormField
+                      control={form.control}
+                      name="roastLevels"
+                      render={() => (
+                        <FormItem className="form-field">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {[
+                              { id: "light", label: "Light Roast" },
+                              { id: "light_medium", label: "Light-Medium Roast" },
+                              { id: "medium", label: "Medium Roast" },
+                              { id: "medium_dark", label: "Medium-Dark Roast" },
+                              { id: "dark", label: "Dark Roast" },
+                              { id: "extra_dark", label: "Extra-Dark Roast" }
+                            ].map((roast) => (
+                              <FormField
+                                key={roast.id}
+                                control={form.control}
+                                name="roastLevels"
+                                render={({ field }) => {
+                                  // Type safety by casting roast.id
+                                  const typedRoastId = roast.id as "light" | "light_medium" | "medium" | "medium_dark" | "dark" | "extra_dark";
+                                  return (
+                                    <FormItem
+                                      key={roast.id}
+                                      className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={Array.isArray(field.value) && field.value.includes(typedRoastId)}
+                                          onCheckedChange={(checked) => {
+                                            const currentValues = Array.isArray(field.value) ? field.value : [];
+                                            return checked
+                                              ? field.onChange([...currentValues, typedRoastId])
+                                              : field.onChange(
+                                                  currentValues.filter(
+                                                    (value) => value !== typedRoastId
+                                                  )
+                                                );
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <div className="space-y-1 leading-none">
+                                        <FormLabel>
+                                          {roast.label}
+                                        </FormLabel>
+                                      </div>
+                                    </FormItem>
+                                  );
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Tag className="h-5 w-5" />
+                      Sells Coffee Beans
+                    </CardTitle>
+                    <CardDescription>
+                      Does this cafe sell coffee beans to customers?
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="card-content">
+                    <FormField
+                      control={form.control}
+                      name="sellsCoffeeBeans"
+                      render={({ field }) => (
+                        <FormItem className="form-field flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value === true}
+                              onCheckedChange={field.onChange}
                             />
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Tag className="h-5 w-5" />
-                    Sells Coffee Beans
-                  </CardTitle>
-                  <CardDescription>
-                    Does this cafe sell coffee beans to customers?
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FormField
-                    control={form.control}
-                    name="sellsCoffeeBeans"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>
-                            Yes, this cafe sells coffee beans
-                          </FormLabel>
-                          <FormDescription>
-                            Customers can purchase coffee beans to brew at home
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Coffee className="h-5 w-5" />
-                    Brewing Methods
-                  </CardTitle>
-                  <CardDescription>
-                    Select the brewing methods available at this cafe
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FormField
-                    control={form.control}
-                    name="brewingMethods"
-                    render={() => (
-                      <FormItem>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {[
-                            { id: "espresso_based", label: "Espresso-based" },
-                            { id: "pour_over", label: "Pour Over" },
-                            { id: "siphon", label: "Siphon" },
-                            { id: "mixed_drinks", label: "Mixed Drinks" },
-                            { id: "nitro", label: "Nitro" },
-                            { id: "cold_brew", label: "Cold Brew" },
-                          ].map((method) => (
-                            <FormField
-                              key={method.id}
-                              control={form.control}
-                              name="brewingMethods"
-                              render={({ field }) => {
-                                return (
-                                  <FormItem
-                                    key={method.id}
-                                    className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4"
-                                  >
-                                    <FormControl>
-                                      <Checkbox
-                                        checked={field.value?.includes(method.id as any)}
-                                        onCheckedChange={(checked) => {
-                                          return checked
-                                            ? field.onChange([...field.value, method.id])
-                                            : field.onChange(
-                                                field.value?.filter(
-                                                  (value) => value !== method.id
-                                                )
-                                              );
-                                        }}
-                                      />
-                                    </FormControl>
-                                    <div className="space-y-1 leading-none">
-                                      <FormLabel>
-                                        {method.label}
-                                      </FormLabel>
-                                    </div>
-                                  </FormItem>
-                                );
-                              }}
-                            />
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              Yes, this cafe sells coffee beans
+                            </FormLabel>
+                            <FormDescription>
+                              Customers can purchase coffee beans to brew at home
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Coffee className="h-5 w-5" />
+                      Brewing Methods
+                    </CardTitle>
+                    <CardDescription>
+                      Select the brewing methods available at this cafe
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="card-content">
+                    <FormField
+                      control={form.control}
+                      name="brewingMethods"
+                      render={() => (
+                        <FormItem className="form-field">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {[
+                              { id: "espresso_based", label: "Espresso-based" },
+                              { id: "pour_over", label: "Pour Over" },
+                              { id: "siphon", label: "Siphon" },
+                              { id: "mixed_drinks", label: "Mixed Drinks" },
+                              { id: "nitro", label: "Nitro" },
+                              { id: "cold_brew", label: "Cold Brew" },
+                            ].map((method) => (
+                              <FormField
+                                key={method.id}
+                                control={form.control}
+                                name="brewingMethods"
+                                render={({ field }) => {
+                                  // Type safety by casting method.id
+                                  const typedMethodId = method.id as "espresso_based" | "pour_over" | "siphon" | "mixed_drinks" | "nitro" | "cold_brew";
+                                  return (
+                                    <FormItem
+                                      key={method.id}
+                                      className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={Array.isArray(field.value) && field.value.includes(typedMethodId)}
+                                          onCheckedChange={(checked) => {
+                                            const currentValues = Array.isArray(field.value) ? field.value : [];
+                                            return checked
+                                              ? field.onChange([...currentValues, typedMethodId])
+                                              : field.onChange(
+                                                  currentValues.filter(
+                                                    (value) => value !== typedMethodId
+                                                  )
+                                                );
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <div className="space-y-1 leading-none">
+                                        <FormLabel>
+                                          {method.label}
+                                        </FormLabel>
+                                      </div>
+                                    </FormItem>
+                                  );
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
             
             <TabsContent value="features" className="space-y-4 mt-6">
