@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Star } from "lucide-react";
 
 interface RatingInputProps {
   rating: number;
@@ -15,9 +14,9 @@ export default function RatingInput({
   const [hoverRating, setHoverRating] = useState<number | null>(null);
 
   const starSizes = {
-    sm: "h-4 w-4",
-    md: "h-6 w-6",
-    lg: "h-8 w-8"
+    sm: "w-4 h-4",
+    md: "w-6 h-6",
+    lg: "w-8 h-8"
   };
 
   const containerClasses = {
@@ -55,16 +54,25 @@ export default function RatingInput({
         const isActive = (hoverRating !== null ? starRating <= hoverRating : starRating <= rating);
         
         return (
-          <Star
+          <button
             key={starRating}
-            className={`${starSizes[size]} cursor-pointer transition-colors ${
-              isActive 
-                ? 'text-yellow-400 fill-yellow-400' 
-                : 'text-gray-300 hover:text-yellow-200'
-            }`}
+            type="button"
+            className="focus:outline-none transition-transform hover:scale-110"
             onMouseEnter={() => handleMouseEnter(starRating)}
             onClick={() => handleClick(starRating)}
-          />
+            aria-label={`Rate ${starRating} stars`}
+          >
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className={starSizes[size]}
+              viewBox="0 0 24 24" 
+              fill={isActive ? "#FFD700" : "none"}
+              stroke={isActive ? "#FFD700" : "#C0C0C0"}
+              strokeWidth="1.5" 
+            >
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </button>
         );
       })}
     </div>
