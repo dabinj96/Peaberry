@@ -440,10 +440,10 @@ export class MemStorage implements IStorage {
     // Add new roast levels
     const newRoastLevels: CafeRoastLevel[] = [];
     for (const level of roastLevels) {
-      if (["light", "medium", "dark"].includes(level)) {
+      if (["light", "light_medium", "medium", "medium_dark", "dark", "extra_dark"].includes(level)) {
         const roastLevel = await this.addCafeRoastLevel({ 
           cafeId, 
-          roastLevel: level as "light" | "medium" | "dark" 
+          roastLevel: level as "light" | "light_medium" | "medium" | "medium_dark" | "dark" | "extra_dark"
         });
         newRoastLevels.push(roastLevel);
       }
@@ -477,13 +477,13 @@ export class MemStorage implements IStorage {
     
     // Add new brewing methods
     const newBrewingMethods: CafeBrewingMethod[] = [];
-    const validMethods = ["pour_over", "espresso", "aeropress", "french_press", "siphon"];
+    const validMethods = ["espresso_based", "pour_over", "siphon", "mixed_drinks", "nitro", "cold_brew"];
     
     for (const method of brewingMethods) {
       if (validMethods.includes(method)) {
         const brewingMethod = await this.addCafeBrewingMethod({ 
           cafeId, 
-          brewingMethod: method as "pour_over" | "espresso" | "aeropress" | "french_press" | "siphon" 
+          brewingMethod: method as "espresso_based" | "pour_over" | "siphon" | "mixed_drinks" | "nitro" | "cold_brew" 
         });
         newBrewingMethods.push(brewingMethod);
       }
