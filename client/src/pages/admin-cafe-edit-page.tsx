@@ -518,34 +518,41 @@ export default function AdminCafeEditPage() {
                     render={() => (
                       <FormItem>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {["light", "medium", "dark"].map((roast) => (
+                          {[
+                            { id: "light", label: "Light Roast" },
+                            { id: "light_medium", label: "Light-Medium Roast" },
+                            { id: "medium", label: "Medium Roast" },
+                            { id: "medium_dark", label: "Medium-Dark Roast" },
+                            { id: "dark", label: "Dark Roast" },
+                            { id: "extra_dark", label: "Extra-Dark Roast" }
+                          ].map((roast) => (
                             <FormField
-                              key={roast}
+                              key={roast.id}
                               control={form.control}
                               name="roastLevels"
                               render={({ field }) => {
                                 return (
                                   <FormItem
-                                    key={roast}
+                                    key={roast.id}
                                     className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4"
                                   >
                                     <FormControl>
                                       <Checkbox
-                                        checked={field.value?.includes(roast as any)}
+                                        checked={field.value?.includes(roast.id as any)}
                                         onCheckedChange={(checked) => {
                                           return checked
-                                            ? field.onChange([...field.value, roast])
+                                            ? field.onChange([...field.value, roast.id])
                                             : field.onChange(
                                                 field.value?.filter(
-                                                  (value) => value !== roast
+                                                  (value) => value !== roast.id
                                                 )
                                               );
                                         }}
                                       />
                                     </FormControl>
                                     <div className="space-y-1 leading-none">
-                                      <FormLabel className="capitalize">
-                                        {roast} Roast
+                                      <FormLabel>
+                                        {roast.label}
                                       </FormLabel>
                                     </div>
                                   </FormItem>
@@ -579,11 +586,12 @@ export default function AdminCafeEditPage() {
                       <FormItem>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {[
+                            { id: "espresso_based", label: "Espresso-based" },
                             { id: "pour_over", label: "Pour Over" },
-                            { id: "espresso", label: "Espresso" },
-                            { id: "aeropress", label: "AeroPress" },
-                            { id: "french_press", label: "French Press" },
                             { id: "siphon", label: "Siphon" },
+                            { id: "mixed_drinks", label: "Mixed Drinks" },
+                            { id: "nitro", label: "Nitro" },
+                            { id: "cold_brew", label: "Cold Brew" },
                           ].map((method) => (
                             <FormField
                               key={method.id}
