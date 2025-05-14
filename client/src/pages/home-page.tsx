@@ -302,23 +302,38 @@ export default function HomePage() {
                 {/* Rating filter */}
                 <div className="space-y-2">
                   <h3 className="font-medium text-sm text-gray-700">Minimum Rating</h3>
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                      <span>1★</span>
-                      <span>5★</span>
+                  <div className="mt-3">
+                    <div className="flex justify-center space-x-2">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          className="focus:outline-none transition-transform hover:scale-110"
+                          onClick={() => {
+                            const newRating = rating === filters.minRating ? undefined : rating;
+                            handleFilterChange({...filters, minRating: newRating});
+                          }}
+                          aria-label={`Set minimum rating to ${rating}`}
+                        >
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            width="24" 
+                            height="24" 
+                            viewBox="0 0 24 24" 
+                            fill={filters.minRating && filters.minRating >= rating ? "#FFD700" : "none"}
+                            stroke={filters.minRating && filters.minRating >= rating ? "#FFD700" : "#C0C0C0"}
+                            strokeWidth="1.5" 
+                          >
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                          </svg>
+                        </button>
+                      ))}
                     </div>
-                    <input
-                      type="range"
-                      min="1"
-                      max="5"
-                      step="1"
-                      value={filters.minRating || 1}
-                      onChange={(e) => handleFilterChange({...filters, minRating: parseInt(e.target.value)})}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#A0522D]"
-                    />
-                    <div className="text-center mt-1 text-gray-700 font-medium">
-                      {filters.minRating || 1}+ ★
-                    </div>
+                    {filters.minRating && (
+                      <div className="text-center mt-2 text-gray-700 font-medium text-sm">
+                        {filters.minRating}+ stars minimum
+                      </div>
+                    )}
                   </div>
                 </div>
                 
