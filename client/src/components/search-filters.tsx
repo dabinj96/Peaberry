@@ -8,7 +8,7 @@ import {
   Separator,
   Badge
 } from "@/components/ui";
-import * as SliderPrimitive from "@radix-ui/react-slider";
+
 import { CafeFilter, cafeSortOptionsEnum } from "@shared/schema";
 import { ChevronDown, ChevronUp, List, MapPin, SlidersHorizontal, X } from "lucide-react";
 import FilterOptions from "./filter-options";
