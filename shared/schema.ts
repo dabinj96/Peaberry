@@ -3,7 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Enums
-export const roastLevelEnum = pgEnum('roast_level', ['light', 'medium', 'dark']);
+export const roastLevelEnum = pgEnum('roast_level', ['light', 'light_medium', 'medium', 'medium_dark', 'dark', 'extra_dark']);
 export const brewingMethodEnum = pgEnum('brewing_method', ['espresso_based', 'pour_over', 'siphon', 'mixed_drinks', 'nitro', 'cold_brew']);
 export const cafeStatusEnum = pgEnum('cafe_status', ['draft', 'published', 'archived']);
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin', 'cafe_owner']);
@@ -41,6 +41,7 @@ export const cafes = pgTable("cafes", {
   hasWifi: boolean("has_wifi").default(false),
   hasPower: boolean("has_power").default(false),
   hasFood: boolean("has_food").default(false),
+  sellsCoffeeBeans: boolean("sells_coffee_beans").default(false),
   imageUrl: text("image_url"),
   website: text("website").default(''),
   phone: text("phone").default(''),
@@ -180,13 +181,14 @@ export const cafeSortOptionsEnum = [
 
 export const cafeFilterSchema = z.object({
   neighborhood: z.string().optional(),
-  roastLevels: z.array(z.enum(["light", "medium", "dark"])).optional(),
-  brewingMethods: z.array(z.enum(["pour_over", "espresso", "aeropress", "french_press", "siphon"])).optional(),
+  roastLevels: z.array(z.enum(["light", "light_medium", "medium", "medium_dark", "dark", "extra_dark"])).optional(),
+  brewingMethods: z.array(z.enum(["espresso_based", "pour_over", "siphon", "mixed_drinks", "nitro", "cold_brew"])).optional(),
   minRating: z.number().min(0).max(5).optional(),
   priceLevel: z.number().min(1).max(4).optional(),
   hasWifi: z.boolean().optional(),
   hasPower: z.boolean().optional(),
   hasFood: z.boolean().optional(),
+  sellsCoffeeBeans: z.boolean().optional(),
   query: z.string().optional(),
   sortBy: z.enum(cafeSortOptionsEnum).optional(),
   status: z.enum(["draft", "published", "archived"]).optional(),

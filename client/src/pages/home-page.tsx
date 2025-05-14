@@ -35,7 +35,7 @@ export default function HomePage() {
   const [cafeDistances, setCafeDistances] = useState<Map<number, number>>(new Map());
   
   // Define the roast levels and brewing methods for type safety
-  const roastLevels = ['light', 'medium', 'dark'] as const;
+  const roastLevels = ['light', 'light_medium', 'medium', 'medium_dark', 'dark', 'extra_dark'] as const;
   type RoastLevel = typeof roastLevels[number];
   
   const brewingMethods = [
@@ -263,7 +263,9 @@ export default function HomePage() {
                             }}
                             className="form-checkbox h-4 w-4 text-[#A0522D] rounded" 
                           />
-                          <span className="text-sm text-gray-700 capitalize">{roast} Roast</span>
+                          <span className="text-sm text-gray-700 capitalize">
+                            {roast.replace(/_/g, '-')}
+                          </span>
                         </label>
                       );
                     })}
@@ -317,6 +319,41 @@ export default function HomePage() {
                     <div className="text-center mt-1 text-gray-700 font-medium">
                       {filters.minRating || 1}+ ★
                     </div>
+                  </div>
+                </div>
+                
+                {/* Sells Coffee Beans filter */}
+                <div className="space-y-2">
+                  <h3 className="font-medium text-sm text-gray-700">Sells Coffee Beans</h3>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="sellsCoffeeBeans"
+                        checked={filters.sellsCoffeeBeans === true}
+                        onChange={() => handleFilterChange({...filters, sellsCoffeeBeans: true})}
+                        className="form-radio h-4 w-4 text-[#A0522D] rounded" 
+                      />
+                      <span className="text-sm text-gray-700">Yes</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="sellsCoffeeBeans"
+                        checked={filters.sellsCoffeeBeans === false}
+                        onChange={() => handleFilterChange({...filters, sellsCoffeeBeans: false})}
+                        className="form-radio h-4 w-4 text-[#A0522D] rounded" 
+                      />
+                      <span className="text-sm text-gray-700">No</span>
+                    </label>
+                    {filters.sellsCoffeeBeans !== undefined && (
+                      <button 
+                        onClick={() => handleFilterChange({...filters, sellsCoffeeBeans: undefined})}
+                        className="text-xs text-gray-500 hover:text-[#A0522D]"
+                      >
+                        Clear
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
