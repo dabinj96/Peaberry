@@ -85,9 +85,10 @@ export default function AdminCafeEditPage() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
   
-  // Form setup
+  // Form setup with debug mode and better error handling
   const form = useForm<CafeFormValues>({
     resolver: zodResolver(cafeFormSchema),
+    mode: "onSubmit",
     defaultValues: {
       name: "",
       description: "",
@@ -110,6 +111,37 @@ export default function AdminCafeEditPage() {
       brewingMethods: [],
     },
   });
+  
+  // Remove any "undefined" text that might show up on the page
+  useEffect(() => {
+    const cleanupUndefinedText = () => {
+      // Find and remove any text nodes containing only "undefined"
+      const findAndRemoveUndefinedText = (node: Node) => {
+        if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim() === "undefined") {
+          node.textContent = "";
+          return true;
+        }
+        
+        // Recursively check child nodes
+        if (node.childNodes) {
+          for (let i = 0; i < node.childNodes.length; i++) {
+            findAndRemoveUndefinedText(node.childNodes[i]);
+          }
+        }
+        return false;
+      };
+      
+      // Start at the root element of the form
+      const formElement = document.querySelector('form');
+      if (formElement) findAndRemoveUndefinedText(formElement);
+    };
+    
+    // Run immediately and set interval to keep checking
+    cleanupUndefinedText();
+    const interval = setInterval(cleanupUndefinedText, 500);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Update form when cafe data is loaded
   useEffect(() => {
@@ -143,43 +175,64 @@ export default function AdminCafeEditPage() {
     setIsSubmitting(true);
     
     try {
-      // Update cafe basics - extract just what we need for main update
-      const { 
-        name, description, address, neighborhood, latitude, longitude, 
-        priceLevel, hasWifi, hasPower, hasFood, sellsCoffeeBeans,
-        imageUrl, website, phone, instagramHandle, googleMapsUrl, status 
-      } = data;
+      // Extract just what we need for main update with safe defaults
+      const cafeUpdate = {
+        name: data.name || '',
+        description: data.description || '',
+        address: data.address || '',
+        neighborhood: data.neighborhood || '',
+        latitude: data.latitude || '',
+        longitude: data.longitude || '',
+        priceLevel: data.priceLevel || 1,
+        hasWifi: Boolean(data.hasWifi),
+        hasPower: Boolean(data.hasPower),
+        hasFood: Boolean(data.hasFood),
+        sellsCoffeeBeans: Boolean(data.sellsCoffeeBeans),
+        imageUrl: data.imageUrl || '',
+        website: data.website || '',
+        phone: data.phone || '',
+        instagramHandle: data.instagramHandle || '',
+        googleMapsUrl: data.googleMapsUrl || '',
+        status: data.status || 'draft'
+      };
       
-      await apiRequest("PUT", `/api/admin/cafes/${cafeId}`, {
-        name, description, address, neighborhood, latitude, longitude,
-        priceLevel, hasWifi, hasPower, hasFood, sellsCoffeeBeans,
-        imageUrl, website, phone, instagramHandle, googleMapsUrl, status
-      });
+      // Update cafe basics
+      await apiRequest("PUT", `/api/admin/cafes/${cafeId}`, cafeUpdate);
       
-      // Update roast levels
+      // Ensure roast levels is always a valid array
+      const roastLevels = Array.isArray(data.roastLevels) ? data.roastLevels : [];
       await apiRequest("PUT", `/api/admin/cafes/${cafeId}/roast-levels`, {
-        roastLevels: data.roastLevels,
+        roastLevels
       });
       
-      // Update brewing methods
+      // Ensure brewing methods is always a valid array
+      const brewingMethods = Array.isArray(data.brewingMethods) ? data.brewingMethods : [];
       await apiRequest("PUT", `/api/admin/cafes/${cafeId}/brewing-methods`, {
-        brewingMethods: data.brewingMethods,
+        brewingMethods
       });
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: [`/api/admin/cafes/${cafeId}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/cafes'] });
       
+      // Display success message
       toast({
         title: "Cafe updated",
         description: "The cafe details have been successfully updated.",
         variant: "default",
       });
-    } catch (error) {
+    } catch (error: any) {
+      // Better error handling
       console.error("Error updating cafe:", error);
+      
+      let errorMessage = "There was an error updating the cafe details.";
+      if (error?.message) {
+        errorMessage += ` Error: ${error.message}`;
+      }
+      
       toast({
         title: "Update failed",
-        description: "There was an error updating the cafe details.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

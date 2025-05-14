@@ -42,15 +42,26 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  try {
+    // Convert any undefined values to null in data object
+    const safeData = data ? JSON.parse(JSON.stringify(data)) : undefined;
+    
+    const res = await fetch(url, {
+      method,
+      headers: safeData ? { "Content-Type": "application/json" } : {},
+      body: safeData ? JSON.stringify(safeData) : undefined,
+      credentials: "include",
+    });
 
-  await throwIfResNotOk(res);
-  return res;
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error) {
+    // Transform any errors with 'undefined' in the message to be more helpful
+    if (error instanceof Error && error.message.includes('undefined')) {
+      throw new Error(`API request to ${url} failed: Invalid data format. Make sure all required fields are provided.`);
+    }
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
