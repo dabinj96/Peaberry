@@ -33,6 +33,7 @@ export default function HomePage() {
   const [sortedCafes, setSortedCafes] = useState<CafeWithDetails[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [cafeDistances, setCafeDistances] = useState<Map<number, number>>(new Map());
+  const [distanceUnit, setDistanceUnit] = useState<'mi' | 'km'>('mi');
   
   // Define the roast levels and brewing methods for type safety
   const roastLevels = ['light', 'light_medium', 'medium', 'medium_dark', 'dark', 'extra_dark'] as const;

@@ -6,14 +6,15 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Heart, MapPin, Star } from "lucide-react";
-import { formatBrewingMethod, formatPriceLevel, formatRoastLevel } from "@/lib/utils";
+import { formatBrewingMethod, formatDistance, formatRoastLevel } from "@/lib/utils";
 
 interface CafeCardProps {
   cafe: CafeWithDetails;
   distance?: number;  // Distance in kilometers
+  distanceUnit?: 'mi' | 'km';  // Unit to display distance in
 }
 
-export default function CafeCard({ cafe, distance }: CafeCardProps) {
+export default function CafeCard({ cafe, distance, distanceUnit = 'mi' }: CafeCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isHovering, setIsHovering] = useState(false);
@@ -103,14 +104,11 @@ export default function CafeCard({ cafe, distance }: CafeCardProps) {
               </span>
             )}
           </div>
-          <div className="flex justify-between items-center text-sm text-gray-500">
+          <div className="text-sm text-gray-500">
             <span className="flex items-center">
               <MapPin className="h-3.5 w-3.5 mr-1" /> 
-              {distance !== undefined 
-                ? `${(distance * 0.621371).toFixed(1)} miles` // Convert km to miles
-                : "Distance unavailable"}
+              {formatDistance(distance, distanceUnit)}
             </span>
-            <span>{formatPriceLevel(cafe.priceLevel)}</span>
           </div>
         </div>
       </Link>

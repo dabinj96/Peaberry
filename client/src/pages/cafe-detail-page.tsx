@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, MapPin, Star, Heart } from "lucide-react";
-import { formatBrewingMethod, formatPriceLevel, formatRoastLevel } from "@/lib/utils";
+import { formatBrewingMethod, formatRoastLevel } from "@/lib/utils";
 import RatingInput from "@/components/rating-input";
 import CafeMap from "@/components/cafe-map";
 
@@ -177,7 +177,6 @@ export default function CafeDetailPage() {
               <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
               <span>{cafe.averageRating?.toFixed(1) || "No ratings"} ({cafe.totalRatings || 0})</span>
             </div>
-            <div>{formatPriceLevel(cafe.priceLevel)}</div>
           </div>
         </div>
         <div className="absolute top-4 right-4 z-20">

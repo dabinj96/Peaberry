@@ -56,23 +56,27 @@ export function formatRoastLevel(level: string): string {
 }
 
 /**
- * Format a price level from its numeric value to a dollar sign representation
- * @param level Price level (1-4)
- * @returns Dollar sign representation of price level
+ * Convert kilometers to miles
+ * @param km Distance in kilometers
+ * @returns Distance in miles
  */
-export function formatPriceLevel(level: number): string {
-  if (!level) return 'N/A';
+export function kmToMiles(km: number): number {
+  return km * 0.621371;
+}
+
+/**
+ * Format distance based on unit preference
+ * @param distanceKm Distance in kilometers
+ * @param unit Unit preference ('mi' for miles, 'km' for kilometers)
+ * @returns Formatted distance string
+ */
+export function formatDistance(distanceKm: number | undefined, unit: 'mi' | 'km' = 'mi'): string {
+  if (distanceKm === undefined) return "Distance unavailable";
   
-  switch (level) {
-    case 1:
-      return '$';
-    case 2:
-      return '$$';
-    case 3:
-      return '$$$';
-    case 4:
-      return '$$$$';
-    default:
-      return 'N/A';
+  if (unit === 'mi') {
+    const miles = kmToMiles(distanceKm);
+    return `${miles.toFixed(1)} mi`;
+  } else {
+    return `${distanceKm.toFixed(1)} km`;
   }
 }
