@@ -257,73 +257,29 @@ export default function SearchFilters({
               {/* Rating filter */}
               <div>
                 <label className="block mb-2 text-sm font-medium">Minimum Rating</label>
-                <div className="flex flex-col">
-                  <div className="flex justify-between mb-2">
-                    <div className="flex items-center">
-                      <span className="text-sm text-gray-600">1</span>
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        width="16" 
-                        height="16" 
-                        viewBox="0 0 24 24" 
-                        fill="none"
-                        stroke="#C0C0C0"
-                        strokeWidth="1.5" 
-                        className="ml-0.5"
-                      >
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                      </svg>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="text-sm text-gray-600">5</span>
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        width="16" 
-                        height="16" 
-                        viewBox="0 0 24 24" 
-                        fill="none"
-                        stroke="#C0C0C0"
-                        strokeWidth="1.5" 
-                        className="ml-0.5"
-                      >
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  <div className="relative">
-                    <SliderPrimitive.Root
-                      className="relative flex w-full touch-none select-none items-center"
-                      defaultValue={[filters.minRating || 1]}
-                      max={5}
-                      min={1}
-                      step={1}
-                      onValueChange={handleMinRatingChange}
+                <div className="flex items-center space-x-1">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      className="focus:outline-none"
+                      onClick={() => handleMinRatingChange([rating === filters.minRating ? 0 : rating])}
+                      aria-label={`Set minimum rating to ${rating}`}
                     >
-                      <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-gray-200">
-                        <SliderPrimitive.Range className="absolute h-full bg-[#A0522D]" />
-                      </SliderPrimitive.Track>
-                      <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full bg-[#8B4513] ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
-                    </SliderPrimitive.Root>
-                  </div>
-                  
-                  <div className="flex justify-center mt-4">
-                    <div className="flex items-center text-sm font-medium">
-                      {(filters.minRating || 1)}+ 
                       <svg 
                         xmlns="http://www.w3.org/2000/svg" 
-                        width="18" 
-                        height="18" 
+                        width="30" 
+                        height="30" 
                         viewBox="0 0 24 24" 
-                        fill="#FFD700"
-                        stroke="#FFD700"
+                        fill={(filters.minRating || 0) >= rating ? "#FFD700" : "none"}
+                        stroke="#C0C0C0"
                         strokeWidth="1.5" 
-                        className="ml-1"
+                        className="transition-colors duration-200 hover:stroke-[#8B4513]"
                       >
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                       </svg>
-                    </div>
-                  </div>
+                    </button>
+                  ))}
                 </div>
               </div>
               
