@@ -59,14 +59,15 @@ const cafeFormSchema = z.object({
   hasWifi: z.boolean().default(false),
   hasPower: z.boolean().default(false),
   hasFood: z.boolean().default(false),
+  sellsCoffeeBeans: z.boolean().default(false),
   imageUrl: z.string().optional(),
   website: z.string().optional(),
   phone: z.string().optional(),
   instagramHandle: z.string().optional(),
   googleMapsUrl: z.string().optional(),
   status: z.enum(["draft", "published", "archived"]),
-  roastLevels: z.array(z.enum(["light", "medium", "dark"])),
-  brewingMethods: z.array(z.enum(["pour_over", "espresso", "aeropress", "french_press", "siphon"])),
+  roastLevels: z.array(z.enum(["light", "light_medium", "medium", "medium_dark", "dark", "extra_dark"])),
+  brewingMethods: z.array(z.enum(["espresso_based", "pour_over", "siphon", "mixed_drinks", "nitro", "cold_brew"])),
 });
 
 type CafeFormValues = z.infer<typeof cafeFormSchema>;
@@ -98,6 +99,7 @@ export default function AdminCafeEditPage() {
       hasWifi: false,
       hasPower: false,
       hasFood: false,
+      sellsCoffeeBeans: false,
       imageUrl: "",
       website: "",
       phone: "",
@@ -123,6 +125,7 @@ export default function AdminCafeEditPage() {
         hasWifi: cafe.hasWifi || false,
         hasPower: cafe.hasPower || false,
         hasFood: cafe.hasFood || false,
+        sellsCoffeeBeans: cafe.sellsCoffeeBeans || false,
         imageUrl: cafe.imageUrl || "",
         website: cafe.website || "",
         phone: cafe.phone || "",
@@ -562,6 +565,42 @@ export default function AdminCafeEditPage() {
                           ))}
                         </div>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Tag className="h-5 w-5" />
+                    Sells Coffee Beans
+                  </CardTitle>
+                  <CardDescription>
+                    Does this cafe sell coffee beans to customers?
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="sellsCoffeeBeans"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            Yes, this cafe sells coffee beans
+                          </FormLabel>
+                          <FormDescription>
+                            Customers can purchase coffee beans to brew at home
+                          </FormDescription>
+                        </div>
                       </FormItem>
                     )}
                   />
