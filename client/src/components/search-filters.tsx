@@ -237,55 +237,48 @@ export default function SearchFilters({
               <div>
                 <label className="block mb-2 text-sm font-medium">Price Range</label>
                 <div className="flex items-center space-x-2">
-                  <Slider 
-                    defaultValue={[filters.priceLevel || 4]} 
-                    max={4} 
-                    min={1} 
-                    step={1} 
-                    onValueChange={handlePriceLevelChange}
-                  />
-                  <span className="text-sm text-gray-600">
-                    {"$".repeat(filters.priceLevel || 4)}
-                  </span>
+                  {[1, 2, 3, 4].map((price) => (
+                    <button
+                      key={price}
+                      type="button"
+                      className={`px-3 py-1 border rounded-md transition-colors ${
+                        (filters.priceLevel || 0) === price 
+                          ? 'bg-[#A0522D] text-white border-[#8B4513]' 
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={() => handlePriceLevelChange([price === filters.priceLevel ? 0 : price])}
+                    >
+                      {"$".repeat(price)}
+                    </button>
+                  ))}
                 </div>
               </div>
               
               {/* Rating filter */}
               <div>
                 <label className="block mb-2 text-sm font-medium">Minimum Rating</label>
-                <div className="flex flex-col">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-1">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          className="focus:outline-none relative"
-                          onClick={() => handleMinRatingChange([rating === filters.minRating ? 0 : rating])}
-                          aria-label={`${rating} stars`}
-                        >
-                          <svg 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            width="26" 
-                            height="26" 
-                            viewBox="0 0 24 24" 
-                            fill={(filters.minRating || 0) >= rating ? "#FFD700" : "none"}
-                            stroke={(filters.minRating || 0) >= rating ? "#FFD700" : "#8B4513"}
-                            strokeWidth="1.5" 
-                            className="transition-all duration-150 hover:scale-110"
-                          >
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                          </svg>
-                        </button>
-                      ))}
-                    </div>
-                    <span className="text-sm font-medium text-[#8B4513]">
-                      {filters.minRating ? `${filters.minRating}★+` : "Any rating"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500 px-1">
-                    <span>1★</span>
-                    <span>5★</span>
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    {[0, 1, 2, 3, 4, 5].map((rating) => (
+                      <button
+                        key={rating}
+                        type="button"
+                        className={`h-9 min-w-[52px] rounded-md border transition-all ${
+                          (filters.minRating || 0) === rating 
+                            ? 'bg-[#A0522D] text-white border-[#8B4513] font-medium' 
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}
+                        onClick={() => handleMinRatingChange([rating])}
+                      >
+                        {rating === 0 ? (
+                          'Any'
+                        ) : (
+                          <span className="flex items-center justify-center">
+                            {rating}<span className="text-yellow-500 ml-0.5">★</span>+
+                          </span>
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
