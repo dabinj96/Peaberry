@@ -110,7 +110,7 @@ export default function CafeList({ cafes, isLoading, cafeDistances }: CafeListPr
                     ))}
                     {cafe.brewingMethods && cafe.brewingMethods.slice(0, 2).map(method => (
                       <span key={method} className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">
-                        {method.replace('_', ' ')}
+                        {method && method.includes('_') ? method.replace(/_/g, ' ') : method}
                       </span>
                     ))}
                     {cafe.brewingMethods && cafe.brewingMethods.length > 2 && (
