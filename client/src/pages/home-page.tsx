@@ -196,13 +196,16 @@ export default function HomePage() {
             </div>
             
             <div className="relative bg-white border-l border-gray-300">
-              <input 
-                type="text" 
-                placeholder="Select a location" 
-                className="w-40 px-4 py-2.5 border-none focus:outline-none focus:ring-0 text-gray-700"
-                value={filters.neighborhood || defaultLocation}
-                readOnly
-              />
+              <div className="flex items-center px-4 w-48">
+                <MapPin className="h-4 w-4 text-[#A0522D] mr-1.5" />
+                <input 
+                  type="text" 
+                  placeholder="Select a location" 
+                  className="w-full py-2.5 border-none focus:outline-none focus:ring-0 text-gray-700"
+                  value={filters.neighborhood ? `${filters.neighborhood}` : defaultLocation ? `${defaultLocation}` : "All Neighborhoods"}
+                  readOnly
+                />
+              </div>
             </div>
             
             <button 
