@@ -440,7 +440,7 @@ export default function HomePage() {
           <div className="flex-1 p-1">
             {/* Sort Options */}
             <div className="bg-white rounded-lg shadow-md mb-3">
-              <div className="flex items-center p-3">
+              <div className="flex flex-col p-3">
                 <div className="flex flex-1 items-center">
                   <span className="font-medium text-sm text-gray-700 mr-3">Sort by</span>
                   <div className="inline-flex items-center rounded-full bg-gray-50 p-1">
@@ -467,6 +467,24 @@ export default function HomePage() {
                       onClick={() => handleSort("reviews")}
                     >
                       Reviews
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center mt-2">
+                  <span className="font-medium text-sm text-gray-700 mr-3">Distance Unit</span>
+                  <div className="inline-flex items-center rounded-full bg-gray-50 p-1">
+                    <button 
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition ${distanceUnit === "mi" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
+                      onClick={() => setDistanceUnit("mi")}
+                    >
+                      Miles
+                    </button>
+                    <button 
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition ${distanceUnit === "km" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
+                      onClick={() => setDistanceUnit("km")}
+                    >
+                      Kilometers
                     </button>
                   </div>
                 </div>
@@ -514,6 +532,7 @@ export default function HomePage() {
                 cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
                 isLoading={isLoading} 
                 cafeDistances={cafeDistances}
+                distanceUnit={distanceUnit}
               />
             </div>
             
