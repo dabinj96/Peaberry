@@ -30,7 +30,6 @@ export {
   SelectValue
 } from "./select";
 export { Separator } from "./separator";
-export { Slider } from "./slider";
 export { Switch } from "./switch";
 export { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 export { 
