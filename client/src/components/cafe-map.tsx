@@ -270,8 +270,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
           // Add marker click listener
           marker.addListener("click", () => {
             if (infoWindowRef.current) {
-              // Format price level as $ symbols
-              const priceLevel = cafe.priceLevel ? "$".repeat(cafe.priceLevel) : "";
+              // No price level needed
               
               // Get cafe features for display
               const features = [];
@@ -306,7 +305,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
                   <div class="flex items-start mb-2">
                     <div class="flex-grow">
                       <h3 class="font-semibold text-[#A0522D] text-lg">${cafe.name}</h3>
-                      <p class="text-sm text-gray-600">${cafe.neighborhood} ${priceLevel ? '· ' + priceLevel : ''}</p>
+                      <p class="text-sm text-gray-600">${cafe.neighborhood}</p>
                     </div>
                     ${cafe.isFavorite ? `
                       <div class="ml-2 text-red-500">

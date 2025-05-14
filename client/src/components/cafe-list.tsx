@@ -3,14 +3,16 @@ import CafeCard from "./cafe-card";
 import { ChevronLeft, ChevronRight, Loader2, MapPin } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
+import { formatDistance } from "@/lib/utils";
 
 interface CafeListProps {
   cafes: CafeWithDetails[];
   isLoading: boolean;
   cafeDistances?: Map<number, number>; // Map of cafe IDs to distances in km
+  distanceUnit?: 'mi' | 'km'; // Unit to display distance in
 }
 
-export default function CafeList({ cafes, isLoading, cafeDistances }: CafeListProps) {
+export default function CafeList({ cafes, isLoading, cafeDistances, distanceUnit = 'mi' }: CafeListProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [cafesPerPage] = useState(10); // Display 10 cafés per page (vertical list)
   
@@ -86,7 +88,6 @@ export default function CafeList({ cafes, isLoading, cafeDistances }: CafeListPr
                     </h3>
                     <div className="text-sm text-gray-600 mb-2">
                       {cafe.neighborhood && <span>{cafe.neighborhood}</span>}
-                      {cafe.priceLevel && <span className="ml-1">· {"$".repeat(cafe.priceLevel)}</span>}
                     </div>
                   </div>
                   
@@ -123,7 +124,7 @@ export default function CafeList({ cafes, isLoading, cafeDistances }: CafeListPr
                   {cafeDistances && cafeDistances.has(cafe.id) && (
                     <div className="text-xs text-gray-500 flex items-center">
                       <MapPin className="h-3 w-3 mr-1" />
-                      {cafeDistances.get(cafe.id)?.toFixed(1)} km
+                      {formatDistance(cafeDistances.get(cafe.id), distanceUnit)}
                     </div>
                   )}
                 </div>
