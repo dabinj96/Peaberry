@@ -749,12 +749,24 @@ export class MemStorage implements IStorage {
         await this.addCafeRoastLevel({ cafeId: cafe.id, roastLevel: "light" });
       }
       
-      if (cafe.name.includes("Gracenote Coffee") || cafe.name.includes("Diesel Cafe") || cafe.name.includes("George Howell Coffee")) {
+      if (cafe.name.includes("Gracenote Coffee") || cafe.name.includes("Diesel Cafe")) {
         await this.addCafeRoastLevel({ cafeId: cafe.id, roastLevel: "dark" });
+      }
+      
+      if (cafe.name.includes("George Howell Coffee")) {
+        await this.addCafeRoastLevel({ cafeId: cafe.id, roastLevel: "medium_dark" });
+      }
+      
+      if (cafe.name.includes("Blue Bottle Coffee")) {
+        await this.addCafeRoastLevel({ cafeId: cafe.id, roastLevel: "extra_dark" });
       }
       
       if (cafe.name.includes("Pavement Coffeehouse")) {
         await this.addCafeRoastLevel({ cafeId: cafe.id, roastLevel: "light" });
+        await this.addCafeRoastLevel({ cafeId: cafe.id, roastLevel: "light_medium" });
+      }
+      
+      if (cafe.name.includes("Ogawa Coffee") || cafe.name.includes("Barrington Coffee")) {
         await this.addCafeRoastLevel({ cafeId: cafe.id, roastLevel: "medium" });
       }
 
@@ -767,16 +779,20 @@ export class MemStorage implements IStorage {
       if (cafe.name.includes("The Thinking Cup") || cafe.name.includes("Gracenote Coffee") || 
           cafe.name.includes("Ogawa Coffee") || cafe.name.includes("Diesel Cafe") ||
           cafe.name.includes("Pavement Coffeehouse")) {
-        await this.addCafeBrewingMethod({ cafeId: cafe.id, brewingMethod: "espresso" });
+        await this.addCafeBrewingMethod({ cafeId: cafe.id, brewingMethod: "espresso_based" });
       }
       
       if (cafe.name.includes("Barrington Coffee") || cafe.name.includes("Diesel Cafe") || 
           cafe.name.includes("Blue Bottle Coffee")) {
-        await this.addCafeBrewingMethod({ cafeId: cafe.id, brewingMethod: "aeropress" });
+        await this.addCafeBrewingMethod({ cafeId: cafe.id, brewingMethod: "mixed_drinks" });
       }
       
       if (cafe.name.includes("Barrington Coffee") || cafe.name.includes("Broadsheet Coffee")) {
-        await this.addCafeBrewingMethod({ cafeId: cafe.id, brewingMethod: "french_press" });
+        await this.addCafeBrewingMethod({ cafeId: cafe.id, brewingMethod: "cold_brew" });
+      }
+      
+      if (cafe.name.includes("George Howell Coffee") || cafe.name.includes("Blue Bottle Coffee")) {
+        await this.addCafeBrewingMethod({ cafeId: cafe.id, brewingMethod: "nitro" });
       }
       
       if (cafe.name.includes("Gracenote Coffee") || cafe.name.includes("Blue Bottle Coffee")) {
