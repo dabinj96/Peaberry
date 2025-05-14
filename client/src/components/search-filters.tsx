@@ -86,7 +86,7 @@ export default function SearchFilters({
   };
 
   // Handle amenity filter changes
-  const handleAmenityChange = (amenity: 'hasWifi' | 'hasPower' | 'hasFood', value: boolean) => {
+  const handleAmenityChange = (amenity: 'hasWifi' | 'hasPower' | 'hasFood' | 'sellsCoffeeBeans', value: boolean) => {
     const newFilters = { ...filters, [amenity]: value || undefined };
     if (!value) {
       delete newFilters[amenity];
@@ -115,6 +115,7 @@ export default function SearchFilters({
     if (newFilters.hasWifi) count++;
     if (newFilters.hasPower) count++;
     if (newFilters.hasFood) count++;
+    if (newFilters.sellsCoffeeBeans) count++;
     setActiveFiltersCount(count);
   };
 
@@ -182,8 +183,11 @@ export default function SearchFilters({
             title="Roast Level" 
             options={[
               { value: "light", label: "Light" },
+              { value: "light_medium", label: "Light-Medium" },
               { value: "medium", label: "Medium" },
+              { value: "medium_dark", label: "Medium-Dark" },
               { value: "dark", label: "Dark" },
+              { value: "extra_dark", label: "Extra Dark" },
             ]}
             selectedValues={filters.roastLevels || []}
             onChange={handleRoastLevelChange}
@@ -193,11 +197,12 @@ export default function SearchFilters({
           <FilterOptions 
             title="Brewing Method" 
             options={[
+              { value: "espresso_based", label: "Espresso-Based" },
               { value: "pour_over", label: "Pour Over" },
-              { value: "espresso", label: "Espresso" },
-              { value: "aeropress", label: "Aeropress" },
-              { value: "french_press", label: "French Press" },
               { value: "siphon", label: "Siphon" },
+              { value: "mixed_drinks", label: "Mixed Drinks" },
+              { value: "nitro", label: "Nitro" },
+              { value: "cold_brew", label: "Cold Brew" },
             ]}
             selectedValues={filters.brewingMethods || []}
             onChange={handleBrewingMethodChange}
@@ -248,16 +253,30 @@ export default function SearchFilters({
               {/* Rating filter */}
               <div>
                 <label className="block mb-2 text-sm font-medium">Minimum Rating</label>
-                <div className="flex items-center space-x-2">
-                  <Slider 
-                    defaultValue={[filters.minRating || 0]} 
-                    max={5} 
-                    min={0} 
-                    step={0.5}
-                    onValueChange={handleMinRatingChange}
-                  />
-                  <span className="text-sm text-gray-600">
-                    {filters.minRating || 0}+
+                <div className="flex items-center space-x-1">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      className="focus:outline-none"
+                      onClick={() => handleMinRatingChange([rating === filters.minRating ? 0 : rating])}
+                    >
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        width="24" 
+                        height="24" 
+                        viewBox="0 0 24 24" 
+                        fill={(filters.minRating || 0) >= rating ? "#FFD700" : "none"}
+                        stroke={(filters.minRating || 0) >= rating ? "#FFD700" : "#CBD5E0"}
+                        strokeWidth="2" 
+                        className="transition-colors duration-200 hover:stroke-[#FFD700]"
+                      >
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                      </svg>
+                    </button>
+                  ))}
+                  <span className="ml-2 text-sm text-gray-600">
+                    {filters.minRating ? `${filters.minRating}+ stars` : "Any rating"}
                   </span>
                 </div>
               </div>
@@ -288,6 +307,14 @@ export default function SearchFilters({
                       id="food" 
                       checked={filters.hasFood || false}
                       onCheckedChange={(checked) => handleAmenityChange('hasFood', checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="beans" className="text-sm cursor-pointer">Sells Coffee Beans</label>
+                    <Switch 
+                      id="beans" 
+                      checked={filters.sellsCoffeeBeans || false}
+                      onCheckedChange={(checked) => handleAmenityChange('sellsCoffeeBeans', checked)}
                     />
                   </div>
                 </div>
