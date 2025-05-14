@@ -117,27 +117,61 @@ export default function AdminCafeEditPage() {
   // Update form when cafe data is loaded
   useEffect(() => {
     if (cafe) {
+      // Add a guard to ensure we have valid data
+      // Start with default form values
+      const defaultValues: CafeFormValues = {
+        name: "",
+        description: "",
+        address: "",
+        neighborhood: "",
+        latitude: "",
+        longitude: "",
+        priceLevel: 1,
+        hasWifi: false,
+        hasPower: false,
+        hasFood: false,
+        sellsCoffeeBeans: false,
+        imageUrl: "",
+        website: "",
+        phone: "",
+        instagramHandle: "",
+        googleMapsUrl: "",
+        status: "draft",
+        roastLevels: [],
+        brewingMethods: [],
+      };
+      
+      // Then add cafe values with careful type handling
       const formValues: CafeFormValues = {
-        name: cafe.name,
+        ...defaultValues,
+        name: cafe.name || "",
         description: cafe.description || "",
-        address: cafe.address,
-        neighborhood: cafe.neighborhood,
-        latitude: cafe.latitude,
-        longitude: cafe.longitude,
-        priceLevel: cafe.priceLevel || 1,
-        hasWifi: cafe.hasWifi || false,
-        hasPower: cafe.hasPower || false,
-        hasFood: cafe.hasFood || false,
-        sellsCoffeeBeans: cafe.sellsCoffeeBeans || false,
+        address: cafe.address || "",
+        neighborhood: cafe.neighborhood || "",
+        latitude: cafe.latitude || "",
+        longitude: cafe.longitude || "",
+        priceLevel: typeof cafe.priceLevel === 'number' ? cafe.priceLevel : 1,
+        hasWifi: cafe.hasWifi === true,
+        hasPower: cafe.hasPower === true,
+        hasFood: cafe.hasFood === true,
+        sellsCoffeeBeans: cafe.sellsCoffeeBeans === true,
         imageUrl: cafe.imageUrl || "",
         website: cafe.website || "",
         phone: cafe.phone || "",
         instagramHandle: cafe.instagramHandle || "",
         googleMapsUrl: cafe.googleMapsUrl || "",
         status: cafe.status || "draft",
-        roastLevels: cafe.roastLevels as any || [],
-        brewingMethods: cafe.brewingMethods as any || [],
+        roastLevels: Array.isArray(cafe.roastLevels) ? 
+          cafe.roastLevels.filter(level => 
+            ["light", "light_medium", "medium", "medium_dark", "dark", "extra_dark"].includes(level)
+          ) as ("light" | "light_medium" | "medium" | "medium_dark" | "dark" | "extra_dark")[] : [],
+        brewingMethods: Array.isArray(cafe.brewingMethods) ? 
+          cafe.brewingMethods.filter(method => 
+            ["espresso_based", "pour_over", "siphon", "mixed_drinks", "nitro", "cold_brew"].includes(method)
+          ) as ("espresso_based" | "pour_over" | "siphon" | "mixed_drinks" | "nitro" | "cold_brew")[] : [],
       };
+      
+      // Reset form with cleaned values
       form.reset(formValues);
     }
   }, [cafe, form]);
@@ -170,7 +204,7 @@ export default function AdminCafeEditPage() {
     setTimeout(preventUndefinedText, 50);
     
     try {
-      // Extract just what we need for main update with safe defaults
+      // Extract just what we need for main update with explicit type handling
       const cafeUpdate = {
         name: data.name || '',
         description: data.description || '',
@@ -178,11 +212,11 @@ export default function AdminCafeEditPage() {
         neighborhood: data.neighborhood || '',
         latitude: data.latitude || '',
         longitude: data.longitude || '',
-        priceLevel: data.priceLevel || 1,
-        hasWifi: Boolean(data.hasWifi),
-        hasPower: Boolean(data.hasPower),
-        hasFood: Boolean(data.hasFood),
-        sellsCoffeeBeans: Boolean(data.sellsCoffeeBeans),
+        priceLevel: typeof data.priceLevel === 'number' ? data.priceLevel : 1,
+        hasWifi: data.hasWifi === true,
+        hasPower: data.hasPower === true,
+        hasFood: data.hasFood === true,
+        sellsCoffeeBeans: data.sellsCoffeeBeans === true, 
         imageUrl: data.imageUrl || '',
         website: data.website || '',
         phone: data.phone || '',
@@ -191,17 +225,41 @@ export default function AdminCafeEditPage() {
         status: data.status || 'draft'
       };
       
+      console.log('Updating cafe with data:', JSON.stringify(cafeUpdate));
+      
       // Update cafe basics
       await apiRequest("PUT", `/api/admin/cafes/${cafeId}`, cafeUpdate);
       
-      // Ensure roast levels is always a valid array
-      const roastLevels = Array.isArray(data.roastLevels) ? data.roastLevels : [];
+      // Ensure roast levels is always a valid array with explicit type checking
+      // Define valid roast levels
+      const validRoastLevels = ["light", "light_medium", "medium", "medium_dark", "dark", "extra_dark"];
+      
+      // Filter for valid values
+      const roastLevels = Array.isArray(data.roastLevels) ? 
+        data.roastLevels.filter(level => 
+          typeof level === 'string' && validRoastLevels.includes(level as string)
+        ) as ("light" | "light_medium" | "medium" | "medium_dark" | "dark" | "extra_dark")[] : 
+        [];
+        
+      console.log('Updating roast levels:', JSON.stringify(roastLevels));
+      
       await apiRequest("PUT", `/api/admin/cafes/${cafeId}/roast-levels`, {
         roastLevels
       });
       
-      // Ensure brewing methods is always a valid array
-      const brewingMethods = Array.isArray(data.brewingMethods) ? data.brewingMethods : [];
+      // Ensure brewing methods is always a valid array with explicit type checking
+      // Define valid brewing methods
+      const validBrewingMethods = ["espresso_based", "pour_over", "siphon", "mixed_drinks", "nitro", "cold_brew"];
+      
+      // Filter for valid values
+      const brewingMethods = Array.isArray(data.brewingMethods) ? 
+        data.brewingMethods.filter(method => 
+          typeof method === 'string' && validBrewingMethods.includes(method as string)
+        ) as ("espresso_based" | "pour_over" | "siphon" | "mixed_drinks" | "nitro" | "cold_brew")[] : 
+        [];
+        
+      console.log('Updating brewing methods:', JSON.stringify(brewingMethods));
+      
       await apiRequest("PUT", `/api/admin/cafes/${cafeId}/brewing-methods`, {
         brewingMethods
       });
