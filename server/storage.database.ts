@@ -227,18 +227,36 @@ export class DatabaseStorage implements IStorage {
     // Apply post-fetch filters that require the CafeWithDetails info
     let result = cafesWithDetails;
     
-    // Roast level filter
+    // Roast level filter - café must have ALL selected roast levels
     if (filters?.roastLevels && filters.roastLevels.length > 0) {
-      result = result.filter(cafe => 
-        filters.roastLevels!.some(level => cafe.roastLevels.includes(level))
-      );
+      // Log for debugging
+      console.log("Filtering by roast levels:", filters.roastLevels);
+      
+      result = result.filter(cafe => {
+        // Log for debugging
+        console.log(`Cafe ${cafe.id} (${cafe.name}) has roast levels:`, cafe.roastLevels);
+        
+        // Check if the cafe has ALL the selected roast levels
+        return filters.roastLevels!.every(level => 
+          cafe.roastLevels.includes(level)
+        );
+      });
     }
     
-    // Brewing method filter
+    // Brewing method filter - café must have ALL selected brewing methods
     if (filters?.brewingMethods && filters.brewingMethods.length > 0) {
-      result = result.filter(cafe => 
-        filters.brewingMethods!.some(method => cafe.brewingMethods.includes(method))
-      );
+      // Log for debugging
+      console.log("Filtering by brewing methods:", filters.brewingMethods);
+      
+      result = result.filter(cafe => {
+        // Log for debugging
+        console.log(`Cafe ${cafe.id} (${cafe.name}) has brewing methods:`, cafe.brewingMethods);
+        
+        // Check if the cafe has ALL the selected brewing methods
+        return filters.brewingMethods!.every(method => 
+          cafe.brewingMethods.includes(method)
+        );
+      });
     }
     
     // Minimum rating filter

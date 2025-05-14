@@ -48,14 +48,74 @@ export default function HomePage() {
   ];
   type BrewingMethod = typeof brewingMethods[number]['value'];
   
-  // Fetch cafes from API
+  // Build query string with filters
+  const buildQueryString = useCallback(() => {
+    const params = new URLSearchParams();
+    
+    // Add neighborhood filter
+    if (filters.neighborhood) {
+      params.append('neighborhood', filters.neighborhood);
+    }
+    
+    // Add roast levels filter
+    if (filters.roastLevels && filters.roastLevels.length > 0) {
+      params.append('roastLevels', filters.roastLevels.join(','));
+    }
+    
+    // Add brewing methods filter
+    if (filters.brewingMethods && filters.brewingMethods.length > 0) {
+      params.append('brewingMethods', filters.brewingMethods.join(','));
+    }
+    
+    // Add minimum rating filter
+    if (filters.minRating) {
+      params.append('minRating', filters.minRating.toString());
+    }
+    
+    // Add other amenity filters
+    if (filters.hasWifi !== undefined) {
+      params.append('hasWifi', filters.hasWifi.toString());
+    }
+    
+    if (filters.hasPower !== undefined) {
+      params.append('hasPower', filters.hasPower.toString());
+    }
+    
+    if (filters.hasFood !== undefined) {
+      params.append('hasFood', filters.hasFood.toString());
+    }
+    
+    if (filters.sellsCoffeeBeans !== undefined) {
+      params.append('sellsCoffeeBeans', filters.sellsCoffeeBeans.toString());
+    }
+    
+    // Add search query if present
+    if (searchQuery) {
+      params.append('q', searchQuery);
+    }
+    
+    const queryString = params.toString();
+    return queryString ? `/api/cafes?${queryString}` : '/api/cafes';
+  }, [filters, searchQuery]);
+  
+  // Fetch cafes from API with filters
+  const queryUrl = buildQueryString();
   const {
     data: cafes = [],
     isLoading,
-    error
+    error,
+    refetch
   } = useQuery<CafeWithDetails[]>({
-    queryKey: ['/api/cafes'],
+    queryKey: [queryUrl],
   });
+  
+  // Refetch cafes when filters change
+  useEffect(() => {
+    refetch();
+    // Log applied filters for debugging
+    console.log('Applied filters:', filters);
+    console.log('Query URL:', queryUrl);
+  }, [filters, queryUrl, refetch]);
   
   // Fetch neighborhoods for filters
   const { data: neighborhoods = [] } = useQuery<string[]>({
