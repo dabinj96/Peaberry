@@ -143,12 +143,17 @@ export default function AdminCafeEditPage() {
     setIsSubmitting(true);
     
     try {
-      // Update cafe basics
+      // Update cafe basics - extract just what we need for main update
+      const { 
+        name, description, address, neighborhood, latitude, longitude, 
+        priceLevel, hasWifi, hasPower, hasFood, sellsCoffeeBeans,
+        imageUrl, website, phone, instagramHandle, googleMapsUrl, status 
+      } = data;
+      
       await apiRequest("PUT", `/api/admin/cafes/${cafeId}`, {
-        ...data,
-        // omit roastLevels and brewingMethods from the main update
-        roastLevels: undefined,
-        brewingMethods: undefined,
+        name, description, address, neighborhood, latitude, longitude,
+        priceLevel, hasWifi, hasPower, hasFood, sellsCoffeeBeans,
+        imageUrl, website, phone, instagramHandle, googleMapsUrl, status
       });
       
       // Update roast levels
