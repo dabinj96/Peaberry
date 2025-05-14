@@ -356,8 +356,28 @@ export default function HomePage() {
               </div>
             </div>
             
-            {/* Café list - always shown */}
-            <div>
+            {/* Mobile map view toggle */}
+            <div className="lg:hidden mb-3">
+              <button 
+                className="w-full py-2 bg-white rounded-lg shadow-md text-center text-gray-700 flex items-center justify-center gap-2"
+                onClick={toggleViewMode}
+              >
+                {viewMode === "list" ? (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
+                    <span>Switch to Map View</span>
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+                    <span>Switch to List View</span>
+                  </>
+                )}
+              </button>
+            </div>
+            
+            {/* Café list - always shown on desktop, conditionally on mobile */}
+            <div className={viewMode === "map" ? "hidden lg:block" : ""}>
               {isLoading && (
                 <div className="bg-white rounded-lg shadow-md p-6 mb-3 text-center">
                   <Loader2 className="h-8 w-8 animate-spin text-[#A0522D] mx-auto mb-2" />
@@ -371,7 +391,7 @@ export default function HomePage() {
                 </div>
               )}
               
-              {/* CafeList component will be updated */}
+              {/* CafeList component */}
               <CafeList 
                 key="cafe-list" 
                 cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
@@ -379,9 +399,21 @@ export default function HomePage() {
                 cafeDistances={cafeDistances}
               />
             </div>
+            
+            {/* Map view - shown on mobile when viewMode is map */}
+            {viewMode === "map" && (
+              <div className="lg:hidden h-[calc(100vh-250px)] bg-white rounded-lg shadow-md overflow-hidden">
+                <CafeMap 
+                  key={`cafe-map-mobile-${cafes.length}`}
+                  cafes={sortedCafes.length > 0 ? sortedCafes : cafes} 
+                  isLoading={isLoading}
+                  singleLocation={false}
+                />
+              </div>
+            )}
           </div>
           
-          {/* Map sidebar */}
+          {/* Map sidebar - desktop only */}
           <aside className="w-1/2 shrink-0 hidden lg:block">
             <div className="sticky top-[130px] h-[calc(100vh-150px)] bg-white rounded-lg shadow-md overflow-hidden">
               <CafeMap 
