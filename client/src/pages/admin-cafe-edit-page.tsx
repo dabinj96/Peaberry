@@ -676,7 +676,10 @@ export default function AdminCafeEditPage() {
                           <FormControl>
                             <Checkbox
                               checked={field.value === true}
-                              onCheckedChange={field.onChange}
+                              onCheckedChange={(checked) => {
+                                // Explicitly convert to boolean to avoid "undefined" text
+                                field.onChange(checked === true);
+                              }}
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
