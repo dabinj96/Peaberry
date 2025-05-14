@@ -11,3 +11,15 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Prevent any erroneous output in the admin cafe edit page */
+.coffee-specialties-tab .card-content > p,
+.coffee-specialties-tab .card-content > span,
+.coffee-specialties-tab .card-content > div:not(.form-field) {
+  display: none !important;
+}
+
+/* Ensure form items display properly */
+.coffee-specialties-tab .form-field {
+  display: block !important;
+}

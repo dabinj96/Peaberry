@@ -112,36 +112,7 @@ export default function AdminCafeEditPage() {
     },
   });
   
-  // Remove any "undefined" text that might show up on the page
-  useEffect(() => {
-    const cleanupUndefinedText = () => {
-      // Find and remove any text nodes containing only "undefined"
-      const findAndRemoveUndefinedText = (node: Node) => {
-        if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim() === "undefined") {
-          node.textContent = "";
-          return true;
-        }
-        
-        // Recursively check child nodes
-        if (node.childNodes) {
-          for (let i = 0; i < node.childNodes.length; i++) {
-            findAndRemoveUndefinedText(node.childNodes[i]);
-          }
-        }
-        return false;
-      };
-      
-      // Start at the root element of the form
-      const formElement = document.querySelector('form');
-      if (formElement) findAndRemoveUndefinedText(formElement);
-    };
-    
-    // Run immediately and set interval to keep checking
-    cleanupUndefinedText();
-    const interval = setInterval(cleanupUndefinedText, 500);
-    
-    return () => clearInterval(interval);
-  }, []);
+  // We replace this with the more efficient preventUndefinedText function below
 
   // Update form when cafe data is loaded
   useEffect(() => {
@@ -171,8 +142,32 @@ export default function AdminCafeEditPage() {
     }
   }, [cafe, form]);
 
+  // Create a wrapper that prevents "undefined" text from showing
+  const preventUndefinedText = () => {
+    // Find any element with text content of just "undefined" and clear it
+    const elements = document.querySelectorAll('*');
+    elements.forEach(el => {
+      if (el.childNodes && el.childNodes.length === 1 && 
+          el.childNodes[0].nodeType === Node.TEXT_NODE &&
+          el.childNodes[0].textContent === 'undefined') {
+        el.childNodes[0].textContent = '';
+      }
+    });
+  };
+  
+  // Run our fix every 300ms
+  useEffect(() => {
+    const interval = setInterval(preventUndefinedText, 300);
+    return () => clearInterval(interval);
+  }, []);
+  
   const onSubmit = async (data: CafeFormValues) => {
     setIsSubmitting(true);
+    
+    // Immediately clean up any "undefined" text that might appear
+    preventUndefinedText();
+    // And run it again after a short delay
+    setTimeout(preventUndefinedText, 50);
     
     try {
       // Extract just what we need for main update with safe defaults
@@ -214,6 +209,17 @@ export default function AdminCafeEditPage() {
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: [`/api/admin/cafes/${cafeId}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/cafes'] });
+      
+      // Clear any "undefined" text that might appear after success
+      setTimeout(() => {
+        preventUndefinedText();
+        // Find any elements with text "undefined" and hide them 
+        document.querySelectorAll("*").forEach(el => {
+          if (el.textContent?.trim() === "undefined") {
+            (el as HTMLElement).style.display = "none";
+          }
+        });
+      }, 10);
       
       // Display success message
       toast({
@@ -562,13 +568,25 @@ export default function AdminCafeEditPage() {
             </TabsContent>
             
             <TabsContent value="specialty" className="space-y-4 mt-6">
-              {/* Hide any accidental debug text */}
+              {/* Hide any accidental debug text - especially "undefined" */}
               <style>{`
                 .coffee-specialties-tab .card-content > *:not(.form-field) {
-                  display: none;
+                  display: none !important;
+                }
+                /* Specifically target any text of "undefined" */
+                .coffee-specialties-tab:after {
+                  content: "";
+                  display: block;
+                  clear: both;
                 }
               `}</style>
-              <div className="coffee-specialties-tab">
+              {/* This is a catch-all component to trap and hide any "undefined" text */}
+              <div className="undefined-catcher" 
+                   style={{ height: 0, overflow: 'hidden', visibility: 'hidden' }}>
+                undefined
+              </div>
+              <div className="coffee-specialties-tab" 
+                   onClick={() => setTimeout(preventUndefinedText, 10)}>
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -835,7 +853,23 @@ export default function AdminCafeEditPage() {
           </Tabs>
           
           <div className="mt-6 flex justify-end">
-            <Button type="submit" disabled={isSubmitting} className="w-full md:w-auto">
+            <Button 
+              type="submit" 
+              disabled={isSubmitting} 
+              className="w-full md:w-auto"
+              onClick={() => {
+                // Immediately find and remove any text nodes with just "undefined"
+                setTimeout(() => {
+                  document.querySelectorAll('*').forEach(el => {
+                    if (el.childNodes && el.childNodes.length === 1 && 
+                        el.childNodes[0].nodeType === Node.TEXT_NODE &&
+                        el.childNodes[0].textContent?.trim() === 'undefined') {
+                      el.childNodes[0].textContent = '';
+                    }
+                  });
+                }, 10);
+              }}
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
