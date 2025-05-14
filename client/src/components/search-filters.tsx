@@ -253,31 +253,40 @@ export default function SearchFilters({
               {/* Rating filter */}
               <div>
                 <label className="block mb-2 text-sm font-medium">Minimum Rating</label>
-                <div className="flex items-center space-x-1">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      className="focus:outline-none"
-                      onClick={() => handleMinRatingChange([rating === filters.minRating ? 0 : rating])}
-                    >
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        width="24" 
-                        height="24" 
-                        viewBox="0 0 24 24" 
-                        fill={(filters.minRating || 0) >= rating ? "#FFD700" : "none"}
-                        stroke={(filters.minRating || 0) >= rating ? "#FFD700" : "#CBD5E0"}
-                        strokeWidth="2" 
-                        className="transition-colors duration-200 hover:stroke-[#FFD700]"
-                      >
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                      </svg>
-                    </button>
-                  ))}
-                  <span className="ml-2 text-sm text-gray-600">
-                    {filters.minRating ? `${filters.minRating}+ stars` : "Any rating"}
-                  </span>
+                <div className="flex flex-col">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-1">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          className="focus:outline-none relative"
+                          onClick={() => handleMinRatingChange([rating === filters.minRating ? 0 : rating])}
+                          aria-label={`${rating} stars`}
+                        >
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            width="26" 
+                            height="26" 
+                            viewBox="0 0 24 24" 
+                            fill={(filters.minRating || 0) >= rating ? "#FFD700" : "none"}
+                            stroke={(filters.minRating || 0) >= rating ? "#FFD700" : "#8B4513"}
+                            strokeWidth="1.5" 
+                            className="transition-all duration-150 hover:scale-110"
+                          >
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                          </svg>
+                        </button>
+                      ))}
+                    </div>
+                    <span className="text-sm font-medium text-[#8B4513]">
+                      {filters.minRating ? `${filters.minRating}★+` : "Any rating"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 px-1">
+                    <span>1★</span>
+                    <span>5★</span>
+                  </div>
                 </div>
               </div>
               
