@@ -4,7 +4,7 @@ import { z } from "zod";
 
 // Enums
 export const roastLevelEnum = pgEnum('roast_level', ['light', 'medium', 'dark']);
-export const brewingMethodEnum = pgEnum('brewing_method', ['pour_over', 'espresso', 'aeropress', 'french_press', 'siphon']);
+export const brewingMethodEnum = pgEnum('brewing_method', ['espresso_based', 'pour_over', 'siphon', 'mixed_drinks', 'nitro', 'cold_brew']);
 export const cafeStatusEnum = pgEnum('cafe_status', ['draft', 'published', 'archived']);
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin', 'cafe_owner']);
 

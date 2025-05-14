@@ -39,11 +39,12 @@ export default function HomePage() {
   type RoastLevel = typeof roastLevels[number];
   
   const brewingMethods = [
-    {value: 'pour_over' as const, label: 'Pour Over'},
-    {value: 'espresso' as const, label: 'Espresso'},
-    {value: 'aeropress' as const, label: 'Aeropress'},
-    {value: 'french_press' as const, label: 'French Press'},
-    {value: 'siphon' as const, label: 'Siphon'}
+    {value: 'espresso_based' as const, label: 'Espresso-based'},
+    {value: 'pour_over' as const, label: 'Pour over'},
+    {value: 'siphon' as const, label: 'Siphon'},
+    {value: 'mixed_drinks' as const, label: 'Mixed Drinks'},
+    {value: 'nitro' as const, label: 'Nitro'},
+    {value: 'cold_brew' as const, label: 'Cold Brew'}
   ];
   type BrewingMethod = typeof brewingMethods[number]['value'];
   
@@ -202,7 +203,7 @@ export default function HomePage() {
                   type="text" 
                   placeholder="Select a location" 
                   className="w-full py-2.5 border-none focus:outline-none focus:ring-0 text-gray-700"
-                  value={filters.neighborhood ? `${filters.neighborhood}` : defaultLocation ? `${defaultLocation}` : "All Neighborhoods"}
+                  value={filters.neighborhood ? `${filters.neighborhood}` : defaultLocation ? `${defaultLocation}` : "All Locations"}
                   readOnly
                 />
               </div>
@@ -227,15 +228,15 @@ export default function HomePage() {
               
               {/* Filters Section */}
               <div className="space-y-5">
-                {/* Neighborhood filter */}
+                {/* Location filter */}
                 <div className="space-y-2">
-                  <h3 className="font-medium text-sm text-gray-700">Neighborhood</h3>
+                  <h3 className="font-medium text-sm text-gray-700">Location</h3>
                   <select 
                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#A0522D]"
                     value={filters.neighborhood || ''}
                     onChange={(e) => handleFilterChange({...filters, neighborhood: e.target.value})}
                   >
-                    <option value="">All Neighborhoods</option>
+                    <option value="">All Locations</option>
                     {neighborhoods.map(neighborhood => (
                       <option key={neighborhood} value={neighborhood}>{neighborhood}</option>
                     ))}
