@@ -228,8 +228,6 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
   // Add markers for cafes
   useEffect(() => {
     if (map) {
-      console.log("Map effect triggered with cafes:", cafes.length);
-      
       // Clear previous markers and clusterer
       if (markerClustererRef.current) {
         markerClustererRef.current.clearMarkers();
@@ -240,7 +238,6 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
       
       // If no cafes, reset map to Boston area and return
       if (cafes.length === 0) {
-        console.log("No cafes found, resetting map to Boston area");
         map.setCenter({ lat: 42.3601, lng: -71.0589 }); // Boston coordinates
         map.setZoom(13);
         return;

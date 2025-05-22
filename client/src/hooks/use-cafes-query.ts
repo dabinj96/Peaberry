@@ -68,6 +68,8 @@ export default function useCafesQuery(
     refetch,
   } = useQuery<CafeWithDetails[]>({
     queryKey: [queryUrl],
+    staleTime: 0, // Always fetch fresh data when filters change
+    gcTime: 1000 * 60 * 5, // Keep cached for 5 minutes
   });
 
   return {
