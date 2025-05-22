@@ -375,8 +375,8 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
         }
       });
       
-      // Create marker clusterer with custom styles if we're not in single location mode
-      if (!singleLocation) {
+      // Only create marker clusterer if we have markers and not in single location mode
+      if (!singleLocation && markersRef.current.length > 0) {
         // Create a MarkerClusterer with custom renderer
         markerClustererRef.current = new MarkerClusterer({
           map,
@@ -446,7 +446,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
             }
           }
         });
-      } else {
+      } else if (markersRef.current.length > 0) {
         // If singleLocation is true, just add markers to the map
         markersRef.current.forEach(marker => marker.setMap(map));
       }
