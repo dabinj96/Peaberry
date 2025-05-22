@@ -474,6 +474,10 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
           map.setCenter({ lat, lng });
           map.setZoom(15);
         }
+      } else if (cafes.length === 0) {
+        // When no cafes match filters, keep map centered on Boston area
+        map.setCenter({ lat: 42.3601, lng: -71.0589 });
+        map.setZoom(13);
       }
     }
   }, [map, cafes, singleLocation]);
