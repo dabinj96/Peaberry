@@ -9,7 +9,7 @@ import CafeList from "@/components/cafe-list";
 import CafeMap from "@/components/cafe-map";
 import FeaturedCafes from "@/components/featured-cafes";
 import HomePageSearchBar from "@/components/home-page-search-bar";
-import { User, Search, MapPin, Filter, Loader2, Star } from "lucide-react";
+import { User, Search, MapPin, Filter, Loader2, Star, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import useCafesQuery from "@/hooks/use-cafes-query";
 
@@ -44,6 +44,8 @@ export default function HomePage() {
     new Map(),
   );
   const [distanceUnit, setDistanceUnit] = useState<"mi" | "km">("mi");
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const [distanceDropdownOpen, setDistanceDropdownOpen] = useState(false);
 
   // Define the roast levels and brewing methods for type safety
   const roastLevels = [
@@ -454,58 +456,90 @@ export default function HomePage() {
 
           {/* Main content - Café List or Map */}
           <div className="flex-1 p-1">
-            {/* Compact Toggle Controls */}
-            <div className="flex items-center justify-between mb-3 bg-white rounded-lg shadow-sm px-4 py-2.5">
-              {/* Sort Toggle Buttons */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 font-medium">Sort:</span>
-                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
-                  {[
-                    { value: "relevance", label: "Relevance" },
-                    { value: "distance", label: "Distance" },
-                    { value: "rating", label: "Rating" },
-                    { value: "reviews", label: "Reviews" }
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleSort(option.value)}
-                      className={`px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                        sortOption === option.value
-                          ? "bg-[#8B4513] text-white shadow-sm"
-                          : "text-gray-600 hover:text-[#8B4513] hover:bg-white"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
+            {/* Clean Dropdown Controls */}
+            <div className="flex items-center justify-between mb-3 bg-white rounded-lg shadow-sm px-4 py-3">
+              {/* Sort Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                  className="flex items-center gap-2 text-sm text-gray-700 hover:text-[#8B4513] transition-colors"
+                >
+                  <span className="font-medium">Sort:</span>
+                  <span className="capitalize">
+                    {sortOption === "relevance" ? "Recommended" : 
+                     sortOption === "rating" ? "Highest Rated" :
+                     sortOption === "reviews" ? "Most Reviewed" :
+                     sortOption}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${sortDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {sortDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    <div className="py-1">
+                      {[
+                        { value: "relevance", label: "Recommended" },
+                        { value: "rating", label: "Highest Rated" },
+                        { value: "reviews", label: "Most Reviewed" },
+                        { value: "distance", label: "Distance" }
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            handleSort(option.value);
+                            setSortDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
+                            sortOption === option.value ? "text-[#8B4513] bg-blue-50" : "text-gray-700"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Distance Unit Toggle */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 font-medium">Unit:</span>
-                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
-                  <button
-                    onClick={() => setDistanceUnit("mi")}
-                    className={`px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                      distanceUnit === "mi"
-                        ? "bg-[#8B4513] text-white shadow-sm"
-                        : "text-gray-600 hover:text-[#8B4513] hover:bg-white"
-                    }`}
-                  >
-                    Mi
-                  </button>
-                  <button
-                    onClick={() => setDistanceUnit("km")}
-                    className={`px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                      distanceUnit === "km"
-                        ? "bg-[#8B4513] text-white shadow-sm"
-                        : "text-gray-600 hover:text-[#8B4513] hover:bg-white"
-                    }`}
-                  >
-                    Km
-                  </button>
-                </div>
+              {/* Distance Unit Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setDistanceDropdownOpen(!distanceDropdownOpen)}
+                  className="flex items-center gap-2 text-sm text-gray-700 hover:text-[#8B4513] transition-colors"
+                >
+                  <span className="font-medium">Distance:</span>
+                  <span>{distanceUnit === "mi" ? "Miles" : "Kilometers"}</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${distanceDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {distanceDropdownOpen && (
+                  <div className="absolute top-full right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          setDistanceUnit("mi");
+                          setDistanceDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
+                          distanceUnit === "mi" ? "text-[#8B4513] bg-blue-50" : "text-gray-700"
+                        }`}
+                      >
+                        Miles
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDistanceUnit("km");
+                          setDistanceDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
+                          distanceUnit === "km" ? "text-[#8B4513] bg-blue-50" : "text-gray-700"
+                        }`}
+                      >
+                        Kilometers
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
