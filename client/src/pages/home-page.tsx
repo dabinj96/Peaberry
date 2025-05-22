@@ -611,18 +611,20 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* CafeList component */}
-              <CafeList
-                key="cafe-list"
-                cafes={sortedCafes.length > 0 ? sortedCafes : cafes}
-                isLoading={isLoading}
-                cafeDistances={cafeDistances}
-                distanceUnit={distanceUnit}
-              />
+              {/* CafeList component - only show when there are cafes */}
+              {cafes.length > 0 && (
+                <CafeList
+                  key="cafe-list"
+                  cafes={sortedCafes.length > 0 ? sortedCafes : cafes}
+                  isLoading={isLoading}
+                  cafeDistances={cafeDistances}
+                  distanceUnit={distanceUnit}
+                />
+              )}
             </div>
 
             {/* Map view - shown on mobile when viewMode is map */}
-            {viewMode === "map" && (
+            {viewMode === "map" && cafes.length > 0 && (
               <div className="lg:hidden h-[calc(100vh-250px)] bg-white rounded-lg shadow-md overflow-hidden">
                 <CafeMap
                   key={`cafe-map-mobile-${cafes.length}`}
@@ -635,16 +637,18 @@ export default function HomePage() {
           </div>
 
           {/* Map sidebar - desktop only */}
-          <aside className="w-1/2 shrink-0 hidden lg:block">
-            <div className="sticky top-[130px] h-[calc(100vh-150px)] bg-white rounded-lg shadow-md overflow-hidden">
-              <CafeMap
-                key={`cafe-map-${cafes.length}`}
-                cafes={sortedCafes.length > 0 ? sortedCafes : cafes}
-                isLoading={isLoading}
-                singleLocation={false}
-              />
-            </div>
-          </aside>
+          {cafes.length > 0 && (
+            <aside className="w-1/2 shrink-0 hidden lg:block">
+              <div className="sticky top-[130px] h-[calc(100vh-150px)] bg-white rounded-lg shadow-md overflow-hidden">
+                <CafeMap
+                  key={`cafe-map-${cafes.length}`}
+                  cafes={sortedCafes.length > 0 ? sortedCafes : cafes}
+                  isLoading={isLoading}
+                  singleLocation={false}
+                />
+              </div>
+            </aside>
+          )}
         </div>
       </main>
     </div>
