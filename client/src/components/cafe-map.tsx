@@ -236,8 +236,10 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
       markersRef.current.forEach(marker => marker.setMap(null));
       markersRef.current = [];
       
-      // If no cafes, just return early - no markers to add
+      // If no cafes, reset map to Boston area and return
       if (cafes.length === 0) {
+        map.setCenter({ lat: 42.3601, lng: -71.0589 }); // Boston coordinates
+        map.setZoom(13);
         return;
       }
       
