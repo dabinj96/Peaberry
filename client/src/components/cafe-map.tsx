@@ -231,11 +231,15 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
       // Clear previous markers and clusterer
       if (markerClustererRef.current) {
         markerClustererRef.current.clearMarkers();
+        markerClustererRef.current = null;
       }
       markersRef.current.forEach(marker => marker.setMap(null));
       markersRef.current = [];
       
-      // Skip showing toast notification - we'll handle empty state in the render method
+      // If no cafes, just return early - no markers to add
+      if (cafes.length === 0) {
+        return;
+      }
       
       const bounds = new window.google.maps.LatLngBounds();
       
