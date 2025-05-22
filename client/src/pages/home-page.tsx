@@ -454,59 +454,57 @@ export default function HomePage() {
 
           {/* Main content - Café List or Map */}
           <div className="flex-1 p-1">
-            {/* Sort Options */}
-            <div className="bg-white rounded-lg shadow-md mb-3">
-              <div className="flex flex-col p-3">
-                <div className="flex flex-1 items-center">
-                  <span className="font-medium text-sm text-gray-700 mr-3">
-                    Sort by
-                  </span>
-                  <div className="inline-flex items-center rounded-full bg-gray-50 p-1">
+            {/* Compact Toggle Controls */}
+            <div className="flex items-center justify-between mb-3 bg-white rounded-lg shadow-sm px-4 py-2.5">
+              {/* Sort Toggle Buttons */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 font-medium">Sort:</span>
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                  {[
+                    { value: "relevance", label: "Relevance" },
+                    { value: "distance", label: "Distance" },
+                    { value: "rating", label: "Rating" },
+                    { value: "reviews", label: "Reviews" }
+                  ].map((option) => (
                     <button
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${sortOption === "relevance" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
-                      onClick={() => handleSort("relevance")}
+                      key={option.value}
+                      onClick={() => handleSort(option.value)}
+                      className={`px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                        sortOption === option.value
+                          ? "bg-[#8B4513] text-white shadow-sm"
+                          : "text-gray-600 hover:text-[#8B4513] hover:bg-white"
+                      }`}
                     >
-                      Relevance
+                      {option.label}
                     </button>
-                    <button
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${sortOption === "distance" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
-                      onClick={() => handleSort("distance")}
-                    >
-                      Distance
-                    </button>
-                    <button
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${sortOption === "rating" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
-                      onClick={() => handleSort("rating")}
-                    >
-                      Rating
-                    </button>
-                    <button
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${sortOption === "reviews" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
-                      onClick={() => handleSort("reviews")}
-                    >
-                      Reviews
-                    </button>
-                  </div>
+                  ))}
                 </div>
+              </div>
 
-                <div className="flex items-center mt-2">
-                  <span className="font-medium text-sm text-gray-700 mr-3">
-                    Distance Unit
-                  </span>
-                  <div className="inline-flex items-center rounded-full bg-gray-50 p-1">
-                    <button
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition ${distanceUnit === "mi" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
-                      onClick={() => setDistanceUnit("mi")}
-                    >
-                      Miles
-                    </button>
-                    <button
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition ${distanceUnit === "km" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
-                      onClick={() => setDistanceUnit("km")}
-                    >
-                      Kilometers
-                    </button>
-                  </div>
+              {/* Distance Unit Toggle */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 font-medium">Unit:</span>
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setDistanceUnit("mi")}
+                    className={`px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                      distanceUnit === "mi"
+                        ? "bg-[#8B4513] text-white shadow-sm"
+                        : "text-gray-600 hover:text-[#8B4513] hover:bg-white"
+                    }`}
+                  >
+                    Mi
+                  </button>
+                  <button
+                    onClick={() => setDistanceUnit("km")}
+                    className={`px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                      distanceUnit === "km"
+                        ? "bg-[#8B4513] text-white shadow-sm"
+                        : "text-gray-600 hover:text-[#8B4513] hover:bg-white"
+                    }`}
+                  >
+                    Km
+                  </button>
                 </div>
               </div>
             </div>
