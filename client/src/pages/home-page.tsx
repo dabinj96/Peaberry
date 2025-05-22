@@ -168,10 +168,13 @@ export default function HomePage() {
 
   // Handle sort selection
   const handleSort = (option: string) => {
-    if (!cafes.length) return;
-
     // Update sort option state
     setSortOption(option);
+
+    if (!cafes.length) {
+      setSortedCafes([]);
+      return;
+    }
 
     let sorted = [...cafes];
 
@@ -204,6 +207,13 @@ export default function HomePage() {
 
     setSortedCafes(sorted);
   };
+
+  // Apply sorting whenever cafes data changes
+  useEffect(() => {
+    if (cafes.length > 0) {
+      handleSort(sortOption);
+    }
+  }, [cafes, cafeDistances]);
 
   const toggleViewMode = () => {
     setViewMode(viewMode === "list" ? "map" : "list");
@@ -444,32 +454,60 @@ export default function HomePage() {
 
           {/* Main content - Café List or Map */}
           <div className="flex-1 p-1">
-            {/* Compact Controls */}
-            <div className="flex items-center justify-between mb-3 bg-white rounded-lg shadow-sm px-4 py-2">
-              {/* Sort Toggle */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Sort:</span>
-                <select
-                  value={sortOption}
-                  onChange={(e) => handleSort(e.target.value)}
-                  className="text-sm font-medium text-[#8B4513] bg-transparent border-none focus:outline-none cursor-pointer"
-                >
-                  <option value="relevance">Relevance</option>
-                  <option value="distance">Distance</option>
-                  <option value="rating">Rating</option>
-                  <option value="reviews">Reviews</option>
-                </select>
-              </div>
+            {/* Sort Options */}
+            <div className="bg-white rounded-lg shadow-md mb-3">
+              <div className="flex flex-col p-3">
+                <div className="flex flex-1 items-center">
+                  <span className="font-medium text-sm text-gray-700 mr-3">
+                    Sort by
+                  </span>
+                  <div className="inline-flex items-center rounded-full bg-gray-50 p-1">
+                    <button
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${sortOption === "relevance" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
+                      onClick={() => handleSort("relevance")}
+                    >
+                      Relevance
+                    </button>
+                    <button
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${sortOption === "distance" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
+                      onClick={() => handleSort("distance")}
+                    >
+                      Distance
+                    </button>
+                    <button
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${sortOption === "rating" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
+                      onClick={() => handleSort("rating")}
+                    >
+                      Rating
+                    </button>
+                    <button
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${sortOption === "reviews" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
+                      onClick={() => handleSort("reviews")}
+                    >
+                      Reviews
+                    </button>
+                  </div>
+                </div>
 
-              {/* Distance Unit Toggle */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Unit:</span>
-                <button
-                  onClick={() => setDistanceUnit(distanceUnit === "mi" ? "km" : "mi")}
-                  className="text-sm font-medium text-[#8B4513] hover:text-[#A0522D] transition-colors"
-                >
-                  {distanceUnit === "mi" ? "Miles" : "Kilometers"}
-                </button>
+                <div className="flex items-center mt-2">
+                  <span className="font-medium text-sm text-gray-700 mr-3">
+                    Distance Unit
+                  </span>
+                  <div className="inline-flex items-center rounded-full bg-gray-50 p-1">
+                    <button
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition ${distanceUnit === "mi" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
+                      onClick={() => setDistanceUnit("mi")}
+                    >
+                      Miles
+                    </button>
+                    <button
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition ${distanceUnit === "km" ? "bg-white shadow-sm text-[#8B4513]" : "text-gray-600 hover:text-[#A0522D]"}`}
+                      onClick={() => setDistanceUnit("km")}
+                    >
+                      Kilometers
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
