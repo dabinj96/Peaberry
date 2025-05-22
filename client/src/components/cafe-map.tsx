@@ -231,17 +231,11 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
       // Clear previous markers and clusterer
       if (markerClustererRef.current) {
         markerClustererRef.current.clearMarkers();
-        markerClustererRef.current = null;
       }
       markersRef.current.forEach(marker => marker.setMap(null));
       markersRef.current = [];
       
-      // If no cafes, reset map to Boston area and return
-      if (cafes.length === 0) {
-        map.setCenter({ lat: 42.3601, lng: -71.0589 }); // Boston coordinates
-        map.setZoom(13);
-        return;
-      }
+      // Skip showing toast notification - we'll handle empty state in the render method
       
       const bounds = new window.google.maps.LatLngBounds();
       
@@ -377,8 +371,8 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
         }
       });
       
-      // Only create marker clusterer if we have markers and not in single location mode
-      if (!singleLocation && markersRef.current.length > 0) {
+      // Create marker clusterer with custom styles if we're not in single location mode
+      if (!singleLocation) {
         // Create a MarkerClusterer with custom renderer
         markerClustererRef.current = new MarkerClusterer({
           map,
@@ -448,7 +442,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
             }
           }
         });
-      } else if (markersRef.current.length > 0) {
+      } else {
         // If singleLocation is true, just add markers to the map
         markersRef.current.forEach(marker => marker.setMap(map));
       }
@@ -476,10 +470,6 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
           map.setCenter({ lat, lng });
           map.setZoom(15);
         }
-      } else if (cafes.length === 0) {
-        // When no cafes match filters, keep map centered on Boston area
-        map.setCenter({ lat: 42.3601, lng: -71.0589 });
-        map.setZoom(13);
       }
     }
   }, [map, cafes, singleLocation]);

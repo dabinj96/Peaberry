@@ -611,16 +611,14 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* CafeList component - only show when there are cafes */}
-              {cafes.length > 0 && (
-                <CafeList
-                  key="cafe-list"
-                  cafes={sortedCafes.length > 0 ? sortedCafes : cafes}
-                  isLoading={isLoading}
-                  cafeDistances={cafeDistances}
-                  distanceUnit={distanceUnit}
-                />
-              )}
+              {/* CafeList component */}
+              <CafeList
+                key="cafe-list"
+                cafes={sortedCafes.length > 0 ? sortedCafes : cafes}
+                isLoading={isLoading}
+                cafeDistances={cafeDistances}
+                distanceUnit={distanceUnit}
+              />
             </div>
 
             {/* Map view - shown on mobile when viewMode is map */}

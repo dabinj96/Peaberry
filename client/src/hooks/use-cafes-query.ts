@@ -68,9 +68,6 @@ export default function useCafesQuery(
     refetch,
   } = useQuery<CafeWithDetails[]>({
     queryKey: [queryUrl],
-    staleTime: 0, // Always fetch fresh data when filters change
-    refetchOnMount: true, // Always refetch when component mounts
-    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 
   return {
