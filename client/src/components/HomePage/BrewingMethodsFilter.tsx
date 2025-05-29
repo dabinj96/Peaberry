@@ -1,50 +1,68 @@
-import { CafeFilter } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const brewingMethods = [
+  { value: "espresso_based", label: "Espresso Based" },
+  { value: "pour_over", label: "Pour Over" },
+  { value: "siphon", label: "Siphon" },
+  { value: "mixed_drinks", label: "Mixed Drinks" },
+  { value: "nitro", label: "Nitro" },
+  { value: "cold_brew", label: "Cold Brew" }
+] as const;
 
 interface BrewingMethodsFilterProps {
   selectedBrewingMethods: string[];
-  onFilterChange: (newFilters: CafeFilter) => void;
-  filters: CafeFilter;
+  onBrewingMethodsChange: (brewingMethods: string[]) => void;
 }
 
-const brewingMethods = [
-  {value: 'espresso_based' as const, label: 'Espresso-based'},
-  {value: 'pour_over' as const, label: 'Pour over'},
-  {value: 'siphon' as const, label: 'Siphon'},
-  {value: 'mixed_drinks' as const, label: 'Mixed Drinks'},
-  {value: 'nitro' as const, label: 'Nitro'},
-  {value: 'cold_brew' as const, label: 'Cold Brew'}
-];
+export function BrewingMethodsFilter({ selectedBrewingMethods, onBrewingMethodsChange }: BrewingMethodsFilterProps) {
+  const handleBrewingMethodToggle = (brewingMethod: string) => {
+    const newBrewingMethods = selectedBrewingMethods.includes(brewingMethod)
+      ? selectedBrewingMethods.filter(b => b !== brewingMethod)
+      : [...selectedBrewingMethods, brewingMethod];
+    onBrewingMethodsChange(newBrewingMethods);
+  };
 
-export default function BrewingMethodsFilter({
-  selectedBrewingMethods,
-  onFilterChange,
-  filters
-}: BrewingMethodsFilterProps) {
   return (
-    <div className="space-y-2">
-      <h3 className="font-medium text-sm text-gray-700">Brewing Methods</h3>
-      <div className="space-y-1">
-        {brewingMethods.map(method => {
-          const isSelected = selectedBrewingMethods.includes(method.value as any) || false;
-          return (
-            <label key={method.value} className="flex items-center space-x-2 cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={isSelected}
-                onChange={() => {
-                  const currentMethods = selectedBrewingMethods;
-                  const newMethods = isSelected 
-                    ? currentMethods.filter(m => m !== method.value)
-                    : [...currentMethods, method.value];
-                  onFilterChange({...filters, brewingMethods: newMethods as any});
-                }}
-                className="form-checkbox h-4 w-4 text-[#A0522D] rounded" 
-              />
-              <span className="text-sm text-gray-700">{method.label}</span>
-            </label>
-          );
-        })}
-      </div>
-    </div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          className="justify-between min-w-[200px]"
+        >
+          {selectedBrewingMethods.length > 0
+            ? `${selectedBrewingMethods.length} brewing method${selectedBrewingMethods.length > 1 ? 's' : ''}`
+            : "Brewing Methods"}
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[200px] p-0">
+        <div className="p-2">
+          {brewingMethods.map((brewingMethod) => (
+            <div
+              key={brewingMethod.value}
+              className={cn(
+                "flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent",
+                selectedBrewingMethods.includes(brewingMethod.value) && "bg-accent"
+              )}
+              onClick={() => handleBrewingMethodToggle(brewingMethod.value)}
+            >
+              <div className={cn(
+                "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                selectedBrewingMethods.includes(brewingMethod.value)
+                  ? "bg-primary text-primary-foreground"
+                  : "opacity-50 [&_svg]:invisible"
+              )}>
+                <Check className="h-3 w-3" />
+              </div>
+              <span>{brewingMethod.label}</span>
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

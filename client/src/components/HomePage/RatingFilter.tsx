@@ -1,52 +1,58 @@
-import { CafeFilter } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronDown, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface RatingFilterProps {
-  selectedMinRating?: number;
-  onFilterChange: (newFilters: CafeFilter) => void;
-  filters: CafeFilter;
+  minRating: number | null;
+  onMinRatingChange: (rating: number | null) => void;
 }
 
-export default function RatingFilter({
-  selectedMinRating,
-  onFilterChange,
-  filters
-}: RatingFilterProps) {
+export function RatingFilter({ minRating, onMinRatingChange }: RatingFilterProps) {
+  const ratings = [5, 4, 3, 2, 1];
+
   return (
-    <div className="space-y-2">
-      <h3 className="font-medium text-sm text-gray-700">Minimum Rating</h3>
-      <div className="mt-3">
-        <div className="flex justify-center space-x-2">
-          {[1, 2, 3, 4, 5].map((rating) => (
-            <button
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          className="justify-between min-w-[200px]"
+        >
+          {minRating ? `${minRating}+ stars` : "Rating"}
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[200px] p-0">
+        <div className="p-2">
+          <div
+            className={cn(
+              "flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent",
+              !minRating && "bg-accent"
+            )}
+            onClick={() => onMinRatingChange(null)}
+          >
+            <span>Any rating</span>
+          </div>
+          {ratings.map((rating) => (
+            <div
               key={rating}
-              type="button"
-              className="focus:outline-none transition-transform hover:scale-110"
-              onClick={() => {
-                const newRating = rating === selectedMinRating ? undefined : rating;
-                onFilterChange({...filters, minRating: newRating});
-              }}
-              aria-label={`Set minimum rating to ${rating}`}
+              className={cn(
+                "flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent",
+                minRating === rating && "bg-accent"
+              )}
+              onClick={() => onMinRatingChange(rating)}
             >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="24" 
-                height="24" 
-                viewBox="0 0 24 24" 
-                fill={selectedMinRating && selectedMinRating >= rating ? "#FFD700" : "none"}
-                stroke={selectedMinRating && selectedMinRating >= rating ? "#FFD700" : "#C0C0C0"}
-                strokeWidth="1.5" 
-              >
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            </button>
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: rating }).map((_, i) => (
+                  <Star key={i} className="h-3 w-3 fill-primary text-primary" />
+                ))}
+                <span className="ml-1">& up</span>
+              </div>
+            </div>
           ))}
         </div>
-        {selectedMinRating && (
-          <div className="text-center mt-2 text-gray-700 font-medium text-sm">
-            {selectedMinRating}+ stars minimum
-          </div>
-        )}
-      </div>
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }

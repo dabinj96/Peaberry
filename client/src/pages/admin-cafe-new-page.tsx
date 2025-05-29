@@ -384,8 +384,6 @@ export default function AdminCafeNewPage() {
                           </FormItem>
                         )}
                       />
-                        )}
-                      />
                     </div>
                   </div>
                 </div>

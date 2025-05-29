@@ -89,10 +89,10 @@ export default function HomePage() {
 
   // Set default location when areas are loaded
   useEffect(() => {
-    if (areas.length > 0 && !searchLocation) {
-      setSearchLocation(areas[0]);
+    if (areas.length > 0 && !defaultLocation) {
+      setDefaultLocation(areas[0]);
     }
-  }, [areas, searchLocation]);
+  }, [areas, defaultLocation]);
 
   // Fetch user's location
   useEffect(() => {
