@@ -83,8 +83,8 @@ export default function HomePage() {
   }, [filters, refetch]);
 
   // Fetch neighborhoods for filters
-  const { data: neighborhoods = [] } = useQuery<string[]>({
-    queryKey: ["/api/neighborhoods"],
+  const { data: areas = [] } = useQuery<string[]>({
+    queryKey: ["/api/areas"],
   });
 
   // Set default location when neighborhoods are loaded
@@ -238,7 +238,7 @@ export default function HomePage() {
           {/* Left Sidebar - Filters */}
           <FilterContainer
             filters={filters}
-            neighborhoods={neighborhoods}
+            areas={areas}
             onFilterChange={handleFilterChange}
           />
 
