@@ -46,7 +46,7 @@ export default function FilterContainer({
           />
 
           <CoffeeBeansFilter
-            sellsCoffeeBeans={filters.sellsCoffeeBeans || null}
+            sellsCoffeeBeans={filters.sellsCoffeeBeans}
             onSellsCoffeeBeansChange={(sellsCoffeeBeans) => onFilterChange({ ...filters, sellsCoffeeBeans })}
           />
         </div>

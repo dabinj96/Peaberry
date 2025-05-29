@@ -1,8 +1,8 @@
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface CoffeeBeansFilterProps {
-  sellsCoffeeBeans: boolean | null;
-  onSellsCoffeeBeansChange: (sellsCoffeeBeans: boolean | null) => void;
+  sellsCoffeeBeans: boolean | undefined;
+  onSellsCoffeeBeansChange: (sellsCoffeeBeans: boolean | undefined) => void;
 }
 
 export function CoffeeBeansFilter({ sellsCoffeeBeans, onSellsCoffeeBeansChange }: CoffeeBeansFilterProps) {
@@ -14,7 +14,7 @@ export function CoffeeBeansFilter({ sellsCoffeeBeans, onSellsCoffeeBeansChange }
           <Checkbox
             id="sells-coffee-beans"
             checked={sellsCoffeeBeans === true}
-            onCheckedChange={(checked) => onSellsCoffeeBeansChange(checked ? true : null)}
+            onCheckedChange={(checked) => onSellsCoffeeBeansChange(checked ? true : undefined)}
           />
           <label
             htmlFor="sells-coffee-beans"
