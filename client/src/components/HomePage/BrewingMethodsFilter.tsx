@@ -36,7 +36,7 @@ export default function BrewingMethodsFilter({
                   const newMethods = isSelected 
                     ? currentMethods.filter(m => m !== method.value)
                     : [...currentMethods, method.value];
-                  onFilterChange({...filters, brewingMethods: newMethods});
+                  onFilterChange({...filters, brewingMethods: newMethods as any});
                 }}
                 className="form-checkbox h-4 w-4 text-[#A0522D] rounded" 
               />

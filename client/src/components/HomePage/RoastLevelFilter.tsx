@@ -29,7 +29,7 @@ export default function RoastLevelFilter({
                   const newRoasts = isSelected 
                     ? currentRoasts.filter(r => r !== roast)
                     : [...currentRoasts, roast];
-                  onFilterChange({...filters, roastLevels: newRoasts});
+                  onFilterChange({...filters, roastLevels: newRoasts as any});
                 }}
                 className="form-checkbox h-4 w-4 text-[#A0522D] rounded" 
               />

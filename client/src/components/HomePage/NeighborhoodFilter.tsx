@@ -1,28 +1,31 @@
 import { CafeFilter } from "@shared/schema";
 
 interface NeighborhoodFilterProps {
-  selectedNeighborhood?: string;
-  neighborhoods: string[];
-  onFilterChange: (newFilters: CafeFilter) => void;
   filters: CafeFilter;
+  neighborhoods: string[];
+  onFilterChange: (filters: CafeFilter) => void;
 }
 
-export default function NeighborhoodFilter({
-  selectedNeighborhood,
-  neighborhoods,
-  onFilterChange,
-  filters
+export default function NeighborhoodFilter({ 
+  filters, 
+  neighborhoods, 
+  onFilterChange 
 }: NeighborhoodFilterProps) {
   return (
     <div className="space-y-2">
       <h3 className="font-medium text-sm text-gray-700">Location</h3>
       <select
         className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#A0522D]"
-        value={selectedNeighborhood || ''}
-        onChange={(e) => onFilterChange({...filters, neighborhood: e.target.value})}
+        value={filters.neighborhood || ""}
+        onChange={(e) =>
+          onFilterChange({
+            ...filters,
+            neighborhood: e.target.value,
+          })
+        }
       >
         <option value="">All Locations</option>
-        {neighborhoods.map(neighborhood => (
+        {neighborhoods.map((neighborhood) => (
           <option key={neighborhood} value={neighborhood}>
             {neighborhood}
           </option>

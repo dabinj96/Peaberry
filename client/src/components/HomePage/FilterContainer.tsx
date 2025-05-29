@@ -25,10 +25,9 @@ export default function FilterContainer({
 
         <div className="space-y-5">
           <NeighborhoodFilter
-            selectedNeighborhood={filters.neighborhood}
+            filters={filters}
             neighborhoods={neighborhoods}
             onFilterChange={onFilterChange}
-            filters={filters}
           />
 
           <RoastLevelFilter
