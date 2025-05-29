@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
+import AboutPage from "@/pages/about-page";
 import ResetPasswordPage from "@/pages/reset-password";
 import CafeDetailPage from "@/pages/cafe-detail-page";
 import ProfilePage from "@/pages/profile-page";
@@ -28,6 +29,7 @@ function Router() {
           <Route path="/reset-password" component={ResetPasswordPage} />
           <Route path="/password-reset/:userId" component={ResetPasswordPage} />
           <Route path="/cafe/:id" component={CafeDetailPage} />
+          <Route path="/about" component={AboutPage} />
           <ProtectedRoute path="/profile" component={ProfilePage} />
           <AdminProtectedRoute path="/admin" component={AdminPage} />
           <AdminProtectedRoute path="/admin/cafes/new" component={AdminCafeNewPage} />

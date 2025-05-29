@@ -9,6 +9,7 @@ import CafeList from "@/components/cafe-list";
 import CafeMap from "@/components/cafe-map";
 import FeaturedCafes from "@/components/featured-cafes";
 import HomePageSearchBar from "@/components/home-page-search-bar";
+import FilterContainer from "@/components/HomePage/FilterContainer";
 import { User, Search, MapPin, Filter, Loader2, Star, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import useCafesQuery from "@/hooks/use-cafes-query";
