@@ -1,9 +1,8 @@
 import { CafeFilter } from "@shared/schema";
 import AreaFilter from "./AreaFilter";
-import RoastLevelFilter from "./RoastLevelFilter";
-import BrewingMethodsFilter from "./BrewingMethodsFilter";
-import RatingFilter from "./RatingFilter";
-import AmenityFilters from "./AmenityFilters";
+import { RoastLevelFilter } from "./RoastLevelFilter";
+import { BrewingMethodsFilter } from "./BrewingMethodsFilter";
+import { RatingFilter } from "./RatingFilter";
 
 interface FilterContainerProps {
   filters: CafeFilter;
@@ -32,25 +31,17 @@ export default function FilterContainer({
 
           <RoastLevelFilter
             selectedRoastLevels={filters.roastLevels || []}
-            onFilterChange={onFilterChange}
-            filters={filters}
+            onRoastLevelsChange={(roastLevels) => onFilterChange({ ...filters, roastLevels })}
           />
 
           <BrewingMethodsFilter
             selectedBrewingMethods={filters.brewingMethods || []}
-            onFilterChange={onFilterChange}
-            filters={filters}
+            onBrewingMethodsChange={(brewingMethods) => onFilterChange({ ...filters, brewingMethods })}
           />
 
           <RatingFilter
-            selectedMinRating={filters.minRating}
-            onFilterChange={onFilterChange}
-            filters={filters}
-          />
-
-          <AmenityFilters
-            filters={filters}
-            onFilterChange={onFilterChange}
+            minRating={filters.minRating || null}
+            onMinRatingChange={(minRating) => onFilterChange({ ...filters, minRating })}
           />
         </div>
       </div>

@@ -269,16 +269,7 @@ export class MemStorage implements IStorage {
         cafes = cafes.filter(cafe => cafe.priceLevel <= filters.priceLevel!);
       }
 
-      // Apply amenities filters
-      if (filters.hasWifi) {
-        cafes = cafes.filter(cafe => cafe.hasWifi);
-      }
-      if (filters.hasPower) {
-        cafes = cafes.filter(cafe => cafe.hasPower);
-      }
-      if (filters.hasFood) {
-        cafes = cafes.filter(cafe => cafe.hasFood);
-      }
+
 
       // Apply text search
       if (filters.query && filters.query.trim() !== '') {

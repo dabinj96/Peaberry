@@ -45,9 +45,6 @@ export default function AdminCafeNewPage() {
       latitude: "",
       longitude: "",
       priceLevel: 2, // Medium price level by default
-      hasWifi: null,
-      hasPower: null,
-      hasFood: null,
       website: "",
       phone: "",
       instagramHandle: "",
