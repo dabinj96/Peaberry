@@ -3,6 +3,7 @@ import AreaFilter from "./AreaFilter";
 import { RoastLevelFilter } from "./RoastLevelFilter";
 import { BrewingMethodsFilter } from "./BrewingMethodsFilter";
 import { RatingFilter } from "./RatingFilter";
+import { CoffeeBeansFilter } from "./CoffeeBeansFilter";
 
 interface FilterContainerProps {
   filters: CafeFilter;
@@ -42,6 +43,11 @@ export default function FilterContainer({
           <RatingFilter
             minRating={filters.minRating || null}
             onMinRatingChange={(minRating) => onFilterChange({ ...filters, minRating })}
+          />
+
+          <CoffeeBeansFilter
+            sellsCoffeeBeans={filters.sellsCoffeeBeans || null}
+            onSellsCoffeeBeansChange={(sellsCoffeeBeans) => onFilterChange({ ...filters, sellsCoffeeBeans })}
           />
         </div>
       </div>

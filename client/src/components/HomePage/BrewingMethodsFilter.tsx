@@ -1,7 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const brewingMethods = [
   { value: "espresso_based", label: "Espresso Based" },
@@ -26,43 +23,25 @@ export function BrewingMethodsFilter({ selectedBrewingMethods, onBrewingMethodsC
   };
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          className="justify-between min-w-[200px]"
-        >
-          {selectedBrewingMethods.length > 0
-            ? `${selectedBrewingMethods.length} brewing method${selectedBrewingMethods.length > 1 ? 's' : ''}`
-            : "Brewing Methods"}
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
-        <div className="p-2">
-          {brewingMethods.map((brewingMethod) => (
-            <div
-              key={brewingMethod.value}
-              className={cn(
-                "flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent",
-                selectedBrewingMethods.includes(brewingMethod.value) && "bg-accent"
-              )}
-              onClick={() => handleBrewingMethodToggle(brewingMethod.value)}
+    <div className="space-y-3">
+      <h3 className="font-medium text-sm text-gray-900">Brewing Methods</h3>
+      <div className="space-y-2">
+        {brewingMethods.map((brewingMethod) => (
+          <div key={brewingMethod.value} className="flex items-center space-x-2">
+            <Checkbox
+              id={brewingMethod.value}
+              checked={selectedBrewingMethods.includes(brewingMethod.value)}
+              onCheckedChange={() => handleBrewingMethodToggle(brewingMethod.value)}
+            />
+            <label
+              htmlFor={brewingMethod.value}
+              className="text-sm font-normal cursor-pointer"
             >
-              <div className={cn(
-                "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                selectedBrewingMethods.includes(brewingMethod.value)
-                  ? "bg-primary text-primary-foreground"
-                  : "opacity-50 [&_svg]:invisible"
-              )}>
-                <Check className="h-3 w-3" />
-              </div>
-              <span>{brewingMethod.label}</span>
-            </div>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
+              {brewingMethod.label}
+            </label>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

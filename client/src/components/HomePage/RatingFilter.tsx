@@ -1,7 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronDown, Star } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Star } from "lucide-react";
 
 interface RatingFilterProps {
   minRating: number | null;
@@ -12,47 +11,32 @@ export function RatingFilter({ minRating, onMinRatingChange }: RatingFilterProps
   const ratings = [5, 4, 3, 2, 1];
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          className="justify-between min-w-[200px]"
-        >
-          {minRating ? `${minRating}+ stars` : "Rating"}
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
-        <div className="p-2">
-          <div
-            className={cn(
-              "flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent",
-              !minRating && "bg-accent"
-            )}
-            onClick={() => onMinRatingChange(null)}
-          >
-            <span>Any rating</span>
-          </div>
-          {ratings.map((rating) => (
-            <div
-              key={rating}
-              className={cn(
-                "flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent",
-                minRating === rating && "bg-accent"
-              )}
-              onClick={() => onMinRatingChange(rating)}
-            >
-              <div className="flex items-center space-x-1">
+    <div className="space-y-3">
+      <h3 className="font-medium text-sm text-gray-900">Minimum Rating</h3>
+      <RadioGroup
+        value={minRating?.toString() || "any"}
+        onValueChange={(value) => onMinRatingChange(value === "any" ? null : parseInt(value))}
+      >
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="any" id="any-rating" />
+          <Label htmlFor="any-rating" className="text-sm font-normal cursor-pointer">
+            Any rating
+          </Label>
+        </div>
+        {ratings.map((rating) => (
+          <div key={rating} className="flex items-center space-x-2">
+            <RadioGroupItem value={rating.toString()} id={`rating-${rating}`} />
+            <Label htmlFor={`rating-${rating}`} className="text-sm font-normal cursor-pointer flex items-center space-x-1">
+              <div className="flex items-center">
                 {Array.from({ length: rating }).map((_, i) => (
                   <Star key={i} className="h-3 w-3 fill-primary text-primary" />
                 ))}
                 <span className="ml-1">& up</span>
               </div>
-            </div>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
+            </Label>
+          </div>
+        ))}
+      </RadioGroup>
+    </div>
   );
 }

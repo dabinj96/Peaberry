@@ -607,9 +607,7 @@ export class MemStorage implements IStorage {
         latitude: "42.3524",
         longitude: "-71.0642",
         priceLevel: 2,
-        hasWifi: true,
-        hasPower: true,
-        hasFood: true,
+        sellsCoffeeBeans: true,
         imageUrl: "https://images.unsplash.com/photo-1554118811-1e0d58224f24",
         status: "draft" // Ensure sample cafés have an explicit status as draft for admin review
       },
@@ -621,9 +619,7 @@ export class MemStorage implements IStorage {
         latitude: "42.3486",
         longitude: "-71.0846",
         priceLevel: 2,
-        hasWifi: true,
-        hasPower: false,
-        hasFood: true,
+        sellsCoffeeBeans: true,
         imageUrl: "https://images.unsplash.com/photo-1445116572660-236099ec97a0",
         status: "draft" // Ensure sample cafés have an explicit status as draft for admin review
       },
@@ -635,9 +631,7 @@ export class MemStorage implements IStorage {
         latitude: "42.3489",
         longitude: "-71.0574",
         priceLevel: 3,
-        hasWifi: false,
-        hasPower: false,
-        hasFood: false,
+        sellsCoffeeBeans: false,
         imageUrl: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb",
         status: "draft" // Ensure sample cafés have an explicit status as draft for admin review
       },
@@ -649,9 +643,7 @@ export class MemStorage implements IStorage {
         latitude: "42.3782",
         longitude: "-71.1222",
         priceLevel: 2,
-        hasWifi: true,
-        hasPower: true,
-        hasFood: true,
+        sellsCoffeeBeans: null,
         imageUrl: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf",
         status: "draft" // Ensure sample cafés have an explicit status as draft for admin review
       },
@@ -663,9 +655,7 @@ export class MemStorage implements IStorage {
         latitude: "42.3583",
         longitude: "-71.0580",
         priceLevel: 3,
-        hasWifi: true,
-        hasPower: true,
-        hasFood: true,
+        sellsCoffeeBeans: true,
         imageUrl: "https://images.unsplash.com/photo-1498804103079-a6351b050096",
         status: "draft" // Ensure sample cafés have an explicit status as draft for admin review
       },
@@ -677,9 +667,7 @@ export class MemStorage implements IStorage {
         latitude: "42.3950",
         longitude: "-71.1223",
         priceLevel: 1,
-        hasWifi: true,
-        hasPower: true,
-        hasFood: true,
+        sellsCoffeeBeans: false,
         imageUrl: "https://images.unsplash.com/photo-1600093463592-8e36ae95ef56",
         status: "draft" // Ensure sample cafés have an explicit status as draft for admin review
       },
@@ -691,9 +679,7 @@ export class MemStorage implements IStorage {
         latitude: "42.3547",
         longitude: "-71.0608",
         priceLevel: 3,
-        hasWifi: true,
-        hasPower: true,
-        hasFood: true,
+        sellsCoffeeBeans: true,
         imageUrl: "https://images.unsplash.com/photo-1559305616-3f99cd43e353",
         status: "draft" // Ensure sample cafés have an explicit status as draft for admin review
       },
@@ -705,9 +691,7 @@ export class MemStorage implements IStorage {
         latitude: "42.3481",
         longitude: "-71.0869",
         priceLevel: 2,
-        hasWifi: true,
-        hasPower: true,
-        hasFood: true,
+        sellsCoffeeBeans: false,
         imageUrl: "https://images.unsplash.com/photo-1442512595331-e89e73853f31",
         status: "draft" // Ensure sample cafés have an explicit status as draft for admin review
       },
@@ -719,9 +703,7 @@ export class MemStorage implements IStorage {
         latitude: "42.3507",
         longitude: "-71.0753",
         priceLevel: 3,
-        hasWifi: false,
-        hasPower: false,
-        hasFood: true,
+        sellsCoffeeBeans: true,
         imageUrl: "https://images.unsplash.com/photo-1514481538271-cf9f99627524",
         status: "draft" // Ensure sample cafés have an explicit status as draft for admin review
       }

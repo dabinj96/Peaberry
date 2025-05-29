@@ -1,7 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const roastLevels = [
   "light",
@@ -32,43 +29,25 @@ export function RoastLevelFilter({ selectedRoastLevels, onRoastLevelsChange }: R
   };
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          className="justify-between min-w-[200px]"
-        >
-          {selectedRoastLevels.length > 0
-            ? `${selectedRoastLevels.length} roast level${selectedRoastLevels.length > 1 ? 's' : ''}`
-            : "Roast Level"}
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
-        <div className="p-2">
-          {roastLevels.map((roastLevel) => (
-            <div
-              key={roastLevel}
-              className={cn(
-                "flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent",
-                selectedRoastLevels.includes(roastLevel) && "bg-accent"
-              )}
-              onClick={() => handleRoastLevelToggle(roastLevel)}
+    <div className="space-y-3">
+      <h3 className="font-medium text-sm text-gray-900">Roast Level</h3>
+      <div className="space-y-2">
+        {roastLevels.map((roastLevel) => (
+          <div key={roastLevel} className="flex items-center space-x-2">
+            <Checkbox
+              id={roastLevel}
+              checked={selectedRoastLevels.includes(roastLevel)}
+              onCheckedChange={() => handleRoastLevelToggle(roastLevel)}
+            />
+            <label
+              htmlFor={roastLevel}
+              className="text-sm font-normal cursor-pointer"
             >
-              <div className={cn(
-                "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                selectedRoastLevels.includes(roastLevel)
-                  ? "bg-primary text-primary-foreground"
-                  : "opacity-50 [&_svg]:invisible"
-              )}>
-                <Check className="h-3 w-3" />
-              </div>
-              <span>{formatRoastLevel(roastLevel)}</span>
-            </div>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
+              {formatRoastLevel(roastLevel)}
+            </label>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
