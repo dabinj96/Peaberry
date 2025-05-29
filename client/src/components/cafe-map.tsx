@@ -305,7 +305,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
                   <div class="flex items-start mb-2">
                     <div class="flex-grow">
                       <h3 class="font-semibold text-[#A0522D] text-lg">${cafe.name}</h3>
-                      <p class="text-sm text-gray-600">${cafe.neighborhood}</p>
+                      <p class="text-sm text-gray-600">${cafe.area}</p>
                     </div>
                     ${cafe.isFavorite ? `
                       <div class="ml-2 text-red-500">
@@ -344,7 +344,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
                       </svg>
                     </a>
                     <a 
-                      href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.neighborhood + ' Boston MA')}" 
+                      href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.area + ' Boston MA')}" 
                       target="_blank"
                       class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
                     >
@@ -501,7 +501,7 @@ export default function CafeMap({ cafes, isLoading, singleLocation = false }: Ca
                 <div key={cafe.id} className="bg-white p-3 rounded shadow-sm text-left">
                   <h4 className="font-medium text-[#A0522D]">{cafe.name}</h4>
                   <p className="text-sm text-gray-500">{cafe.address}</p>
-                  <p className="text-xs text-gray-400 mt-1">{cafe.neighborhood}</p>
+                  <p className="text-xs text-gray-400 mt-1">{cafe.area}</p>
                 </div>
               ))}
             </div>

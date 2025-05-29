@@ -52,7 +52,7 @@ const cafeFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
   address: z.string().min(1, "Address is required"),
-  neighborhood: z.string().min(1, "Neighborhood is required"),
+  area: z.string().min(1, "Neighborhood is required"),
   latitude: z.string().min(1, "Latitude is required"),
   longitude: z.string().min(1, "Longitude is required"),
   priceLevel: z.coerce.number().min(1).max(4),
@@ -93,7 +93,7 @@ export default function AdminCafeEditPage() {
       name: "",
       description: "",
       address: "",
-      neighborhood: "",
+      area: "",
       latitude: "",
       longitude: "",
       priceLevel: 1,
@@ -123,7 +123,7 @@ export default function AdminCafeEditPage() {
         name: "",
         description: "",
         address: "",
-        neighborhood: "",
+        area: "",
         latitude: "",
         longitude: "",
         priceLevel: 1,
@@ -147,7 +147,7 @@ export default function AdminCafeEditPage() {
         name: cafe.name || "",
         description: cafe.description || "",
         address: cafe.address || "",
-        neighborhood: cafe.neighborhood || "",
+        area: cafe.area || "",
         latitude: cafe.latitude || "",
         longitude: cafe.longitude || "",
         priceLevel: typeof cafe.priceLevel === 'number' ? cafe.priceLevel : 1,
@@ -209,7 +209,7 @@ export default function AdminCafeEditPage() {
         name: data.name || '',
         description: data.description || '',
         address: data.address || '',
-        neighborhood: data.neighborhood || '',
+        area: data.area || '',
         latitude: data.latitude || '',
         longitude: data.longitude || '',
         priceLevel: typeof data.priceLevel === 'number' ? data.priceLevel : 1,
@@ -421,7 +421,7 @@ export default function AdminCafeEditPage() {
                     
                     <FormField
                       control={form.control}
-                      name="neighborhood"
+                      name="area"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Neighborhood</FormLabel>

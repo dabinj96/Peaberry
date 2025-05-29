@@ -171,7 +171,7 @@ export default function CafeDetailPage() {
           <div className="flex items-center gap-4 text-white">
             <div className="flex items-center">
               <MapPin className="h-4 w-4 mr-1" />
-              <span>{cafe.neighborhood}</span>
+              <span>{cafe.area}</span>
             </div>
             <div className="flex items-center">
               <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
@@ -359,7 +359,7 @@ export default function CafeDetailPage() {
               <div className="mt-6">
                 <Button 
                   className="w-full bg-[#A0522D] hover:bg-[#8B4513]"
-                  onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.neighborhood + ' Boston MA')}`, '_blank')}
+                  onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.area + ' Boston MA')}`, '_blank')}
                 >
                   View on Google Maps
                 </Button>

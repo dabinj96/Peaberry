@@ -257,10 +257,10 @@ export class MemStorage implements IStorage {
     }
     
     if (filters) {
-      // Apply neighborhood filter
-      if (filters.neighborhood && filters.neighborhood !== '') {
+      // Apply area filter
+      if (filters.area && filters.area !== '') {
         cafes = cafes.filter(cafe => 
-          cafe.neighborhood.toLowerCase() === filters.neighborhood!.toLowerCase()
+          cafe.area.toLowerCase() === filters.area!.toLowerCase()
         );
       }
 
@@ -286,7 +286,7 @@ export class MemStorage implements IStorage {
         cafes = cafes.filter(cafe => 
           cafe.name.toLowerCase().includes(query) || 
           cafe.description.toLowerCase().includes(query) ||
-          cafe.neighborhood.toLowerCase().includes(query) ||
+          cafe.area.toLowerCase().includes(query) ||
           cafe.address.toLowerCase().includes(query)
         );
       }
@@ -407,11 +407,11 @@ export class MemStorage implements IStorage {
   }
 
   async listNeighborhoods(): Promise<string[]> {
-    const neighborhoods = new Set<string>();
+    const areas = new Set<string>();
     for (const cafe of this.cafesMap.values()) {
-      neighborhoods.add(cafe.neighborhood);
+      areas.add(cafe.area);
     }
-    return Array.from(neighborhoods).sort();
+    return Array.from(areas).sort();
   }
 
   // Cafe roast level methods
@@ -612,7 +612,7 @@ export class MemStorage implements IStorage {
         name: "The Thinking Cup",
         description: "Known for their classic coffees and artisanal pastries, this coffeehouse has a charming vintage atmosphere.",
         address: "165 Tremont St, Boston, MA 02111",
-        neighborhood: "Downtown",
+        area: "Downtown",
         latitude: "42.3524",
         longitude: "-71.0642",
         priceLevel: 2,
@@ -626,7 +626,7 @@ export class MemStorage implements IStorage {
         name: "Barrington Coffee",
         description: "A specialty roaster offering a variety of single-origin beans and expertly crafted espresso drinks.",
         address: "303 Newbury St, Boston, MA 02115",
-        neighborhood: "Back Bay",
+        area: "Back Bay",
         latitude: "42.3486",
         longitude: "-71.0846",
         priceLevel: 2,
@@ -640,7 +640,7 @@ export class MemStorage implements IStorage {
         name: "Gracenote Coffee",
         description: "Small-batch roaster with an intimate space serving exceptional espresso and pour-overs.",
         address: "108 Lincoln St, Boston, MA 02111",
-        neighborhood: "South End",
+        area: "South End",
         latitude: "42.3489",
         longitude: "-71.0574",
         priceLevel: 3,
@@ -654,7 +654,7 @@ export class MemStorage implements IStorage {
         name: "Broadsheet Coffee",
         description: "Spacious cafe with a focus on ethically sourced beans and precise brewing techniques.",
         address: "100 Kirkland St, Cambridge, MA 02138",
-        neighborhood: "Cambridge",
+        area: "Cambridge",
         latitude: "42.3782",
         longitude: "-71.1222",
         priceLevel: 2,
@@ -668,7 +668,7 @@ export class MemStorage implements IStorage {
         name: "Ogawa Coffee",
         description: "Japanese-inspired coffee shop featuring award-winning baristas and unique brewing methods.",
         address: "10 Milk St, Boston, MA 02108",
-        neighborhood: "Downtown",
+        area: "Downtown",
         latitude: "42.3583",
         longitude: "-71.0580",
         priceLevel: 3,
@@ -682,7 +682,7 @@ export class MemStorage implements IStorage {
         name: "Diesel Cafe",
         description: "Spacious, industrial-chic coffeehouse with pool tables and local art.",
         address: "257 Elm St, Somerville, MA 02144",
-        neighborhood: "Somerville",
+        area: "Somerville",
         latitude: "42.3950",
         longitude: "-71.1223",
         priceLevel: 1,
@@ -696,7 +696,7 @@ export class MemStorage implements IStorage {
         name: "George Howell Coffee",
         description: "Known for their meticulous roasting and brewing techniques, offering a variety of single-origin beans.",
         address: "505 Washington St, Boston, MA 02111",
-        neighborhood: "Downtown",
+        area: "Downtown",
         latitude: "42.3547",
         longitude: "-71.0608",
         priceLevel: 3,
@@ -710,7 +710,7 @@ export class MemStorage implements IStorage {
         name: "Pavement Coffeehouse",
         description: "A Boston staple with multiple locations, featuring house-roasted beans and artisanal bagels.",
         address: "1096 Boylston St, Boston, MA 02215",
-        neighborhood: "Back Bay",
+        area: "Back Bay",
         latitude: "42.3481",
         longitude: "-71.0869",
         priceLevel: 2,
@@ -724,7 +724,7 @@ export class MemStorage implements IStorage {
         name: "Blue Bottle Coffee",
         description: "Minimalist cafés with a focus on single-origin beans and meticulously crafted pour-overs.",
         address: "163 Newbury St, Boston, MA 02116",
-        neighborhood: "Back Bay",
+        area: "Back Bay",
         latitude: "42.3507",
         longitude: "-71.0753",
         priceLevel: 3,

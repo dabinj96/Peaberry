@@ -20,7 +20,7 @@ import PlacesAutocomplete from "@/components/places-autocomplete";
 
 // Extend the insert schema with validation rules
 const cafeFormSchema = insertCafeSchema.extend({
-  neighborhood: z.string().min(1, "Neighborhood is required"),
+  area: z.string().min(1, "Neighborhood is required"),
   name: z.string().min(1, "Cafe name is required"),
   address: z.string().min(5, "Address is required"),
   description: z.string().min(10, "Description should be at least 10 characters"),
@@ -41,7 +41,7 @@ export default function AdminCafeNewPage() {
       name: "",
       description: "",
       address: "",
-      neighborhood: "Boston",
+      area: "Boston",
       latitude: "",
       longitude: "",
       priceLevel: 2, // Medium price level by default
@@ -62,15 +62,15 @@ export default function AdminCafeNewPage() {
     address: string,
     lat?: number,
     lng?: number,
-    neighborhood?: string
+    area?: string
   ) => {
     form.setValue("address", address);
     if (lat && lng) {
       form.setValue("latitude", lat.toString());
       form.setValue("longitude", lng.toString());
     }
-    if (neighborhood) {
-      form.setValue("neighborhood", neighborhood);
+    if (area) {
+      form.setValue("area", area);
     }
   };
 
@@ -223,7 +223,7 @@ export default function AdminCafeNewPage() {
                   
                   <FormField
                     control={form.control}
-                    name="neighborhood"
+                    name="area"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Neighborhood *</FormLabel>
@@ -384,12 +384,6 @@ export default function AdminCafeNewPage() {
                           </FormItem>
                         )}
                       />
-                      
-
-                                onCheckedChange={(checked) => field.onChange(checked ? true : null)}
-                              />
-                            </FormControl>
-                          </FormItem>
                         )}
                       />
                     </div>

@@ -35,7 +35,7 @@ export default function HomePageSearchBar({
                 type="text" 
                 placeholder="Select a location" 
                 className="w-full py-2.5 border-none focus:outline-none focus:ring-0 text-gray-700"
-                value={filters.neighborhood ? `${filters.neighborhood}` : defaultLocation ? `${defaultLocation}` : "All Locations"}
+                value={filters.area ? `${filters.area}` : defaultLocation ? `${defaultLocation}` : "All Locations"}
                 readOnly
               />
             </div>

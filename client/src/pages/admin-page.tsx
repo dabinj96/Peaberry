@@ -56,7 +56,7 @@ export default function AdminPage() {
     const matchesSearch = searchTerm === "" || 
       cafe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cafe.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cafe.neighborhood.toLowerCase().includes(searchTerm.toLowerCase());
+      cafe.area.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || cafe.status === statusFilter;
     
@@ -361,7 +361,7 @@ export default function AdminPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline">{cafe.neighborhood}</Badge>
+                            <Badge variant="outline">{cafe.area}</Badge>
                           </TableCell>
                           <TableCell>
                             <Badge

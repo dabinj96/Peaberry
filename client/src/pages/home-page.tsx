@@ -82,17 +82,17 @@ export default function HomePage() {
     console.log("Applied filters:", filters);
   }, [filters, refetch]);
 
-  // Fetch neighborhoods for filters
+  // Fetch areas for filters
   const { data: areas = [] } = useQuery<string[]>({
     queryKey: ["/api/areas"],
   });
 
-  // Set default location when neighborhoods are loaded
+  // Set default location when areas are loaded
   useEffect(() => {
-    if (neighborhoods.length > 0 && !defaultLocation) {
-      setDefaultLocation(neighborhoods[0]);
+    if (areas.length > 0 && !searchLocation) {
+      setSearchLocation(areas[0]);
     }
-  }, [neighborhoods, defaultLocation]);
+  }, [areas, searchLocation]);
 
   // Fetch user's location
   useEffect(() => {

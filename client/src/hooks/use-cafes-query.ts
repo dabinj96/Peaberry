@@ -17,9 +17,9 @@ interface CafeWithDetails extends BaseCafeWithDetails {
 const buildCafesQueryString = (filters: CafeFilter, searchQuery: string) => {
   const params = new URLSearchParams();
 
-  // Add neighborhood filter
-  if (filters.neighborhood) {
-    params.append("neighborhood", filters.neighborhood);
+  // Add area filter
+  if (filters.area) {
+    params.append("area", filters.area);
   }
 
   // Add roast levels filter

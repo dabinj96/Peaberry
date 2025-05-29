@@ -85,7 +85,7 @@ export default function CafeCard({ cafe, distance, distanceUnit = 'mi' }: CafeCa
           </div>
           <p className="text-gray-600 text-sm mb-2 flex items-center">
             <MapPin className="h-3.5 w-3.5 mr-1" />
-            {cafe.neighborhood}
+            {cafe.area}
           </p>
           <div className="flex flex-wrap gap-1 mb-3">
             {cafe.roastLevels.map((level) => (

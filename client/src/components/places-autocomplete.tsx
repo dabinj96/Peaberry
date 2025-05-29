@@ -6,7 +6,7 @@ import { GOOGLE_MAPS_API_KEY } from "@/lib/utils";
 interface PlacesAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
-  onSelect?: (address: string, lat?: number, lng?: number, neighborhood?: string) => void;
+  onSelect?: (address: string, lat?: number, lng?: number, area?: string) => void;
   placeholder?: string;
   id?: string;
   className?: string;
@@ -86,30 +86,30 @@ export default function PlacesAutocomplete({
               const lat = place.geometry.location.lat();
               const lng = place.geometry.location.lng();
               
-              // Extract neighborhood from address components if available
-              let neighborhood = "";
+              // Extract area from address components if available
+              let area = "";
               if (place.address_components) {
-                // Look for the neighborhood component
-                const neighborhoodComponent = place.address_components.find(
-                  (component: any) => component.types.includes('neighborhood')
+                // Look for the area component
+                const areaComponent = place.address_components.find(
+                  (component: any) => component.types.includes('area')
                 );
                 
-                // Look for sublocality if neighborhood is not found
+                // Look for sublocality if area is not found
                 const sublocalityComponent = place.address_components.find(
                   (component: any) => component.types.includes('sublocality')
                 );
                 
-                // Look for locality if neither neighborhood nor sublocality is found
+                // Look for locality if neither area nor sublocality is found
                 const localityComponent = place.address_components.find(
                   (component: any) => component.types.includes('locality')
                 );
                 
-                neighborhood = neighborhoodComponent ? neighborhoodComponent.long_name :
+                area = areaComponent ? areaComponent.long_name :
                               sublocalityComponent ? sublocalityComponent.long_name :
                               localityComponent ? localityComponent.long_name : "";
               }
               
-              onSelect(place.formatted_address, lat, lng, neighborhood);
+              onSelect(place.formatted_address, lat, lng, area);
             }
           }
         });

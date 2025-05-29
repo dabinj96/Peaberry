@@ -87,7 +87,7 @@ export default function CafeList({ cafes, isLoading, cafeDistances, distanceUnit
                       <a href={`/cafe/${cafe.id}`} className="hover:underline">{cafe.name}</a>
                     </h3>
                     <div className="text-sm text-gray-600 mb-2">
-                      {cafe.neighborhood && <span>{cafe.neighborhood}</span>}
+                      {cafe.area && <span>{cafe.area}</span>}
                     </div>
                   </div>
                   

@@ -239,9 +239,9 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (filters) {
-      // Neighborhood filter
-      if (filters.neighborhood && filters.neighborhood !== "") {
-        whereConditions.push(eq(cafes.neighborhood, filters.neighborhood));
+      // Area filter
+      if (filters.area && filters.area !== "") {
+        whereConditions.push(eq(cafes.area, filters.area));
       }
 
       // Price level filter
@@ -267,7 +267,7 @@ export class DatabaseStorage implements IStorage {
           or(
             ilike(cafes.name, searchTerm),
             ilike(cafes.description, searchTerm),
-            ilike(cafes.neighborhood, searchTerm),
+            ilike(cafes.area, searchTerm),
             ilike(cafes.address, searchTerm),
           ),
         );
@@ -401,12 +401,12 @@ export class DatabaseStorage implements IStorage {
 
   async listNeighborhoods(): Promise<string[]> {
     const results = await db
-      .selectDistinct({ neighborhood: cafes.neighborhood })
+      .selectDistinct({ area: cafes.area })
       .from(cafes)
-      .where(eq(cafes.status, "published")) // Only show neighborhoods from published cafés
-      .orderBy(cafes.neighborhood);
+      .where(eq(cafes.status, "published")) // Only show areas from published cafés
+      .orderBy(cafes.area);
 
-    return results.map((r) => r.neighborhood);
+    return results.map((r) => r.area);
   }
 
   // Cafe roast level methods

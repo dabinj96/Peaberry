@@ -34,23 +34,23 @@ export default function SearchFilters({
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   
-  // Fetch neighborhoods for filter dropdown
-  const { data: neighborhoods = [] } = useQuery<string[]>({
-    queryKey: ["/api/neighborhoods"],
+  // Fetch areas for filter dropdown
+  const { data: areas = [] } = useQuery<string[]>({
+    queryKey: ["/api/areas"],
     queryFn: async () => {
-      const res = await fetch("/api/neighborhoods");
+      const res = await fetch("/api/areas");
       if (!res.ok) {
-        throw new Error("Failed to fetch neighborhoods");
+        throw new Error("Failed to fetch areas");
       }
       return res.json();
     }
   });
 
-  // Handle neighborhood filter change
-  const handleNeighborhoodChange = (neighborhood: string) => {
-    const newFilters = { ...filters, neighborhood: neighborhood || undefined };
-    if (!neighborhood) {
-      delete newFilters.neighborhood;
+  // Handle area filter change
+  const handleNeighborhoodChange = (area: string) => {
+    const newFilters = { ...filters, area: area || undefined };
+    if (!area) {
+      delete newFilters.area;
     }
     updateFilters(newFilters);
   };
@@ -110,7 +110,7 @@ export default function SearchFilters({
     
     // Count active filters
     let count = 0;
-    if (newFilters.neighborhood) count++;
+    if (newFilters.area) count++;
     if (newFilters.roastLevels && newFilters.roastLevels.length > 0) count++;
     if (newFilters.brewingMethods && newFilters.brewingMethods.length > 0) count++;
     if (newFilters.priceLevel) count++;
@@ -153,9 +153,9 @@ export default function SearchFilters({
               <PopoverTrigger asChild>
                 <Button 
                   variant="outline" 
-                  className={`rounded-full ${filters.neighborhood ? 'bg-[#A0522D] text-white hover:bg-[#8B4513] hover:text-white' : ''}`}
+                  className={`rounded-full ${filters.area ? 'bg-[#A0522D] text-white hover:bg-[#8B4513] hover:text-white' : ''}`}
                 >
-                  {filters.neighborhood || "Neighborhood"}
+                  {filters.area || "Neighborhood"}
                   <ChevronDown className="h-4 w-4 ml-1" />
                 </Button>
               </PopoverTrigger>
@@ -167,13 +167,13 @@ export default function SearchFilters({
                   >
                     All Neighborhoods
                   </div>
-                  {neighborhoods.map(neighborhood => (
+                  {areas.map(area => (
                     <div 
-                      key={neighborhood}
+                      key={area}
                       className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => handleNeighborhoodChange(neighborhood)}
+                      onClick={() => handleNeighborhoodChange(area)}
                     >
-                      {neighborhood}
+                      {area}
                     </div>
                   ))}
                 </div>
@@ -214,12 +214,12 @@ export default function SearchFilters({
           {/* More Filters button */}
           <Button 
             variant="outline" 
-            className={`rounded-full mt-2 ${activeFiltersCount > 0 && !filters.neighborhood && !filters.roastLevels && !filters.brewingMethods ? 'bg-[#A0522D] text-white hover:bg-[#8B4513] hover:text-white' : ''}`}
+            className={`rounded-full mt-2 ${activeFiltersCount > 0 && !filters.area && !filters.roastLevels && !filters.brewingMethods ? 'bg-[#A0522D] text-white hover:bg-[#8B4513] hover:text-white' : ''}`}
             onClick={() => setIsMoreFiltersOpen(!isMoreFiltersOpen)}
           >
             <SlidersHorizontal className="h-4 w-4 mr-1" />
             More Filters
-            {activeFiltersCount > 0 && !filters.neighborhood && !filters.roastLevels && !filters.brewingMethods && (
+            {activeFiltersCount > 0 && !filters.area && !filters.roastLevels && !filters.brewingMethods && (
               <Badge variant="secondary" className="ml-1 bg-white text-[#A0522D] hover:bg-white">
                 {activeFiltersCount}
               </Badge>

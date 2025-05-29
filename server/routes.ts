@@ -100,8 +100,8 @@ async function fetchCafesFromGooglePlaces(location: string = "Boston, MA") {
             rating: details.rating || place.rating,
             totalRatings: details.user_ratings_total || place.user_ratings_total,
             price_level: details.price_level,
-            neighborhood: extractNeighborhood(details.formatted_address || place.formatted_address),
-            description: `A specialty coffee shop located in ${extractNeighborhood(details.formatted_address || place.formatted_address)}.`,
+            area: extractArea(details.formatted_address || place.formatted_address),
+            description: `A specialty coffee shop located in ${extractArea(details.formatted_address || place.formatted_address)}.`,
             photos: details.photos ? details.photos.map((photo: any) => ({
               photo_reference: photo.photo_reference,
               width: photo.width,
@@ -118,8 +118,8 @@ async function fetchCafesFromGooglePlaces(location: string = "Boston, MA") {
           address: place.formatted_address,
           lat: place.geometry?.location.lat,
           lng: place.geometry?.location.lng,
-          neighborhood: extractNeighborhood(place.formatted_address),
-          description: `A specialty coffee shop located in ${extractNeighborhood(place.formatted_address)}.`,
+          area: extractArea(place.formatted_address),
+          description: `A specialty coffee shop located in ${extractArea(place.formatted_address)}.`,
         });
       }
       
@@ -142,7 +142,7 @@ function getFrontendUrl(): string {
   return process.env.FRONTEND_URL || 'http://localhost:3000';
 }
 
-// Helper to extract neighborhood from address
+// Helper to extract area from address
 function extractArea(address: string): string {
   // If no address, return null to use the city name later
   if (!address) return "Unknown";
@@ -162,7 +162,7 @@ function extractArea(address: string): string {
     }
   }
   
-  // Next check for Boston neighborhoods
+  // Next check for Boston areas
   const bostonNeighborhoods = [
     "Back Bay", "Beacon Hill", "North End", "South End", "Downtown",
     "Fenway", "Kenmore", "Allston", "Brighton", "Jamaica Plain",
@@ -170,19 +170,19 @@ function extractArea(address: string): string {
     "West Roxbury", "Roslindale", "Hyde Park", "Mattapan", "Mission Hill"
   ];
   
-  for (const neighborhood of bostonNeighborhoods) {
-    if (address.includes(neighborhood)) {
-      return neighborhood;
+  for (const area of bostonNeighborhoods) {
+    if (address.includes(area)) {
+      return area;
     }
   }
   
-  // Try to extract neighborhood from address components
+  // Try to extract area from address components
   // Format is typically: "123 Main St, Neighborhood, Boston, MA 02XXX, USA"
   const addressParts = address.split(",").map(part => part.trim());
   
-  // If we have at least 3 parts (street, city/neighborhood, state/zip) and Boston is mentioned
+  // If we have at least 3 parts (street, city/area, state/zip) and Boston is mentioned
   if (addressParts.length >= 3 && address.includes("Boston")) {
-    // Check if the part before "Boston" might be a neighborhood
+    // Check if the part before "Boston" might be a area
     for (let i = 1; i < addressParts.length; i++) {
       if (addressParts[i].includes("Boston") && i > 0) {
         const potentialNeighborhood = addressParts[i-1];
@@ -194,12 +194,12 @@ function extractArea(address: string): string {
     }
   }
   
-  // If it mentions Boston but we couldn't extract a neighborhood
+  // If it mentions Boston but we couldn't extract a area
   if (address.includes("Boston")) {
     return "Boston";
   }
   
-  // If we reach here, we couldn't find a specific neighborhood
+  // If we reach here, we couldn't find a specific area
   // Extract the city from the address if possible
   const cityMatch = address.match(/([A-Za-z\s]+),\s*[A-Z]{2}/);
   if (cityMatch && cityMatch[1]) {
@@ -519,8 +519,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle filters
       const filterParams: Record<string, any> = {};
       
-      if (req.query.neighborhood) {
-        filterParams.neighborhood = req.query.neighborhood as string;
+      if (req.query.area) {
+        filterParams.area = req.query.area as string;
       }
       
       if (req.query.roastLevels) {
@@ -599,13 +599,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Neighborhood routes
-  app.get("/api/neighborhoods", async (req, res) => {
+  app.get("/api/areas", async (req, res) => {
     try {
-      const neighborhoods = await storage.listNeighborhoods();
-      res.json(neighborhoods);
+      const areas = await storage.listNeighborhoods();
+      res.json(areas);
     } catch (error) {
-      console.error("Error fetching neighborhoods:", error);
-      res.status(500).json({ error: "An error occurred while fetching neighborhoods" });
+      console.error("Error fetching areas:", error);
+      res.status(500).json({ error: "An error occurred while fetching areas" });
     }
   });
 
@@ -761,9 +761,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Map Google Place data to our cafe schema
           const cafeData = {
             name: place.name,
-            description: place.description || `A specialty coffee shop in ${place.neighborhood || 'Boston'}.`,
+            description: place.description || `A specialty coffee shop in ${place.area || 'Boston'}.`,
             address: place.address,
-            neighborhood: place.neighborhood || "Boston",
+            area: place.area || "Boston",
             website: place.website || "",
             phone: place.phone || "",
             latitude: place.lat.toString(),
