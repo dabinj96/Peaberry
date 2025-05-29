@@ -32,7 +32,7 @@ export interface IStorage {
   updateCafe(id: number, cafeData: Partial<Cafe>): Promise<Cafe | undefined>;
   deleteCafe(id: number): Promise<boolean>;
   searchCafes(query: string, userId?: number): Promise<CafeWithDetails[]>;
-  listNeighborhoods(): Promise<string[]>;
+  listAreas(): Promise<string[]>;
 
   // Cafe roast level methods
   addCafeRoastLevel(cafeRoastLevel: InsertCafeRoastLevel): Promise<CafeRoastLevel>;

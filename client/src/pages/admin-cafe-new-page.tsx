@@ -385,35 +385,7 @@ export default function AdminCafeNewPage() {
                         )}
                       />
                       
-                      <FormField
-                        control={form.control}
-                        name="hasPower"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                            <div className="space-y-0.5">
-                              <FormLabel>Power Outlets</FormLabel>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value === true}
-                                onCheckedChange={(checked) => field.onChange(checked ? true : null)}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="hasFood"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                            <div className="space-y-0.5">
-                              <FormLabel>Food</FormLabel>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value === true}
+
                                 onCheckedChange={(checked) => field.onChange(checked ? true : null)}
                               />
                             </FormControl>
