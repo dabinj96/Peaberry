@@ -143,7 +143,7 @@ function getFrontendUrl(): string {
 }
 
 // Helper to extract neighborhood from address
-function extractNeighborhood(address: string): string {
+function extractArea(address: string): string {
   // If no address, return null to use the city name later
   if (!address) return "Unknown";
   

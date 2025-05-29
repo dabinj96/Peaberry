@@ -34,13 +34,10 @@ export const cafes = pgTable("cafes", {
   name: text("name").notNull(),
   description: text("description").notNull(),
   address: text("address").notNull(),
-  neighborhood: text("neighborhood").notNull(),
+  area: text("area").notNull(),
   latitude: text("latitude").notNull(),
   longitude: text("longitude").notNull(),
   priceLevel: integer("price_level").default(1), // 1-4 representing $ to $$$$
-  hasWifi: boolean("has_wifi").default(false),
-  hasPower: boolean("has_power").default(false),
-  hasFood: boolean("has_food").default(false),
   sellsCoffeeBeans: boolean("sells_coffee_beans").default(false),
   imageUrl: text("image_url"),
   website: text("website").default(''),
@@ -180,14 +177,11 @@ export const cafeSortOptionsEnum = [
 ] as const;
 
 export const cafeFilterSchema = z.object({
-  neighborhood: z.string().optional(),
+  area: z.string().optional(),
   roastLevels: z.array(z.enum(["light", "light_medium", "medium", "medium_dark", "dark", "extra_dark"])).optional(),
   brewingMethods: z.array(z.enum(["espresso_based", "pour_over", "siphon", "mixed_drinks", "nitro", "cold_brew"])).optional(),
   minRating: z.number().min(0).max(5).optional(),
   priceLevel: z.number().min(1).max(4).optional(),
-  hasWifi: z.boolean().optional(),
-  hasPower: z.boolean().optional(),
-  hasFood: z.boolean().optional(),
   sellsCoffeeBeans: z.boolean().optional(),
   query: z.string().optional(),
   sortBy: z.enum(cafeSortOptionsEnum).optional(),

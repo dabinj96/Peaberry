@@ -1,5 +1,5 @@
 import { CafeFilter } from "@shared/schema";
-import NeighborhoodFilter from "./NeighborhoodFilter";
+import AreaFilter from "./AreaFilter";
 import RoastLevelFilter from "./RoastLevelFilter";
 import BrewingMethodsFilter from "./BrewingMethodsFilter";
 import RatingFilter from "./RatingFilter";
@@ -7,13 +7,13 @@ import AmenityFilters from "./AmenityFilters";
 
 interface FilterContainerProps {
   filters: CafeFilter;
-  neighborhoods: string[];
+  areas: string[];
   onFilterChange: (newFilters: CafeFilter) => void;
 }
 
 export default function FilterContainer({
   filters,
-  neighborhoods,
+  areas,
   onFilterChange
 }: FilterContainerProps) {
   return (
@@ -24,9 +24,9 @@ export default function FilterContainer({
         </h2>
 
         <div className="space-y-5">
-          <NeighborhoodFilter
+          <AreaFilter
             filters={filters}
-            neighborhoods={neighborhoods}
+            areas={areas}
             onFilterChange={onFilterChange}
           />
 
