@@ -5,15 +5,11 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Loader2, 
   UserX, 
-  RefreshCw, 
-  AlertTriangle, 
-  Check, 
-  Users, 
-  Repeat,
-  Database 
+  RefreshCw,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -22,16 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -91,13 +77,10 @@ export default function UserManagement() {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => {
-            refetchUsers();
-            refetchOrphanedCheck();
-          }}
-          disabled={isLoadingUsers || isCheckingOrphaned}
+          onClick={() => refetchUsers()}
+          disabled={isLoadingUsers}
         >
-          {(isLoadingUsers || isCheckingOrphaned) ? (
+          {isLoadingUsers ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -106,73 +89,12 @@ export default function UserManagement() {
         </Button>
       </div>
 
-      {/* Google OAuth Sync Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Google OAuth Synchronization
-          </CardTitle>
-          <CardDescription>
-            Synchronize Google OAuth user data between Firebase Auth and the local database.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm text-muted-foreground mb-4">
-            <p>Google OAuth user synchronization runs automatically every 24 hours. You can also trigger a manual sync if needed.</p>
-            <p className="mt-1">This will:</p>
-            <ul className="list-disc pl-5 mt-1 space-y-1">
-              <li>Update local user profiles with the latest Google OAuth data</li>
-              <li>Link existing email-matching accounts to their Google provider</li>
-              <li>Identify users deleted from Google OAuth and remove their provider links</li>
-            </ul>
-          </div>
-          
-          <Button 
-            onClick={() => syncFirebaseUsersMutation.mutate()}
-            disabled={syncFirebaseUsersMutation.isPending}
-            className="mt-2"
-          >
-            {syncFirebaseUsersMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Syncing Google Users...
-              </>
-            ) : (
-              <>
-                <Repeat className="mr-2 h-4 w-4" />
-                Sync Google OAuth Users
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Orphaned users alert */}
-      {orphanedUsers && orphanedUsers.count > 0 && (
-        <Alert className="mb-4">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Orphaned Google OAuth Users Detected</AlertTitle>
-          <AlertDescription>
-            Found {orphanedUsers.count} Google OAuth users in the database that no longer exist in Firebase.
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="ml-2"
-              onClick={() => handleShowCleanupDialog(orphanedUsers.users)}
-            >
-              View and Clean Up
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
       {/* User listing table */}
       <Card>
         <CardHeader>
-          <CardTitle>Users</CardTitle>
+          <CardTitle>Local Users</CardTitle>
           <CardDescription>
-            All registered users in the system. For Google OAuth users, "active" indicates they exist in Firebase, "deleted" means they were removed from Firebase.
+            Users registered with email and password in the system (OAuth users are not shown).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -195,8 +117,7 @@ export default function UserManagement() {
                     <TableHead>User</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead>Auth Provider</TableHead>
-                    <TableHead>OAuth Status</TableHead>
+                    <TableHead>Created</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -215,12 +136,7 @@ export default function UserManagement() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {user.providerId || 'Local'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusBadgeVariant(user.firebaseStatus) as any}>
-                            {user.firebaseStatus}
-                          </Badge>
+                          {new Date(user.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
                           <Button
@@ -244,8 +160,8 @@ export default function UserManagement() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                        No users found
+                      <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
+                        No local users found
                       </TableCell>
                     </TableRow>
                   )}
@@ -255,66 +171,6 @@ export default function UserManagement() {
           )}
         </CardContent>
       </Card>
-
-      {/* Cleanup confirmation dialog */}
-      <Dialog open={isCleanupDialogOpen} onOpenChange={setIsCleanupDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Google OAuth User Cleanup</DialogTitle>
-            <DialogDescription>
-              The following {selectedUsers.length} Google OAuth users exist in the database but not in Firebase. 
-              Would you like to remove them from the database?
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="max-h-[300px] overflow-y-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Provider</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {selectedUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.name || user.username}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.providerId || 'Local'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsCleanupDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleCleanupConfirm}
-              disabled={cleanupOrphanedUsersMutation.isPending}
-            >
-              {cleanupOrphanedUsersMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Cleaning Up...
-                </>
-              ) : (
-                <>
-                  <UserX className="mr-2 h-4 w-4" />
-                  Clean Up Users
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
