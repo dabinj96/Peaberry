@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Star } from "lucide-react";
 
 interface RatingFilterProps {
-  minRating: number | null;
+  minRating: number | undefined;
   onMinRatingChange: (rating: number | null) => void;
 }
 

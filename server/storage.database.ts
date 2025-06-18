@@ -249,15 +249,9 @@ export class DatabaseStorage implements IStorage {
         whereConditions.push(eq(cafes.priceLevel, filters.priceLevel));
       }
 
-      // Amenities filters
-      if (filters.hasWifi) {
-        whereConditions.push(eq(cafes.hasWifi, true));
-      }
-      if (filters.hasPower) {
-        whereConditions.push(eq(cafes.hasPower, true));
-      }
-      if (filters.hasFood) {
-        whereConditions.push(eq(cafes.hasFood, true));
+      // Coffee beans filter
+      if (filters.sellsCoffeeBeans !== undefined) {
+        whereConditions.push(eq(cafes.sellsCoffeeBeans, filters.sellsCoffeeBeans));
       }
 
       // Text search filter

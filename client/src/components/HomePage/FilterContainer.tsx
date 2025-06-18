@@ -32,17 +32,17 @@ export default function FilterContainer({
 
           <RoastLevelFilter
             selectedRoastLevels={filters.roastLevels || []}
-            onRoastLevelsChange={(roastLevels: string[]) => onFilterChange({ ...filters, roastLevels })}
+            onRoastLevelsChange={(roastLevels: string[]) => onFilterChange({ ...filters, roastLevels: roastLevels as any })}
           />
 
           <BrewingMethodsFilter
             selectedBrewingMethods={filters.brewingMethods || []}
-            onBrewingMethodsChange={(brewingMethods: string[]) => onFilterChange({ ...filters, brewingMethods })}
+            onBrewingMethodsChange={(brewingMethods: string[]) => onFilterChange({ ...filters, brewingMethods: brewingMethods as any })}
           />
 
           <RatingFilter
-            minRating={filters.minRating || null}
-            onMinRatingChange={(minRating: number | null) => onFilterChange({ ...filters, minRating })}
+            minRating={filters.minRating}
+            onMinRatingChange={(minRating: number | null) => onFilterChange({ ...filters, minRating: minRating || undefined })}
           />
 
           <CoffeeBeansFilter
