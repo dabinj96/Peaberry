@@ -215,6 +215,9 @@ export default function HomePage() {
   useEffect(() => {
     if (cafes.length > 0) {
       handleSort(sortOption);
+    } else {
+      // Clear sorted cafes when filter results are empty
+      setSortedCafes([]);
     }
   }, [cafes, cafeDistances]);
 

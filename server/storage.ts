@@ -397,7 +397,7 @@ export class MemStorage implements IStorage {
     return this.listCafes({ query }, userId);
   }
 
-  async listNeighborhoods(): Promise<string[]> {
+  async listAreas(): Promise<string[]> {
     const areas = new Set<string>();
     for (const cafe of this.cafesMap.values()) {
       areas.add(cafe.area);

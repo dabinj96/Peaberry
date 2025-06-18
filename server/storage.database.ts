@@ -399,7 +399,7 @@ export class DatabaseStorage implements IStorage {
     return this.listCafes({ query, status: "published" }, userId);
   }
 
-  async listNeighborhoods(): Promise<string[]> {
+  async listAreas(): Promise<string[]> {
     const results = await db
       .selectDistinct({ area: cafes.area })
       .from(cafes)
