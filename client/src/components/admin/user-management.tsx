@@ -35,77 +35,27 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Type for the user data with OAuth status
-interface UserWithStatus {
+// Type for local users only
+interface LocalUser {
   id: number;
   username: string;
   email: string;
   name: string;
   role: 'user' | 'admin' | 'cafe_owner';
-  providerId: string | null;
-  providerUid: string | null;
-  firebaseStatus: 'active' | 'deleted' | 'local-only' | 'unknown'; // Renamed in UI but kept in type for API compatibility
   createdAt: string;
-}
-
-// Type for orphaned users check response
-interface OrphanedUsersCheck {
-  message: string;
-  count: number;
-  users: UserWithStatus[];
-}
-
-// Type for cleanup response
-interface CleanupResult {
-  message: string;
-  results: {
-    total: number;
-    deleted: number;
-    failed: number;
-    errors: string[];
-  };
-}
-
-// Type for sync results
-interface SyncResult {
-  success: boolean;
-  message: string;
-  results: {
-    added: number;
-    updated: number;
-    deleted: number;
-    errors: string[];
-  };
 }
 
 export default function UserManagement() {
   const { toast } = useToast();
-  const [isCleanupDialogOpen, setIsCleanupDialogOpen] = useState(false);
-  const [selectedUsers, setSelectedUsers] = useState<UserWithStatus[]>([]);
 
-  // Query to fetch all users with their status
+  // Query to fetch local users only
   const { 
     data: users,
     isLoading: isLoadingUsers,
     error: usersError,
     refetch: refetchUsers
-  } = useQuery<UserWithStatus[]>({
+  } = useQuery<LocalUser[]>({
     queryKey: ["/api/admin/users"],
-    refetchOnWindowFocus: false,
-  });
-
-  // Query to check for orphaned users
-  const {
-    data: orphanedUsers,
-    isLoading: isCheckingOrphaned,
-    error: orphanedCheckError,
-    refetch: refetchOrphanedCheck
-  } = useQuery<OrphanedUsersCheck>({
-    queryKey: ["/api/admin/cleanup-orphaned-users", "check"],
-    queryFn: async () => {
-      const response = await apiRequest("POST", "/api/admin/cleanup-orphaned-users?check=true");
-      return await response.json();
-    },
     refetchOnWindowFocus: false,
   });
 
@@ -121,7 +71,6 @@ export default function UserManagement() {
         description: "The user has been successfully removed from the database.",
       });
       refetchUsers();
-      refetchOrphanedCheck();
     },
     onError: (error: any) => {
       toast({
@@ -131,75 +80,6 @@ export default function UserManagement() {
       });
     },
   });
-
-  // Mutation to clean up orphaned users
-  const cleanupOrphanedUsersMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/admin/cleanup-orphaned-users");
-      return await response.json() as CleanupResult;
-    },
-    onSuccess: (data) => {
-      setIsCleanupDialogOpen(false);
-      toast({
-        title: "Cleanup completed",
-        description: `${data.results.deleted} out of ${data.results.total} orphaned users were cleaned up.`,
-      });
-      refetchUsers();
-      refetchOrphanedCheck();
-    },
-    onError: (error: any) => {
-      setIsCleanupDialogOpen(false);
-      toast({
-        title: "Cleanup failed",
-        description: error.message || "An error occurred during cleanup",
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Mutation to manually sync Google OAuth users
-  const syncFirebaseUsersMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/admin/sync-firebase-users");
-      return await response.json() as SyncResult;
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Google OAuth sync completed",
-        description: `Updated: ${data.results.updated}, Deleted: ${data.results.deleted}, Errors: ${data.results.errors.length}`,
-      });
-      refetchUsers();
-      refetchOrphanedCheck();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Google OAuth sync failed",
-        description: error.message || "An error occurred during synchronization",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Helper to get status badge color
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'active': return "success";
-      case 'deleted': return "destructive";
-      case 'local-only': return "secondary";
-      default: return "outline";
-    }
-  };
-
-  // Handle the confirmation to clean up orphaned users
-  const handleCleanupConfirm = () => {
-    cleanupOrphanedUsersMutation.mutate();
-  };
-
-  // Display orphaned users in the cleanup dialog
-  const handleShowCleanupDialog = (orphanedUsers: UserWithStatus[]) => {
-    setSelectedUsers(orphanedUsers);
-    setIsCleanupDialogOpen(true);
-  };
 
   return (
     <div className="space-y-6">

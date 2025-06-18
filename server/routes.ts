@@ -1251,57 +1251,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch all users
       const users = await storage.listUsers();
       
+      // Filter to only local users (no OAuth providers)
+      const localUsers = users.filter(user => !user.providerId && !user.providerUid);
+      
       // Remove sensitive information
-      const safeUsers = users.map(user => {
+      const safeUsers = localUsers.map(user => {
         const { password, ...userWithoutPassword } = user;
         return userWithoutPassword;
       });
       
-      // Get Firebase users for verification
-      let firebaseUsers: any[] = [];
-      try {
-        firebaseUsers = await listFirebaseUsers();
-      } catch (error) {
-        console.warn('Could not fetch Firebase users:', error);
-      }
-      
-      // Create a map of provider UIDs for quick lookup
-      const providerMap = new Map();
-      firebaseUsers.forEach(firebaseUser => {
-        firebaseUser.providerData.forEach((provider: any) => {
-          if (provider.providerId === 'google.com') {
-            providerMap.set(`${provider.providerId}:${provider.uid}`, firebaseUser.uid);
-          }
-        });
-      });
-      
-      // Check Firebase status and add to each user
-      const usersWithStatus = await Promise.all(
-        safeUsers.map(async (user) => {
-          let firebaseStatus = 'unknown';
-          
-          if (user.providerId && user.providerUid) {
-            const providerKey = `${user.providerId}:${user.providerUid}`;
-            const firebaseUid = providerMap.get(providerKey);
-            
-            if (firebaseUid) {
-              firebaseStatus = 'active';
-            } else {
-              firebaseStatus = 'deleted';
-            }
-          } else if (user.username) {
-            // For password auth users, there's no Firebase entry
-            firebaseStatus = 'local-only';
-          }
-          
-          return {
-            ...user,
-            firebaseStatus
-          };
-        })
-      );
-      
-      res.json(usersWithStatus);
+      res.json(safeUsers);
     } catch (error) {
       console.error('Error listing users:', error);
       res.status(500).json({ error: 'Failed to list users' });
